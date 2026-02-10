@@ -26,7 +26,7 @@ sources:
   - id: sunny-skyz
     name: Sunny Skyz
     type: rss
-    url: https://www.sunnyskyz.com/feed/rss
+    url: https://www.sunnyskyz.com/rss_tebow.php
     category: feel_good
     is_curated_positive: true
     enabled: false
@@ -35,7 +35,7 @@ sources:
   - id: bbc-uplifting
     name: BBC Uplifting
     type: rss
-    url: https://feeds.bbci.co.uk/news/topics/cx2pk703/rss.xml
+    url: https://feeds.bbci.co.uk/news/topics/cx2pk70323et/rss.xml
     category: feel_good
     is_curated_positive: true
     enabled: false
@@ -44,7 +44,7 @@ sources:
   - id: dailygood
     name: DailyGood
     type: rss
-    url: https://www.dailygood.org/rss/dgood.xml
+    url: https://www.dailygood.org/feed/
     category: feel_good
     is_curated_positive: true
     enabled: false
@@ -81,7 +81,7 @@ sources:
   - id: scientific-american
     name: Scientific American
     type: rss
-    url: https://rss.sciam.com/ScientificAmerican-Global
+    url: https://www.scientificamerican.com/platform/syndication/rss/
     category: science
     is_curated_positive: false
     enabled: false
