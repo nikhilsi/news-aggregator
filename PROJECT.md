@@ -12,10 +12,11 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| **Backend** | Python 3.12+ / FastAPI | REST API serving both web and mobile clients |
-| **Database/Cache** | SQLite | Lightweight, zero-infrastructure. Used for caching fetched articles and user data |
+| **Backend** | Python 3.11+ / FastAPI | REST API serving both web and mobile clients |
+| **Database** | SQLite | Users and persistent data only |
+| **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
 | **Web Frontend** | Next.js (React) | SSR for link preview support, image optimization, category-based routing |
-| **iOS App** | Swift / SwiftUI | Native iOS app with full feature parity to web. Learning exercise — Claude Code does the heavy lifting |
+| **iOS App** | Swift / SwiftUI | Native iOS app with full feature parity to web |
 | **Deployment** | DigitalOcean Droplet | Backend deployed alongside other existing projects |
 
 ---
@@ -38,8 +39,12 @@ The core idea: a single place to consume news without clickbait, ad overload, an
        │   Backend       │
        │                 │
        │  ┌───────────┐  │
+       │  │ In-Memory  │  │
        │  │  Cache     │  │
-       │  │  (SQLite)  │  │
+       │  └───────────┘  │
+       │  ┌───────────┐  │
+       │  │  SQLite    │  │
+       │  │  (users)   │  │
        │  └───────────┘  │
        └────────┬────────┘
                 │
@@ -55,51 +60,54 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 ### Data Flow
 
 1. **User opens app** (web or iOS)
-2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech&sentiment=positive`)
-3. **Backend checks cache** — if cached articles exist and TTL has not expired, return cached data
+2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech`)
+3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
 4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, News APIs, Financial APIs)
-5. **Backend normalizes** all responses into a common article schema
+5. **Backend normalizes** all responses into a common article structure
 6. **Backend applies deduplication** (URL match + fuzzy title matching)
-7. **Backend caches** the normalized articles in SQLite with a timestamp
+7. **Backend caches** the normalized articles in memory with a timestamp
 8. **Backend returns** filtered, sorted articles to the client
 
-**No background jobs.** All fetching is on-demand, triggered by user requests. Cache TTL is configurable (default: 15 minutes).
+**No background jobs.** All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, cache is empty — first request triggers fresh fetches.
 
 ---
 
 ## Authentication
 
-Simple username/password authentication.
+Email/password authentication with JWT tokens.
 
 - Backend issues a JWT token on successful login
 - Token is sent with every subsequent request via `Authorization: Bearer <token>` header
 - Both web and iOS clients store the token locally (httpOnly cookie for web, Keychain for iOS)
 - Single user initially, with the ability to add more users later (family/friends)
 - Registration is invite-only or admin-created (no public signup)
+- User table tracks: email, password_hash, full_name, is_admin, is_active, failed_login_attempts, last_login
 
 ---
 
 ## Data Model
 
-### Article (Core Entity)
+### Article (In-Memory Cache)
+
+Articles are transient cached data, stored in memory only. The structure below is what each source's fetcher normalizes into:
 
 ```python
 {
-    "id": str,                  # Unique identifier (generated hash of URL)
     "title": str,               # Article headline
     "summary": str,             # Short description or first paragraph
     "content": str | None,      # Full article content (extracted for reader view)
-    "url": str,                 # Original source URL
+    "url": str,                 # Original source URL (used as unique identifier)
     "image_url": str | None,    # Thumbnail/hero image
+    "source_id": str,           # Source ID from sources.yaml
     "source_name": str,         # e.g., "Ars Technica", "Good News Network"
-    "source_type": str,         # "rss" | "api" | "financial"
-    "category": str,            # See categories below
+    "source_type": str,         # "rss" | "news_api" | "financial_api"
+    "category": str,            # Category from source config
     "sentiment": float | None,  # -1.0 to 1.0 (from API, or null if unavailable)
-    "tags": list[str],          # Keywords, tickers, etc.
     "published_at": datetime,   # When the article was published
-    "cached_at": datetime       # When we fetched/cached it
 }
 ```
+
+Source-type fetchers may preserve additional fields from the raw response. The above is the minimum common shape exposed via the API.
 
 ### Categories
 
@@ -113,9 +121,11 @@ Simple username/password authentication.
 - `sports` — Sports news
 - `offbeat` — Weird, wonderful, unusual stories
 
-Categories are assigned based on source configuration. A single source maps to one primary category. Articles from general news APIs may be tagged based on API-provided categories.
+Categories are assigned based on source configuration. A single source maps to one primary category.
 
 ### Source Configuration
+
+Sources are defined in `backend/sources.yaml`. See that file for the full list. Each source has:
 
 ```python
 {
@@ -127,88 +137,38 @@ Categories are assigned based on source configuration. A single source maps to o
     "is_curated_positive": bool,    # If true, all articles pass sentiment filter
     "enabled": bool,                # Toggle source on/off without removing config
     "api_key_env": str | None,      # Environment variable name for API key (if needed)
-    "cache_ttl_minutes": int        # Per-source cache TTL override (default: 15)
+    "cache_ttl_minutes": int        # Per-source cache TTL (default: 15)
 }
 ```
 
-### User
+### User (SQLite — Persistent)
 
-```python
-{
-    "id": str,
-    "username": str,
-    "password_hash": str,
-    "created_at": datetime
-}
+```sql
+users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255),
+    is_admin BOOLEAN DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    failed_login_attempts INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME
+)
 ```
 
 ---
 
 ## Source Registry
 
-Sources are defined in a YAML configuration file (`sources.yaml`). This makes it easy to add, remove, or toggle sources without code changes.
+Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove, or toggle sources without code changes.
 
-### Initial Sources
+**Current sources:** 24 total (21 RSS feeds, 1 News API, 2 Financial APIs). All RSS URLs have been validated. See `backend/sources.yaml` for the full list with URLs.
 
-#### RSS Feeds — Curated Positive/Good News
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| Good News Network | `https://www.goodnewsnetwork.org/feed/` | feel_good |
-| Positive News | `https://positive.news/feed` | feel_good |
-| Sunny Skyz | `https://www.sunnyskyz.com/feed/rss` | feel_good |
-| BBC Uplifting | `https://feeds.bbci.co.uk/news/topics/cx2pk703/rss.xml` | feel_good |
-| DailyGood | `https://www.dailygood.org/rss/dgood.xml` | feel_good |
-
-#### RSS Feeds — Science & Discovery
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| Ars Technica - Science | `https://feeds.arstechnica.com/arstechnica/science` | science |
-| NASA Breaking News | `https://www.nasa.gov/rss/dyn/breaking_news.rss` | science |
-| New Scientist | `https://www.newscientist.com/feed/home/` | science |
-| Scientific American | `https://rss.sciam.com/ScientificAmerican-Global` | science |
-
-#### RSS Feeds — Technology
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| The Verge | `https://www.theverge.com/rss/index.xml` | tech |
-| Wired | `https://www.wired.com/feed/rss` | tech |
-| Ars Technica - Tech | `https://feeds.arstechnica.com/arstechnica/technology-lab` | tech |
-| Engadget | `https://www.engadget.com/rss.xml` | tech |
-
-#### RSS Feeds — Offbeat / Weird / Fun
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| Atlas Obscura | `https://www.atlasobscura.com/feeds/latest` | offbeat |
-
-#### RSS Feeds — Entertainment
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| A.V. Club | `https://www.avclub.com/rss` | entertainment |
-| Polygon | `https://www.polygon.com/rss/index.xml` | entertainment |
-
-#### RSS Feeds — Google News (Free, Unlimited, No API Key)
-| Source | RSS URL | Category |
-|--------|---------|----------|
-| Google News - Science | `https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en` | science |
-| Google News - Technology | `https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pIUWlnQVAB?hl=en-US&gl=US&ceid=US:en` | tech |
-| Google News - Entertainment | `https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en` | entertainment |
-| Google News - Health | `https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtVnVLQUFQAQ?hl=en-US&gl=US&ceid=US:en` | health |
-| Google News - Sports | `https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en` | sports |
-
-#### News APIs
-| Source | API | Category | Free Tier |
-|--------|-----|----------|-----------|
-| WorldNewsAPI | `https://api.worldnewsapi.com/search-news` | all (sentiment-filterable) | 500 req/day |
-
-WorldNewsAPI is the primary API source because of its built-in sentiment scoring (`min-sentiment` parameter). This powers the "feel good" filter for mainstream news sources.
-
-#### Financial APIs (Existing Subscriptions)
-| Source | API | Category | Notes |
-|--------|-----|----------|-------|
-| Alpha Vantage | Various endpoints | finance | Premium subscription — stock news, market data |
-| Financial Modeling Prep | Various endpoints | finance | Premium subscription — financial news, company data |
-
-**Note:** Specific AV and FMP endpoints and data presentation (headlines only, with tickers, watchlist support, etc.) are TBD — to be refined during development.
+**Source types and how they're fetched:**
+- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds).
+- **News API** (`type: news_api`) — WorldNewsAPI. Dedicated client with sentiment scoring support.
+- **Financial API** (`type: financial_api`) — Alpha Vantage + FMP. Dedicated client (endpoints TBD).
 
 ---
 
@@ -253,7 +213,6 @@ GET    /api/v1/articles/:id        # Get single article with full content (reade
 {
     "articles": [
         {
-            "id": "abc123",
             "title": "Scientists Discover New Species in Deep Ocean",
             "summary": "A team of marine biologists...",
             "url": "https://source.com/article",
@@ -261,7 +220,6 @@ GET    /api/v1/articles/:id        # Get single article with full content (reade
             "source_name": "New Scientist",
             "category": "science",
             "sentiment": 0.7,
-            "tags": ["marine biology", "discovery"],
             "published_at": "2026-02-10T08:30:00Z"
         }
     ],
@@ -287,46 +245,32 @@ GET    /api/v1/categories          # List all available categories
 GET    /api/v1/articles/:id/content    # Extract and return clean article content
 ```
 
-This endpoint uses content extraction (e.g., `newspaper3k` or `readability-lxml`) to fetch the full article from the source URL and return a clean, readable version stripped of ads, navigation, and clutter.
-
----
-
-## Reader View
-
-When a user taps/clicks an article, instead of opening the original (often ad-heavy) source URL, the app renders a clean reading experience within the app itself.
-
-**How it works:**
-1. User selects an article
-2. Client calls `GET /api/v1/articles/:id/content`
-3. Backend fetches the full page from the article's source URL
-4. Backend extracts the main article content using a content extraction library
-5. Returns clean HTML/text content, along with metadata (title, author, publish date, estimated read time)
-6. Client renders the content in a clean, distraction-free reading layout
-
-**Fallback:** If content extraction fails (paywalled, anti-scraping, etc.), the app falls back to opening the original URL in an in-app browser.
+Uses content extraction to fetch the full article from the source URL and return a clean, readable version stripped of ads, navigation, and clutter. Falls back to opening the original URL if extraction fails.
 
 ---
 
 ## Caching Strategy
 
-- **Cache layer:** SQLite table storing normalized articles with a `cached_at` timestamp
+- **Cache layer:** In-memory Python dict (not SQLite — articles are transient)
+- **Cache key:** Source ID
 - **Default TTL:** 15 minutes (configurable per-source in `sources.yaml`)
-- **Cache key:** Combination of source ID + category + any filter parameters
 - **On request:**
-  1. Check if cached results exist for the requested filters
-  2. If `cached_at + ttl > now`, return cached data
-  3. If stale, fetch fresh data from sources, normalize, deduplicate, cache, and return
-- **Cache eviction:** Articles older than 24 hours are purged on next fetch cycle (lazy cleanup)
+  1. Find enabled sources for the requested category
+  2. For each source, check if cached articles exist and are fresh
+  3. If fresh, use cached data
+  4. If stale/missing, fetch from source, normalize, cache, return
+- **No eviction logic needed** — stale entries are overwritten on next fetch
+- **Server restart** = empty cache = first request fetches fresh data
 - **No background jobs** — all fetching and cache management is triggered by user requests
 
 ---
 
 ## Deduplication
 
-Multiple sources will cover the same story. Before caching, the backend deduplicates using:
+Multiple sources will cover the same story. After fetching and before returning, the backend deduplicates using:
 
 1. **URL match** — Exact URL comparison (primary check)
-2. **Fuzzy title match** — If titles are >85% similar (using a string similarity library like `rapidfuzz`), treat as duplicate
+2. **Fuzzy title match** — If titles are >85% similar (using `rapidfuzz`), treat as duplicate
 3. **On duplicate:** Keep the version from the higher-priority source (source priority defined in `sources.yaml`)
 
 ---
@@ -337,29 +281,30 @@ Multiple sources will cover the same story. Before caching, the backend deduplic
 news-aggregator/
 ├── README.md
 ├── PROJECT.md                      # This file
+├── CLAUDE.md                       # Claude Code development guide
+├── CURRENT_STATE.md                # Build status tracker
+├── NOW.md                          # Current priorities
+├── CHANGELOG.md                    # Version history
 │
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py                 # FastAPI app entry point
 │   │   ├── config.py               # App configuration, env vars
-│   │   ├── database.py             # SQLite connection and setup
+│   │   ├── database.py             # SQLite connection and setup (users only)
+│   │   ├── cache.py                # In-memory article cache
 │   │   │
 │   │   ├── auth/
-│   │   │   ├── __init__.py
 │   │   │   ├── router.py           # Auth endpoints
 │   │   │   ├── models.py           # User model
 │   │   │   └── utils.py            # JWT, password hashing
 │   │   │
 │   │   ├── articles/
-│   │   │   ├── __init__.py
 │   │   │   ├── router.py           # Article endpoints
-│   │   │   ├── models.py           # Article model
 │   │   │   ├── service.py          # Business logic — fetch, cache, filter
 │   │   │   └── reader.py           # Content extraction for reader view
 │   │   │
 │   │   ├── sources/
-│   │   │   ├── __init__.py
 │   │   │   ├── router.py           # Source/category endpoints
 │   │   │   ├── registry.py         # Load and manage source configs
 │   │   │   ├── rss_fetcher.py      # RSS feed parser
@@ -367,84 +312,18 @@ news-aggregator/
 │   │   │   └── finance_fetcher.py  # Alpha Vantage + FMP client
 │   │   │
 │   │   └── common/
-│   │       ├── __init__.py
-│   │       ├── schemas.py          # Pydantic schemas (shared)
+│   │       ├── schemas.py          # Pydantic schemas (API response shapes)
 │   │       └── dedup.py            # Deduplication logic
 │   │
+│   ├── schema.sql                  # SQLite schema (users table only)
 │   ├── sources.yaml                # Source registry configuration
 │   ├── requirements.txt
-│   ├── .env.example                # Template for environment variables
+│   ├── .env.example
 │   └── Dockerfile
 │
-├── web/
-│   ├── src/
-│   │   ├── app/                    # Next.js app router
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx            # Home / article feed
-│   │   │   ├── login/
-│   │   │   │   └── page.tsx
-│   │   │   └── article/
-│   │   │       └── [id]/
-│   │   │           └── page.tsx    # Reader view
-│   │   │
-│   │   ├── components/
-│   │   │   ├── ArticleCard.tsx
-│   │   │   ├── ArticleFeed.tsx
-│   │   │   ├── CategoryFilter.tsx
-│   │   │   ├── SentimentToggle.tsx
-│   │   │   ├── SearchBar.tsx
-│   │   │   ├── ReaderView.tsx
-│   │   │   └── Navbar.tsx
-│   │   │
-│   │   ├── lib/
-│   │   │   ├── api.ts              # API client for FastAPI backend
-│   │   │   └── auth.ts             # Auth helpers, token management
-│   │   │
-│   │   └── types/
-│   │       └── index.ts            # TypeScript type definitions
-│   │
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   └── Dockerfile
-│
-├── ios/
-│   ├── NewsAggregator/
-│   │   ├── NewsAggregatorApp.swift     # App entry point
-│   │   ├── ContentView.swift
-│   │   │
-│   │   ├── Models/
-│   │   │   ├── Article.swift
-│   │   │   ├── Category.swift
-│   │   │   └── User.swift
-│   │   │
-│   │   ├── Views/
-│   │   │   ├── Feed/
-│   │   │   │   ├── ArticleFeedView.swift
-│   │   │   │   ├── ArticleCardView.swift
-│   │   │   │   └── CategoryFilterView.swift
-│   │   │   │
-│   │   │   ├── Reader/
-│   │   │   │   └── ReaderView.swift
-│   │   │   │
-│   │   │   ├── Auth/
-│   │   │   │   └── LoginView.swift
-│   │   │   │
-│   │   │   └── Components/
-│   │   │       ├── SentimentToggle.swift
-│   │   │       └── SearchBar.swift
-│   │   │
-│   │   ├── Services/
-│   │   │   ├── APIClient.swift         # HTTP client for FastAPI backend
-│   │   │   ├── AuthService.swift       # Login, token storage (Keychain)
-│   │   │   └── ArticleService.swift    # Article fetching and caching
-│   │   │
-│   │   └── Utilities/
-│   │       └── Constants.swift         # API base URL, config
-│   │
-│   └── NewsAggregator.xcodeproj/
-│
-└── docker-compose.yml              # Backend + Web for deployment
+├── web/                            # Next.js web frontend (Phase 2)
+├── ios/                            # SwiftUI iOS app (Phase 3)
+└── docker-compose.yml
 ```
 
 ---
@@ -486,22 +365,8 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
 
 ## TBD — To Be Decided During Development
 
-These items were deliberately left open to be figured out during the build:
-
-1. **Default view / sorting** — What the user sees when they first open the app (all news sorted by recency? top stories? curated mix?)
-2. **Financial news specifics** — Which AV and FMP endpoints to use, what data to display (headlines only, stock price alongside, watchlist of tickers, etc.)
-3. **Political news filter** — How aggressive the "hide political news" toggle should be (keyword blocklist, sentiment-based, or something smarter)
-4. **App/website brand name** — Project is `news-aggregator` for now. Brand name, domain, and App Store name TBD
-5. **Source priority ranking** — When duplicates are found, which source wins? Needs a priority order.
-6. **Additional sources** — The initial source list is a starting point. More can be added to `sources.yaml` at any time.
-
----
-
-## Development Approach
-
-- **Claude Code** will be the primary development tool, used from VS Code terminal on macOS
-- Build order recommendation:
-  1. **Backend first** — FastAPI with a few RSS sources, caching, and article endpoint. Get data flowing.
-  2. **Web frontend** — Next.js consuming the backend API. Get the feed rendering with filters.
-  3. **iOS app** — SwiftUI consuming the same backend API. Full feature parity with web.
-- Iterate: start with 3-5 sources, get end-to-end working, then expand sources and features
+1. **Default view / sorting** — What the user sees when they first open the app
+2. **Financial news specifics** — Which AV and FMP endpoints to use, what data to display
+3. **Political news filter** — How aggressive the "hide political news" toggle should be
+4. **App/website brand name** — Project is `news-aggregator` for now
+5. **Source priority ranking** — When duplicates are found, which source wins
