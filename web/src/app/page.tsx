@@ -4,24 +4,36 @@
  * Home page — the main article feed.
  *
  * Layout: sticky header with search, horizontal category tabs, responsive article grid
- * with infinite scroll. This is the primary view of the app.
+ * with infinite scroll. Clicking an article opens a full-screen reader overlay (modal)
+ * so the feed stays mounted and the back transition is instant.
  */
 
 import { useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import CategoryTabs from '@/components/CategoryTabs';
 import ArticleGrid from '@/components/ArticleGrid';
+import ReaderModal from '@/components/ReaderModal';
 import { useArticles } from '@/hooks/useArticles';
+import { Article } from '@/lib/types';
 
 export default function HomePage() {
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
   const { articles, loading, error, hasMore, loadMore } = useArticles(category, search);
 
   // Memoize search handler to avoid re-creating on every render (SearchBar uses it in useEffect)
   const handleSearch = useCallback((query: string) => {
     setSearch(query);
+  }, []);
+
+  const handleArticleClick = useCallback((article: Article) => {
+    setSelectedArticle(article);
+  }, []);
+
+  const handleCloseReader = useCallback(() => {
+    setSelectedArticle(null);
   }, []);
 
   return (
@@ -43,8 +55,14 @@ export default function HomePage() {
           error={error}
           hasMore={hasMore}
           loadMore={loadMore}
+          onArticleClick={handleArticleClick}
         />
       </main>
+
+      {/* Reader overlay — renders on top when an article is selected */}
+      {selectedArticle && (
+        <ReaderModal article={selectedArticle} onClose={handleCloseReader} />
+      )}
     </div>
   );
 }

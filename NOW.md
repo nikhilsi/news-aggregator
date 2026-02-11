@@ -130,6 +130,7 @@ Deferred until V1 is live and we can evaluate based on real usage.
 - **Additional source types** — NewsAPI fetcher (WorldNewsAPI)
 
 ### Frontend
+- **Performance review** — Audit and fix perceived performance issues: reader view load time, content extraction latency, skeleton/spinner UX, any jank in modal open/close transitions.
 - **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.
 - **User settings page** — Preferences, profile editing, source toggles. Build when there's something to configure.
 - **Landing page** — Public marketing-style page with value prop, login/signup CTA. Build when ready to share with family/friends.

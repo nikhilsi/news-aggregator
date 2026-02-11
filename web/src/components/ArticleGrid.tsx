@@ -19,6 +19,7 @@ interface ArticleGridProps {
   error: string | null;
   hasMore: boolean;
   loadMore: () => void;
+  onArticleClick: (article: Article) => void;
 }
 
 export default function ArticleGrid({
@@ -27,6 +28,7 @@ export default function ArticleGrid({
   error,
   hasMore,
   loadMore,
+  onArticleClick,
 }: ArticleGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +87,7 @@ export default function ArticleGrid({
     <>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {articles.map((article, index) => (
-          <ArticleCard key={`${article.url}-${index}`} article={article} />
+          <ArticleCard key={`${article.url}-${index}`} article={article} onClick={onArticleClick} />
         ))}
       </div>
 

@@ -2,32 +2,23 @@
 
 /**
  * Single article card — displays thumbnail, title, summary, source, and relative time.
- * Clicking the card navigates to the in-app reader view.
+ * Clicking the card opens the reader modal overlay.
  */
 
-import Link from 'next/link';
 import { Article } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
 
 interface ArticleCardProps {
   article: Article;
+  onClick: (article: Article) => void;
 }
 
-function readerUrl(article: Article): string {
-  const params = new URLSearchParams();
-  params.set('url', article.url);
-  if (article.title) params.set('title', article.title);
-  if (article.source_name) params.set('source_name', article.source_name);
-  if (article.image_url) params.set('image_url', article.image_url);
-  if (article.published_at) params.set('published_at', article.published_at);
-  return `/article?${params.toString()}`;
-}
-
-export default function ArticleCard({ article }: ArticleCardProps) {
+export default function ArticleCard({ article, onClick }: ArticleCardProps) {
   return (
-    <Link
-      href={readerUrl(article)}
-      className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+    <button
+      type="button"
+      onClick={() => onClick(article)}
+      className="group flex w-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white text-left transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
     >
       {/* Thumbnail — show placeholder gradient if no image */}
       <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
@@ -65,6 +56,6 @@ export default function ArticleCard({ article }: ArticleCardProps) {
           )}
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
