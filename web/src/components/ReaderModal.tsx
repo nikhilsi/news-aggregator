@@ -45,14 +45,11 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
     return () => { cancelled = true; };
   }, [article.url]);
 
-  // Push a URL state so browser back closes the modal
+  // Push a history entry (without changing URL) so browser back closes the modal.
+  // We avoid changing the URL because Next.js App Router intercepts popstate
+  // and tries to route, which conflicts with our manual history management.
   useEffect(() => {
-    const params = new URLSearchParams();
-    params.set('url', article.url);
-    if (article.title) params.set('title', article.title);
-    if (article.source_name) params.set('source_name', article.source_name);
-
-    window.history.pushState({ readerModal: true }, '', `/article?${params.toString()}`);
+    window.history.pushState({ readerModal: true }, '');
 
     function handlePopState() {
       onClose();
@@ -60,7 +57,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [article, onClose]);
+  }, [onClose]);
 
   // Lock body scroll while modal is open
   useEffect(() => {
@@ -68,14 +65,14 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // Close on Escape key
+  // Close on Escape key — go through history.back() so the URL reverts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') window.history.back();
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   const handleClose = useCallback(() => {
     // Go back to undo the pushState (restores the feed URL)
