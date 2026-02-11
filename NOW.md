@@ -31,7 +31,7 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 - [x] GET /api/v1/articles with category, source, pagination
 - [ ] GET /api/v1/articles/:id for single article (reader view — later)
 - [ ] Sentiment filter parameter
-- [ ] Keyword search in title/summary
+- [x] Keyword search in title/summary (case-insensitive, composes with category/source filters)
 
 ### 5. Authentication — `done`
 - [x] User model + SQLite table (schema.sql — users table with email, password_hash, is_admin, is_active, etc.)

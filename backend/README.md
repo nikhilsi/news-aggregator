@@ -30,6 +30,7 @@ uvicorn app.main:app --reload --port 8000
 | `category` | string | `all` | Filter: science, tech, feel_good, etc. |
 | `source` | string | — | Filter by source ID (e.g., `the-verge`) |
 | `page` | int | 1 | Page number |
+| `search` | string | — | Keyword search in title and summary (case-insensitive) |
 | `per_page` | int | 20 | Items per page (max 50) |
 
 ## Folder Structure
