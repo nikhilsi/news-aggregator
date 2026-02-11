@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Use class-based dark mode so we can toggle with a button */
+@variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}

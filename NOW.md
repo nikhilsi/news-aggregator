@@ -43,17 +43,44 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 
 ---
 
-## Phase 2: Web Frontend — `up next`
+## Phase 2: Web Frontend — `in progress`
 
-Next.js app consuming the backend API.
+Next.js app consuming the backend API. Layout: top nav with horizontal category tabs, responsive article card grid, dark mode from the start.
 
-- [ ] Project scaffolding (Next.js + Tailwind)
-- [ ] Layout (header, nav, responsive shell)
-- [ ] Article feed page (card grid, infinite scroll or pagination)
-- [ ] Category/source filters
-- [ ] Keyword search
-- [ ] Login page + auth context (JWT storage, protected routes)
-- [ ] User profile / settings page
+### 1. Project scaffolding — `done`
+- [x] Next.js project (App Router) + Tailwind CSS
+- [x] Folder structure, environment config (NEXT_PUBLIC_API_URL)
+- [x] Dark mode setup (Tailwind class-based, localStorage persistence, respects prefers-color-scheme, no flash on load)
+- [x] API client helper (fetch wrapper for articles, categories, auth)
+- [x] TypeScript interfaces matching backend API response shapes
+
+### 2. Layout + navigation — `done`
+- [x] Header (logo/name, search bar, dark mode toggle, login button)
+- [x] Category tabs (horizontal, scrollable on mobile, fetched from API)
+- [x] Responsive shell (mobile-first, max-w-7xl container)
+
+### 3. Article feed — `done`
+- [x] Article card component (image, title, summary, source + relative time)
+- [x] Responsive card grid (1 col mobile, 2 tablet, 3 desktop)
+- [x] Infinite scroll (Intersection Observer, 200px early trigger)
+- [x] Loading/empty/error states (skeleton cards, error message, empty message)
+- [x] Broken image fallback (gradient placeholder)
+
+### 4. Filters + search — `done`
+- [x] Category tab selection (updates feed, resets pagination)
+- [x] Search bar (debounced 400ms, keyword search via API)
+- [x] Race condition handling (stale request discard)
+
+### 5. Authentication — `done`
+- [x] Login page (email + password form, error display, redirect on success)
+- [x] Auth context + useAuth hook (JWT in localStorage, validates token on mount)
+- [x] Conditional UI (login/logout button, user name display)
+
+### 6. Polish + testing — `pending`
+- [ ] Visual review in browser (both light and dark mode)
+- [ ] Test all user flows (browse, filter, search, login/logout, dark mode toggle)
+- [ ] Mobile responsiveness check
+- [ ] Fix any styling or UX issues found
 
 ---
 
@@ -71,3 +98,8 @@ Deferred until V1 frontend is live and we can evaluate based on real usage.
 - **Deduplication** — URL exact match + fuzzy title matching with rapidfuzz (>85% similarity) + source priority ranking. Build once we see actual overlap in the frontend.
 - **Additional source types** — NewsAPI fetcher, Financial API fetcher (Alpha Vantage, FMP)
 - **Enable more sources** — Currently 4 of 24 enabled. Scale up after dedup is in place.
+
+### Frontend
+- **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.
+- **User settings page** — Preferences, profile editing, source toggles. Build when there's something to configure.
+- **Landing page** — Public marketing-style page with value prop, login/signup CTA. Build when ready to share with family/friends.
