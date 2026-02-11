@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Produce a self-contained build for Docker (copies only needed files)
+  output: 'standalone',
 };
 
 export default nextConfig;

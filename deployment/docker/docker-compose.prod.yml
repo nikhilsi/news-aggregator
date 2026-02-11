@@ -1,0 +1,48 @@
+services:
+  backend:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.backend
+    container_name: clearnews-backend
+    env_file: ../.env.production
+    environment:
+      - TZ=America/Los_Angeles
+      - DB_PATH=/app/data/news_aggregator.db
+      - CORS_ORIGINS=https://getclearnews.com
+    ports:
+      - "127.0.0.1:8000:8000"   # Internal only — nginx handles external traffic
+    volumes:
+      - /opt/app/data:/app/data  # SQLite persistence (survives container rebuilds)
+      - /opt/app/logs:/app/logs  # Log persistence
+    restart: always
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://getclearnews.com/api/v1
+    container_name: clearnews-frontend
+    ports:
+      - "127.0.0.1:3000:3000"   # Internal only — nginx handles external traffic
+    restart: always
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  app-network:
+    driver: bridge

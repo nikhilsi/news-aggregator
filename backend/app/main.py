@@ -11,6 +11,7 @@ Run with: uvicorn app.main:app --reload --port 8000
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import httpx
@@ -61,10 +62,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: allow the Next.js dev server to call the API
+# CORS: allow the frontend to call the API
+# In production behind a single domain + nginx, CORS isn't needed but doesn't hurt
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[o.strip() for o in _cors_origins.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

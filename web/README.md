@@ -37,7 +37,8 @@ web/src/
 │   ├── ArticleCard.tsx      # Single article card (image, title, summary, source)
 │   ├── ArticleGrid.tsx      # Responsive grid + infinite scroll + loading/error states
 │   ├── SearchBar.tsx        # Debounced search input (400ms)
-│   └── ThemeToggle.tsx      # Dark/light mode toggle button
+│   ├── ThemeToggle.tsx      # Dark/light mode toggle button
+│   └── UserMenu.tsx         # User dropdown menu (logout, future: preferences/admin)
 │
 ├── hooks/
 │   └── useArticles.ts       # Article fetching with pagination + infinite scroll

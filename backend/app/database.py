@@ -8,11 +8,13 @@ Schema is defined in backend/schema.sql and applied on startup via init_db().
 Uses WAL journal mode for better concurrent read performance.
 """
 
+import os
+
 import aiosqlite
 from pathlib import Path
 
-# Database file location (relative to where uvicorn is started)
-DB_PATH = Path("news_aggregator.db")
+# Database file location — configurable via DB_PATH env var for Docker deployments
+DB_PATH = Path(os.environ.get("DB_PATH", "news_aggregator.db"))
 
 # SQL schema file — lives alongside sources.yaml in backend/
 SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schema.sql"

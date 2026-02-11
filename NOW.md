@@ -84,20 +84,45 @@ Next.js app consuming the backend API. Layout: top nav with horizontal category 
 
 ---
 
-## Phase 3: iOS App (after Phase 2)
+## Phase 3: Deployment — `done`
+
+Docker Compose deployment to DigitalOcean with nginx, SSL, and security hardening.
+
+### 1. Deployment infrastructure — `done`
+- [x] Dockerfile for backend (Python 3.12, non-root user, health check)
+- [x] Dockerfile for frontend (Next.js standalone, multi-stage build, non-root user)
+- [x] docker-compose.prod.yml (backend + frontend, localhost-only ports, SQLite bind mount)
+- [x] Host-level nginx config (SSL termination, rate limiting, /api/ → backend, / → frontend)
+- [x] Setup script (installs Docker/nginx, builds containers, generates SECRET_KEY)
+- [x] SSL setup script (Let's Encrypt + auto-renewal)
+- [x] Firewall setup script (UFW + fail2ban)
+- [x] Deploy script (git pull, rebuild, restart)
+- [x] Log streaming script (stream remote Docker logs to local terminal)
+- [x] .env.production template
+- [x] Deployment README with setup guide + troubleshooting
+
+### 2. Code changes for production — `done`
+- [x] DB_PATH configurable via env var (for Docker bind mount)
+- [x] CORS origins configurable via env var
+- [x] Next.js standalone output mode for Docker builds
+- [x] All 21 RSS sources enabled (3 API-based remain disabled)
+- [x] Categories endpoint hides empty categories
+
+---
+
+## Phase 4: iOS App (future)
 
 ---
 
 ## Future Enhancements
 
-Deferred until V1 frontend is live and we can evaluate based on real usage.
+Deferred until V1 is live and we can evaluate based on real usage.
 
 ### Backend
-- **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once FE is built and we see if in-app reading is wanted.
+- **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once we see if in-app reading is wanted.
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI. Decide on approach later.
 - **Deduplication** — URL exact match + fuzzy title matching with rapidfuzz (>85% similarity) + source priority ranking. Build once we see actual overlap in the frontend.
 - **Additional source types** — NewsAPI fetcher, Financial API fetcher (Alpha Vantage, FMP)
-- **Enable more sources** — Currently 4 of 24 enabled. Scale up after dedup is in place.
 
 ### Frontend
 - **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.

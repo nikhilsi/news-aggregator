@@ -98,11 +98,11 @@ Request → Article Service → check cache per source
 
 JWT-based auth with email + password login. Tokens use HS256 (symmetric HMAC) and expire after 24 hours (configurable via `JWT_EXPIRE_MINUTES` in `.env`).
 
-**Creating the first admin user:**
+**Creating a user (admin or regular):**
 ```bash
 cd backend
 source venv/bin/activate
-python seed_admin.py
+python seed_admin.py      # Prompts for role, email, name, password
 ```
 
 **Login flow:**

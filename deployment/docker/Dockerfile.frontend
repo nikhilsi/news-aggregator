@@ -1,0 +1,44 @@
+# ── Build stage ────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY web/package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY web/ .
+
+# Set production API URL (passed as build arg, baked into the JS bundle)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Build Next.js in standalone mode (output: 'standalone' in next.config.ts)
+RUN npm run build
+
+# ── Production stage ──────────────────────────────────────────────────
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy standalone server + static assets from build stage
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Create non-root user for security
+RUN adduser -D appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=20s \
+    CMD curl -f http://localhost:3000/ || exit 1
+
+EXPOSE 3000
+
+# Next.js standalone server listens on port 3000 by default
+CMD ["node", "server.js"]

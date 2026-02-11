@@ -12,12 +12,12 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| **Backend** | Python 3.11+ / FastAPI | REST API serving both web and mobile clients |
+| **Backend** | Python 3.12+ / FastAPI | REST API serving both web and mobile clients |
 | **Database** | SQLite | Users and persistent data only |
 | **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
-| **Web Frontend** | Next.js (React) | SSR for link preview support, image optimization, category-based routing |
+| **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Standalone output for Docker, dark mode, infinite scroll |
 | **iOS App** | Swift / SwiftUI | Native iOS app with full feature parity to web |
-| **Deployment** | DigitalOcean Droplet | Backend deployed alongside other existing projects |
+| **Deployment** | DigitalOcean Droplet / Docker Compose | Dedicated droplet, nginx reverse proxy, Let's Encrypt SSL |
 
 ---
 
@@ -321,9 +321,14 @@ news-aggregator/
 │   ├── .env.example
 │   └── Dockerfile
 │
-├── web/                            # Next.js web frontend (Phase 2)
-├── ios/                            # SwiftUI iOS app (Phase 3)
-└── docker-compose.yml
+├── web/                            # Next.js web frontend
+├── ios/                            # SwiftUI iOS app (planned)
+├── deployment/
+│   ├── docker/                     # Dockerfiles + docker-compose.prod.yml
+│   ├── nginx/                      # Host-level nginx config
+│   ├── scripts/                    # setup.sh, deploy.sh, etc.
+│   └── .env.production.example     # Production env template
+└── scripts/                        # Local dev restart scripts
 ```
 
 ---
@@ -347,15 +352,27 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
 
 ## Deployment
 
-### Backend + Web (DigitalOcean Droplet)
+### Production (DigitalOcean Droplet)
 
-- **Backend:** FastAPI running via `uvicorn`, behind a reverse proxy (nginx or caddy)
-- **Web:** Next.js running via `next start`, behind the same reverse proxy
-- **Docker Compose** orchestrates both services
-- SQLite database file lives on the droplet's filesystem
-- API keys stored as environment variables on the droplet
+- **Domain**: getclearnews.com
+- **Host**: DigitalOcean Droplet (Ubuntu 24.04, $6/mo, sfo3)
+- **Reverse proxy**: Nginx (host-level) handles SSL termination, rate limiting, routing
+- **Containers**: Docker Compose with two services
+  - Backend: FastAPI on Uvicorn (port 8000, localhost only)
+  - Frontend: Next.js standalone (port 3000, localhost only)
+- **SSL**: Let's Encrypt with certbot auto-renewal
+- **Database**: SQLite bind-mounted to `/opt/app/data/` for persistence
+- **Security**: UFW firewall, fail2ban, rate limiting, non-root container users, security headers
 
-### iOS App
+```
+Internet → Nginx (SSL + rate limiting)
+              ├── /api/* → Backend container (port 8000)
+              └── /*     → Frontend container (port 3000)
+```
+
+See [deployment/README.md](deployment/README.md) for setup and deploy instructions.
+
+### iOS App (planned)
 
 - Built and tested locally via Xcode
 - Distributed via TestFlight for family/friends (requires Apple Developer account — $99/year)
@@ -363,10 +380,12 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
 
 ---
 
-## TBD — To Be Decided During Development
+## TBD — To Be Decided
 
-1. **Default view / sorting** — What the user sees when they first open the app
-2. **Financial news specifics** — Which AV and FMP endpoints to use, what data to display
-3. **Political news filter** — How aggressive the "hide political news" toggle should be
-4. **App/website brand name** — Project is `news-aggregator` for now
-5. **Source priority ranking** — When duplicates are found, which source wins
+1. **Financial news specifics** — Which AV and FMP endpoints to use, what data to display
+2. **Political news filter** — How aggressive the "hide political news" toggle should be
+3. **Source priority ranking** — When duplicates are found, which source wins
+
+### Resolved
+- **Brand name**: ClearNews (getclearnews.com)
+- **Default view**: All categories, sorted by published_at descending, 20 per page with infinite scroll
