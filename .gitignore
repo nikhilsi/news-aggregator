@@ -41,5 +41,6 @@ ios/DerivedData/
 htmlcov/
 .pytest_cache/
 
-# Docker
+# Logs
+logs/
 *.log
