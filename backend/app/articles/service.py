@@ -6,7 +6,8 @@ This is the main business logic layer for articles. It:
 2. Checks the in-memory cache for each source
 3. Fetches stale/missing sources concurrently via asyncio.gather
 4. Caches fresh results
-5. Merges and sorts articles from all sources
+5. Deduplicates articles (URL exact match + title keyword overlap)
+6. Merges and sorts articles from all sources
 
 The service does NOT know how to fetch from any specific source type —
 it delegates to the appropriate fetcher (rss_fetcher, etc.) based on source.type.
@@ -14,6 +15,7 @@ it delegates to the appropriate fetcher (rss_fetcher, etc.) based on source.type
 
 import asyncio
 import logging
+import re
 
 import httpx
 
@@ -57,6 +59,119 @@ async def _fetch_source(source: SourceConfig) -> list[dict]:
     else:
         logger.warning("Unknown source type '%s' for %s", source.type, source.name)
         return []
+
+
+# ── Deduplication ────────────────────────────────────────────────────────
+# Two layers:
+# 1. URL exact match — same article from multiple sources (e.g., Ars Technica
+#    direct feed + Google News both resolve to the same URL)
+# 2. Title keyword overlap — same story covered by different outlets
+#    (e.g., Samsung Unpacked from The Verge, Engadget, and Google News)
+#
+# When two articles are considered duplicates, we keep the "better" one:
+# prefer articles with images, prefer direct feeds over Google News.
+
+# Words too common to be meaningful for title comparison
+_STOP_WORDS = frozenset({
+    "the", "is", "are", "was", "were", "be", "been", "have", "has", "had",
+    "do", "does", "did", "will", "would", "shall", "should", "may", "might",
+    "can", "could", "to", "of", "in", "for", "on", "with", "at", "by", "from",
+    "as", "into", "through", "during", "before", "after", "and", "but", "or",
+    "if", "not", "no", "its", "it", "this", "that", "an", "up", "so", "than",
+    "new", "says", "how", "why", "what", "who", "when", "where", "about",
+})
+
+# Minimum keyword overlap ratio to consider two titles as covering the same story
+_TITLE_OVERLAP_THRESHOLD = 0.6
+
+
+def _title_keywords(title: str) -> set[str]:
+    """Extract significant keywords from a title for dedup comparison."""
+    t = title.lower().replace("'s ", " ").replace("'s", "")
+    words = re.findall(r"[a-z0-9]+", t)
+    return {w for w in words if w not in _STOP_WORDS and len(w) > 2}
+
+
+def _titles_match(kw1: set[str], kw2: set[str]) -> bool:
+    """Check if two sets of title keywords overlap enough to be the same story."""
+    if not kw1 or not kw2:
+        return False
+    overlap = len(kw1 & kw2)
+    smaller = min(len(kw1), len(kw2))
+    return (overlap / smaller) >= _TITLE_OVERLAP_THRESHOLD
+
+
+def _article_priority(article: dict) -> tuple:
+    """Score an article for dedup priority. Higher = better to keep.
+
+    Prefers: has image > no image, direct feed > Google News.
+    """
+    has_image = 1 if article.get("image_url") else 0
+    is_direct = 0 if "Google News" in article.get("source_name", "") else 1
+    return (is_direct, has_image)
+
+
+def _deduplicate(articles: list[dict]) -> list[dict]:
+    """Remove duplicate articles using URL match and title keyword overlap.
+
+    Keeps the higher-priority version of each duplicate pair.
+    """
+    if not articles:
+        return articles
+
+    # Index: URL → best article seen so far
+    url_seen: dict[str, dict] = {}
+    # Index: list of (keywords, article) for title comparison
+    title_index: list[tuple[set[str], dict]] = []
+    kept: list[dict] = []
+    removed = 0
+
+    for article in articles:
+        url = article.get("url", "")
+        priority = _article_priority(article)
+
+        # Layer 1: URL exact match
+        if url in url_seen:
+            existing = url_seen[url]
+            if priority > _article_priority(existing):
+                # New article is better — swap
+                kept.remove(existing)
+                url_seen[url] = article
+                # Also update title_index
+                title_index = [(kw, a) for kw, a in title_index if a is not existing]
+                keywords = _title_keywords(article.get("title", ""))
+                title_index.append((keywords, article))
+                kept.append(article)
+            removed += 1
+            continue
+
+        # Layer 2: Title keyword overlap
+        keywords = _title_keywords(article.get("title", ""))
+        is_dupe = False
+        for existing_kw, existing_article in title_index:
+            if _titles_match(keywords, existing_kw):
+                # Found a title match — keep the better one
+                if priority > _article_priority(existing_article):
+                    kept.remove(existing_article)
+                    title_index.remove((existing_kw, existing_article))
+                    url_seen.pop(existing_article.get("url", ""), None)
+                    # Add the new article instead
+                    url_seen[url] = article
+                    title_index.append((keywords, article))
+                    kept.append(article)
+                removed += 1
+                is_dupe = True
+                break
+
+        if not is_dupe:
+            url_seen[url] = article
+            title_index.append((keywords, article))
+            kept.append(article)
+
+    if removed:
+        logger.info("Dedup: removed %d duplicates, %d → %d articles", removed, len(articles), len(kept))
+
+    return kept
 
 
 async def get_articles(
@@ -111,6 +226,9 @@ async def get_articles(
                 continue
             cache.set(source.id, result, source.cache_ttl_minutes)
             all_articles.extend(result)
+
+    # Deduplicate before sorting
+    all_articles = _deduplicate(all_articles)
 
     # Sort by published_at descending — most recent first
     # Articles without a published_at (None) sort to the end
