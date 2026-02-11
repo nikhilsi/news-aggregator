@@ -262,7 +262,12 @@ async def _backfill_missing_images(
 # We resolve these at fetch time so the cache stores final, ready-to-serve data.
 # This also lets the og:image backfill work, since it needs real article URLs.
 
-GNEWS_DECODE_TIMEOUT = 5.0
+GNEWS_DECODE_TIMEOUT = 8.0
+
+# Limit concurrent requests to Google to avoid rate limiting.
+# All 5 Google News sources resolve URLs simultaneously — without a limit,
+# that's ~350 concurrent requests. Cap at 10 to be respectful.
+_gnews_semaphore = asyncio.Semaphore(10)
 
 
 def _is_google_news_url(url: str) -> bool:
@@ -279,45 +284,46 @@ async def _resolve_single_google_url(
     1. Fetch the article page to extract signature + timestamp
     2. POST to batchexecute API with those params to get the decoded URL
 
+    Uses a shared semaphore to limit concurrent requests to Google.
     Returns the decoded URL, or None on any failure.
     """
-    parsed = urlparse(article_url)
-    base64_str = parsed.path.split("/")[-1]
+    async with _gnews_semaphore:
+        parsed = urlparse(article_url)
+        base64_str = parsed.path.split("/")[-1]
 
-    # Step 1: Fetch article page to get decoding params
-    try:
-        resp = await client.get(article_url, follow_redirects=True, timeout=GNEWS_DECODE_TIMEOUT)
-    except Exception:
-        return None
+        # Step 1: Fetch article page to get decoding params
+        try:
+            resp = await client.get(article_url, follow_redirects=True, timeout=GNEWS_DECODE_TIMEOUT)
+        except Exception:
+            return None
 
-    sig_match = re.search(r'data-n-a-sg="([^"]+)"', resp.text)
-    ts_match = re.search(r'data-n-a-ts="([^"]+)"', resp.text)
-    if not sig_match or not ts_match:
-        return None
+        sig_match = re.search(r'data-n-a-sg="([^"]+)"', resp.text)
+        ts_match = re.search(r'data-n-a-ts="([^"]+)"', resp.text)
+        if not sig_match or not ts_match:
+            return None
 
-    signature = sig_match.group(1)
-    timestamp = ts_match.group(1)
+        signature = sig_match.group(1)
+        timestamp = ts_match.group(1)
 
-    # Step 2: Decode via batchexecute API
-    try:
-        payload = [
-            "Fbv4je",
-            f'["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{base64_str}",{timestamp},"{signature}"]',
-        ]
-        resp2 = await client.post(
-            "https://news.google.com/_/DotsSplashUi/data/batchexecute",
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                "User-Agent": "Mozilla/5.0 (compatible)",
-            },
-            data=f"f.req={quote(json.dumps([[payload]]))}",
-            timeout=GNEWS_DECODE_TIMEOUT,
-        )
-        parsed_data = json.loads(resp2.text.split("\n\n")[1])[:-2]
-        decoded_url = json.loads(parsed_data[0][2])[1]
-        return decoded_url
-    except Exception:
-        return None
+        # Step 2: Decode via batchexecute API
+        try:
+            payload = [
+                "Fbv4je",
+                f'["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{base64_str}",{timestamp},"{signature}"]',
+            ]
+            resp2 = await client.post(
+                "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                },
+                data=f"f.req={quote(json.dumps([[payload]]))}",
+                timeout=GNEWS_DECODE_TIMEOUT,
+            )
+            parsed_data = json.loads(resp2.text.split("\n\n")[1])[:-2]
+            decoded_url = json.loads(parsed_data[0][2])[1]
+            return decoded_url
+        except Exception:
+            return None
 
 
 async def _resolve_google_news_urls(
