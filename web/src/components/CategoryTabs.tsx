@@ -28,7 +28,7 @@ export default function CategoryTabs({ selected, onSelect }: CategoryTabsProps) 
 
   return (
     <nav
-      className="flex gap-1 overflow-x-auto pb-px"
+      className="flex flex-wrap gap-1 pb-px"
       role="tablist"
       aria-label="Article categories"
     >
@@ -40,10 +40,10 @@ export default function CategoryTabs({ selected, onSelect }: CategoryTabsProps) 
             role="tab"
             aria-selected={isActive}
             onClick={() => onSelect(cat.id)}
-            className={`cursor-pointer whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors ${
+            className={`cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:px-4 sm:py-2 sm:text-sm ${
               isActive
-                ? 'border-b-2 border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
             }`}
           >
             {cat.name}

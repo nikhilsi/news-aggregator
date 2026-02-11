@@ -1,12 +1,12 @@
 """
-Seed script — creates the initial admin user.
+Seed script — creates a user account (admin or regular).
 
 Usage:
     cd backend
     source venv/bin/activate
     python seed_admin.py
 
-Prompts for email, full name, and password interactively.
+Prompts for role, email, full name, and password interactively.
 Safe to re-run: if the email already exists, it prints a message and exits.
 """
 
@@ -19,12 +19,16 @@ from app.auth.utils import hash_password
 from app.database import DB_PATH, init_db
 
 
-async def create_admin():
-    """Prompt for admin details and insert into the users table."""
+async def create_user():
+    """Prompt for user details and insert into the users table."""
     # Ensure DB and tables exist
     await init_db()
 
-    print("\n── Create Admin User ──\n")
+    print("\n── Create User ──\n")
+
+    # Ask for role
+    role = input("Role (admin/user) [user]: ").strip().lower() or "user"
+    is_admin = 1 if role == "admin" else 0
 
     email = input("Email: ").strip()
     if not email:
@@ -55,14 +59,15 @@ async def create_admin():
 
         await db.execute(
             "INSERT INTO users (email, password_hash, full_name, is_admin, is_active) "
-            "VALUES (?, ?, ?, 1, 1)",
-            (email, hashed, full_name),
+            "VALUES (?, ?, ?, ?, 1)",
+            (email, hashed, full_name, is_admin),
         )
         await db.commit()
-        print(f"\nAdmin user '{email}' created successfully.")
+        role_label = "Admin" if is_admin else "User"
+        print(f"\n{role_label} '{email}' created successfully.")
     finally:
         await db.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(create_admin())
+    asyncio.run(create_user())

@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * App header — logo/name, search bar, dark mode toggle, and login/logout button.
+ * App header — logo/name, search bar, dark mode toggle, and user menu.
  * Sticky at the top of the viewport.
  */
 
 import { useAuth } from '@/context/AuthContext';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
+import UserMenu from './UserMenu';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -15,7 +16,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onSearch }: HeaderProps) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/80">
@@ -31,21 +32,11 @@ export default function Header({ onSearch }: HeaderProps) {
         </div>
 
         {/* Right side: theme toggle + auth */}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
 
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-gray-600 dark:text-gray-400 sm:inline">
-                {user?.full_name || user?.email}
-              </span>
-              <button
-                onClick={logout}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-              >
-                Logout
-              </button>
-            </div>
+            <UserMenu />
           ) : (
             <Link
               href="/login"
