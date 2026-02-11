@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 
+import asyncio
+
 import feedparser
 import httpx
 
@@ -188,6 +190,65 @@ def _normalize_entry(entry: dict, source: SourceConfig) -> dict | None:
     }
 
 
+# ── og:image Fallback ───────────────────────────────────────────────────
+
+# Max bytes to read from an article page when looking for og:image.
+# The meta tag is always in <head>, so 15KB is more than enough.
+OG_IMAGE_READ_LIMIT = 15_000
+OG_IMAGE_TIMEOUT = 5.0
+
+async def _fetch_og_image(url: str, client: httpx.AsyncClient) -> str | None:
+    """Fetch the og:image meta tag from an article's page.
+
+    Only reads the first ~15KB of the page (enough to get <head> content).
+    Returns None on any error — this is a best-effort fallback.
+    """
+    try:
+        response = await client.get(url, timeout=OG_IMAGE_TIMEOUT)
+        # Only read the first chunk — og:image is always in <head>
+        html = response.text[:OG_IMAGE_READ_LIMIT]
+        match = re.search(
+            r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+            html,
+        )
+        if match:
+            return match.group(1)
+        # Also try reversed attribute order (content before property)
+        match = re.search(
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+            html,
+        )
+        if match:
+            return match.group(1)
+    except Exception:
+        pass
+    return None
+
+
+async def _backfill_missing_images(
+    articles: list[dict], client: httpx.AsyncClient
+) -> None:
+    """For articles with no image, try to fetch og:image from the article page.
+
+    Modifies articles in place. Fetches concurrently for performance.
+    """
+    missing = [(i, a) for i, a in enumerate(articles) if not a.get("image_url")]
+    if not missing:
+        return
+
+    tasks = [_fetch_og_image(a["url"], client) for _, a in missing]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    found = 0
+    for (idx, _), result in zip(missing, results):
+        if isinstance(result, str) and result:
+            articles[idx]["image_url"] = result
+            found += 1
+
+    if found:
+        logger.debug("Backfilled %d/%d missing images via og:image", found, len(missing))
+
+
 # ── Main Fetch Function ─────────────────────────────────────────────────
 
 async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dict]:
@@ -237,6 +298,9 @@ async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
         except Exception as e:
             logger.warning("Error normalizing entry from %s: %s", source.name, str(e))
             continue
+
+    # Step 4: Backfill missing images by fetching og:image from article pages
+    await _backfill_missing_images(articles, client)
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info("Fetched %d articles from %s in %dms", len(articles), source.name, duration_ms)

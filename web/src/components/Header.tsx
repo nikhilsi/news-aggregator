@@ -22,7 +22,7 @@ export default function Header({ onSearch }: HeaderProps) {
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
         {/* Logo / App name */}
         <Link href="/" className="shrink-0 text-xl font-bold text-gray-900 dark:text-white">
-          News
+          <span className="text-blue-600 dark:text-blue-400">Clear</span>News
         </Link>
 
         {/* Search bar — grows to fill available space */}

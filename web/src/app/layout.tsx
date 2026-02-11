@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'News Aggregator',
+  title: 'ClearNews',
   description: 'A clean, personal news reader — no clickbait, no noise.',
 };
 

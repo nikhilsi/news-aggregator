@@ -28,12 +28,14 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Header onSearch={handleSearch} />
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
-        {/* Category filter tabs */}
-        <div className="mb-6">
+      {/* Category tabs — sticky below the header */}
+      <div className="sticky top-[53px] z-40 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950">
+        <div className="mx-auto max-w-7xl px-4">
           <CategoryTabs selected={category} onSelect={setCategory} />
         </div>
+      </div>
 
+      <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Article grid with infinite scroll */}
         <ArticleGrid
           articles={articles}
