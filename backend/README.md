@@ -50,7 +50,8 @@ backend/
 │   ├── sources/
 │   │   ├── registry.py      # Loads sources.yaml, provides query helpers
 │   │   ├── router.py        # GET /api/v1/sources, /categories endpoints
-│   │   └── rss_fetcher.py   # RSS feed fetcher + normalization + Google News URL resolver + og:image backfill
+│   │   ├── rss_fetcher.py   # RSS feed fetcher + normalization + Google News URL resolver + og:image backfill
+│   │   └── fmp_fetcher.py   # FMP financial API fetcher (general news + market analysis)
 │   │
 │   ├── common/
 │   │   └── schemas.py       # Pydantic models for API responses
@@ -74,11 +75,9 @@ backend/
 
 ```
 Request → Article Service → check cache per source
-                          → if stale: fetch via rss_fetcher (concurrent)
-                              → parse RSS XML
-                              → normalize entries
-                              → resolve Google News URLs (batchexecute API, Semaphore(10))
-                              → backfill missing images (og:image from article pages)
+                          → if stale: fetch via appropriate fetcher (concurrent)
+                              → RSS: parse XML → normalize → resolve Google News URLs → backfill images
+                              → FMP: fetch JSON → normalize (general news or fmp-articles format)
                           → cache result (final, ready-to-serve dicts)
                           → merge all sources
                           → deduplicate (URL match + title keyword overlap)
@@ -138,9 +137,9 @@ async def protected_route(user: dict = Depends(get_current_user)):
 
 | Type | Fetcher | Status |
 |------|---------|--------|
-| `rss` | `rss_fetcher.py` | Working |
-| `news_api` | `news_api_fetcher.py` | Not yet implemented |
-| `financial_api` | `finance_fetcher.py` | Not yet implemented |
+| `rss` | `rss_fetcher.py` | Working (21 sources) |
+| `financial_api` | `fmp_fetcher.py` | Working (2 FMP sources) |
+| `news_api` | — | Not yet implemented |
 
 ## Dependencies
 

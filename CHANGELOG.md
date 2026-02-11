@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0] - 2026-02-10 — FMP Financial News
+
+### Added
+- **FMP financial news sources**: Two FMP (Financial Modeling Prep) endpoints — general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Both enabled with 20 articles each.
+- **FMP fetcher** (`fmp_fetcher.py`): Normalizers for both FMP response formats, HTML stripping for article content, timeout and error handling.
+- **Finance category**: Now visible in UI with 2 sources and ~20 articles.
+
+### Changed
+- Removed Alpha Vantage from sources (replaced by FMP).
+- Source count: 23 enabled (21 RSS + 2 Financial API), 1 disabled (WorldNewsAPI).
+
+---
+
 ## [0.4.0] - 2026-02-10 — Google News Fix + Deduplication
 
 ### Added

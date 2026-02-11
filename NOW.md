@@ -126,7 +126,8 @@ Deferred until V1 is live and we can evaluate based on real usage.
 - **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once we see if in-app reading is wanted.
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI. Decide on approach later.
 - **~~Deduplication~~** — Done. URL exact match + title keyword overlap (0.6 threshold). See articles/service.py.
-- **Additional source types** — NewsAPI fetcher, Financial API fetcher (Alpha Vantage, FMP)
+- **~~Financial API fetcher~~** — Done. FMP general-latest + fmp-articles, both enabled. See sources/fmp_fetcher.py.
+- **Additional source types** — NewsAPI fetcher (WorldNewsAPI)
 
 ### Frontend
 - **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.

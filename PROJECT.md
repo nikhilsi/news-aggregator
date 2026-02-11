@@ -165,12 +165,12 @@ users (
 
 Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove, or toggle sources without code changes.
 
-**Current sources:** 24 total (21 RSS feeds, 1 News API, 2 Financial APIs). All RSS URLs have been validated. See `backend/sources.yaml` for the full list with URLs.
+**Current sources:** 24 total (21 RSS feeds, 1 News API, 2 Financial APIs). 23 enabled, 1 disabled (WorldNewsAPI). See `backend/sources.yaml` for the full list with URLs.
 
 **Source types and how they're fetched:**
 - **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds).
-- **News API** (`type: news_api`) — WorldNewsAPI. Dedicated client with sentiment scoring support.
-- **Financial API** (`type: financial_api`) — Alpha Vantage + FMP. Dedicated client (endpoints TBD).
+- **News API** (`type: news_api`) — WorldNewsAPI. Not yet implemented (disabled).
+- **Financial API** (`type: financial_api`) — FMP (Financial Modeling Prep). Two endpoints: general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Dedicated fetcher (`fmp_fetcher.py`).
 
 ---
 
@@ -311,7 +311,8 @@ news-aggregator/
 │   │   ├── sources/
 │   │   │   ├── router.py           # Source/category endpoints
 │   │   │   ├── registry.py         # Load and manage source configs
-│   │   │   └── rss_fetcher.py      # RSS feed parser + Google News URL resolver + og:image backfill
+│   │   │   ├── rss_fetcher.py      # RSS feed parser + Google News URL resolver + og:image backfill
+│   │   │   └── fmp_fetcher.py      # FMP financial API fetcher (general news + market analysis)
 │   │   │
 │   │   └── common/
 │   │       └── schemas.py          # Pydantic schemas (API response shapes)
