@@ -211,22 +211,22 @@ sources:
     cache_ttl_minutes: 15
 
   # ── Financial APIs ─────────────────────────────────────────────────────
-  - id: alpha-vantage
-    name: Alpha Vantage
+  - id: fmp-general-news
+    name: FMP - Financial News
     type: financial_api
-    url: https://www.alphavantage.co
+    url: "https://financialmodelingprep.com/stable/news/general-latest?page=0&limit=20"
     category: finance
     is_curated_positive: false
-    enabled: false
-    api_key_env: ALPHA_VANTAGE_API_KEY
-    cache_ttl_minutes: 30
-
-  - id: financial-modeling-prep
-    name: Financial Modeling Prep
-    type: financial_api
-    url: https://financialmodelingprep.com
-    category: finance
-    is_curated_positive: false
-    enabled: false
+    enabled: true
     api_key_env: FMP_API_KEY
-    cache_ttl_minutes: 30
+    cache_ttl_minutes: 15
+
+  - id: fmp-articles
+    name: FMP - Market Analysis
+    type: financial_api
+    url: "https://financialmodelingprep.com/stable/fmp-articles?page=0&limit=20"
+    category: finance
+    is_curated_positive: false
+    enabled: true
+    api_key_env: FMP_API_KEY
+    cache_ttl_minutes: 15

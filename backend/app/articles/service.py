@@ -22,6 +22,7 @@ import httpx
 from app import cache
 from app.sources.registry import SourceConfig, get_sources_by_category, get_source_by_id
 from app.sources.rss_fetcher import fetch_rss
+from app.sources.fmp_fetcher import fetch_fmp
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +54,7 @@ async def _fetch_source(source: SourceConfig) -> list[dict]:
         logger.info("News API fetcher not yet implemented, skipping %s", source.name)
         return []
     elif source.type == "financial_api":
-        # TODO: implement finance_fetcher.py
-        logger.info("Financial API fetcher not yet implemented, skipping %s", source.name)
-        return []
+        return await fetch_fmp(source, client)
     else:
         logger.warning("Unknown source type '%s' for %s", source.type, source.name)
         return []
