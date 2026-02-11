@@ -45,6 +45,27 @@ class ArticleListResponse(BaseModel):
     pagination: PaginationResponse
 
 
+class ReaderResponse(BaseModel):
+    """Response shape for GET /api/v1/articles/reader.
+
+    Uses a status field to indicate success or failure, so the frontend
+    can decide whether to render content or show a fallback.
+    """
+
+    status: str                                 # "ok" or "failed"
+    url: str                                    # Original article URL
+    title: str | None = None                    # Article title (from cache or extracted)
+    author: str | None = None                   # Author name (extracted)
+    content_html: str | None = None             # Sanitized HTML content (only when status="ok")
+    word_count: int | None = None               # Word count of extracted content
+    image_url: str | None = None                # Hero image URL
+    source_name: str | None = None              # Source display name (from cache)
+    published_at: datetime | None = None        # Publication date (from cache)
+    extracted_at: datetime | None = None        # When content was extracted
+    reason: str | None = None                   # Failure reason (only when status="failed"):
+                                                # "forbidden", "timeout", "extraction_empty", "error"
+
+
 class SourceResponse(BaseModel):
     """Source info returned by GET /api/v1/sources."""
 

@@ -39,6 +39,20 @@ export interface Source {
   enabled: boolean;
 }
 
+export interface ReaderResponse {
+  status: 'ok' | 'failed';
+  url: string;
+  title: string | null;
+  author: string | null;
+  content_html: string | null;
+  word_count: number | null;
+  image_url: string | null;
+  source_name: string | null;
+  published_at: string | null;
+  extracted_at: string | null;
+  reason: string | null;           // "forbidden" | "timeout" | "extraction_empty" | "error"
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: string;

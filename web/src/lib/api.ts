@@ -4,6 +4,7 @@ import {
   ArticleListResponse,
   Category,
   LoginResponse,
+  ReaderResponse,
   User,
 } from './types';
 
@@ -40,6 +41,12 @@ export async function fetchArticles(params: ArticleParams = {}): Promise<Article
 
   const qs = searchParams.toString();
   return request<ArticleListResponse>(`/articles${qs ? `?${qs}` : ''}`);
+}
+
+/* ── Reader View ──────────────────────────────────────────── */
+
+export async function fetchReaderContent(url: string): Promise<ReaderResponse> {
+  return request<ReaderResponse>(`/articles/reader?url=${encodeURIComponent(url)}`);
 }
 
 /* ── Categories ───────────────────────────────────────────── */

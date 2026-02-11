@@ -2,9 +2,10 @@
 
 /**
  * Single article card — displays thumbnail, title, summary, source, and relative time.
- * Clicking the card opens the original article in a new tab.
+ * Clicking the card navigates to the in-app reader view.
  */
 
+import Link from 'next/link';
 import { Article } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
 
@@ -12,12 +13,20 @@ interface ArticleCardProps {
   article: Article;
 }
 
+function readerUrl(article: Article): string {
+  const params = new URLSearchParams();
+  params.set('url', article.url);
+  if (article.title) params.set('title', article.title);
+  if (article.source_name) params.set('source_name', article.source_name);
+  if (article.image_url) params.set('image_url', article.image_url);
+  if (article.published_at) params.set('published_at', article.published_at);
+  return `/article?${params.toString()}`;
+}
+
 export default function ArticleCard({ article }: ArticleCardProps) {
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={readerUrl(article)}
       className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
     >
       {/* Thumbnail — show placeholder gradient if no image */}
@@ -56,6 +65,6 @@ export default function ArticleCard({ article }: ArticleCardProps) {
           )}
         </div>
       </div>
-    </a>
+    </Link>
   );
 }

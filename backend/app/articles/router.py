@@ -1,16 +1,34 @@
 """
 Article API endpoints.
 
-GET /api/v1/articles  — Fetch articles with optional category/source/search/pagination filters.
-                        Triggers on-demand fetching from RSS/API sources if cache is stale.
+GET /api/v1/articles         — Fetch articles with optional category/source/search/pagination filters.
+GET /api/v1/articles/reader  — Extract clean article content for reader view.
 """
 
 from fastapi import APIRouter, Query
 
+from app.articles.reader import extract_article_content
 from app.articles.service import get_articles
-from app.common.schemas import ArticleListResponse, ArticleResponse, PaginationResponse
+from app.common.schemas import ArticleListResponse, ArticleResponse, PaginationResponse, ReaderResponse
 
 router = APIRouter(prefix="/api/v1", tags=["articles"])
+
+
+@router.get("/articles/reader", response_model=ReaderResponse)
+async def reader_view(
+    url: str = Query(..., description="Article URL to extract content from"),
+):
+    """Extract clean article content for in-app reading.
+
+    Fetches the full article page, extracts the main content using
+    readability-lxml (with trafilatura fallback), sanitizes HTML,
+    and returns it for rendering. Results are cached for 60 minutes.
+
+    Returns status="ok" with content on success, or status="failed"
+    with a reason code on failure (forbidden, timeout, extraction_empty, error).
+    """
+    result = await extract_article_content(url)
+    return ReaderResponse(**result)
 
 
 def _matches_search(article: dict, term: str) -> bool:
