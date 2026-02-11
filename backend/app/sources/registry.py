@@ -102,6 +102,7 @@ def get_categories_with_counts() -> list[dict]:
     for cat_id, cat_name in CATEGORIES.items():
         if cat_id == "all":
             result.append({"id": cat_id, "name": cat_name, "source_count": len(enabled)})
-        else:
-            result.append({"id": cat_id, "name": cat_name, "source_count": counts.get(cat_id, 0)})
+        elif counts.get(cat_id, 0) > 0:
+            # Only include categories that have at least one enabled source
+            result.append({"id": cat_id, "name": cat_name, "source_count": counts[cat_id]})
     return result

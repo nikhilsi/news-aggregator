@@ -20,7 +20,7 @@ sources:
     url: https://positive.news/feed
     category: feel_good
     is_curated_positive: true
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: sunny-skyz
@@ -29,7 +29,7 @@ sources:
     url: https://www.sunnyskyz.com/rss_tebow.php
     category: feel_good
     is_curated_positive: true
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: bbc-uplifting
@@ -38,7 +38,7 @@ sources:
     url: https://feeds.bbci.co.uk/news/topics/cx2pk70323et/rss.xml
     category: feel_good
     is_curated_positive: true
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: dailygood
@@ -47,7 +47,7 @@ sources:
     url: https://www.dailygood.org/feed/
     category: feel_good
     is_curated_positive: true
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── Science & Discovery ────────────────────────────────────────────────
@@ -66,7 +66,7 @@ sources:
     url: https://www.nasa.gov/rss/dyn/breaking_news.rss
     category: science
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: new-scientist
@@ -75,7 +75,7 @@ sources:
     url: https://www.newscientist.com/feed/home/
     category: science
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: scientific-american
@@ -84,7 +84,7 @@ sources:
     url: https://www.scientificamerican.com/platform/syndication/rss/
     category: science
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── Technology ─────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ sources:
     url: https://www.wired.com/feed/rss
     category: tech
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: ars-technica-tech
@@ -112,7 +112,7 @@ sources:
     url: https://feeds.arstechnica.com/arstechnica/technology-lab
     category: tech
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: engadget
@@ -121,7 +121,7 @@ sources:
     url: https://www.engadget.com/rss.xml
     category: tech
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── Offbeat / Weird / Fun ──────────────────────────────────────────────
@@ -131,7 +131,7 @@ sources:
     url: https://www.atlasobscura.com/feeds/latest
     category: offbeat
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── Entertainment ──────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ sources:
     url: https://www.polygon.com/rss/index.xml
     category: entertainment
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── Google News (RSS) ──────────────────────────────────────────────────
@@ -160,7 +160,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: science
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: google-news-tech
@@ -169,7 +169,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pIUWlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: tech
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: google-news-entertainment
@@ -178,7 +178,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: entertainment
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: google-news-health
@@ -187,7 +187,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtVnVLQUFQAQ?hl=en-US&gl=US&ceid=US:en"
     category: health
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: google-news-sports
@@ -196,7 +196,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: sports
     is_curated_positive: false
-    enabled: false
+    enabled: true
     cache_ttl_minutes: 15
 
   # ── News APIs ──────────────────────────────────────────────────────────
