@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0] - 2026-02-10 — Reader View
+
+### Added
+- **Reader view**: In-app article reading with clean, extracted content. Clicking an article card opens a reader view page instead of the source site. Back button + "View Original" link always available.
+- **Content extraction backend**: `reader.py` service using readability-lxml (primary) with trafilatura fallback. HTML sanitization for XSS prevention. Separate content cache with 60-minute TTL.
+- **Reader API endpoint**: `GET /api/v1/articles/reader?url=<url>` — returns `status: "ok"` with extracted HTML content, or `status: "failed"` with reason (forbidden, timeout, extraction_empty, error).
+- **Failure fallback**: When extraction fails (paywalled sites like NYT, Reuters), shows a clean fallback with "Read on {source}" button to open the original URL.
+- **Tailwind Typography**: `@tailwindcss/typography` plugin for styled prose content in reader view.
+- **Article metadata passthrough**: Reader page shows title, source, author, date, and hero image immediately via URL params while content loads.
+
+---
+
 ## [0.5.0] - 2026-02-10 — FMP Financial News
 
 ### Added

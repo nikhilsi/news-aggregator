@@ -123,7 +123,7 @@ Docker Compose deployment to DigitalOcean with nginx, SSL, and security hardenin
 Deferred until V1 is live and we can evaluate based on real usage.
 
 ### Backend
-- **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once we see if in-app reading is wanted.
+- **~~Reader view~~** — Done. GET /api/v1/articles/reader?url= with readability-lxml + trafilatura fallback. See articles/reader.py.
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI. Decide on approach later.
 - **~~Deduplication~~** — Done. URL exact match + title keyword overlap (0.6 threshold). See articles/service.py.
 - **~~Financial API fetcher~~** — Done. FMP general-latest + fmp-articles, both enabled. See sources/fmp_fetcher.py.

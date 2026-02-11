@@ -17,6 +17,7 @@ uvicorn app.main:app --reload --port 8000
 |--------|----------|-------------|
 | GET | `/health` | Health check |
 | GET | `/api/v1/articles` | Fetch articles (supports category, source, pagination) |
+| GET | `/api/v1/articles/reader` | Extract clean article content for reader view |
 | GET | `/api/v1/sources` | List all configured sources |
 | GET | `/api/v1/categories` | List categories with source counts |
 | POST | `/api/v1/auth/login` | Login with email + password, returns JWT |
@@ -44,8 +45,9 @@ backend/
 │   ├── cache.py             # In-memory article cache with per-source TTL
 │   │
 │   ├── articles/
-│   │   ├── router.py        # GET /api/v1/articles endpoint
-│   │   └── service.py       # Orchestrates cache + fetching + dedup + merging
+│   │   ├── router.py        # GET /api/v1/articles + /articles/reader endpoints
+│   │   ├── service.py       # Orchestrates cache + fetching + dedup + merging
+│   │   └── reader.py        # Content extraction for reader view (readability + trafilatura)
 │   │
 │   ├── sources/
 │   │   ├── registry.py      # Loads sources.yaml, provides query helpers

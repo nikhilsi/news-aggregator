@@ -15,6 +15,7 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 - **RSS fetcher** — async fetch via httpx, parse with feedparser, normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images, Google News URL resolver (decodes redirect URLs to real article URLs via batchexecute API)
 - **FMP fetcher** — fetches financial news from FMP API (general-latest + fmp-articles endpoints), normalizes both response formats, HTML stripping for article content
 - **Article service** — orchestration layer: cache checks → concurrent fetch → merge → deduplicate → sort → filter → paginate
+- **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback), sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
 - **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), prefers articles with images and direct feeds over Google News (~33 dupes removed per cycle)
 - **Keyword search** — case-insensitive search on title/summary, composes with all filters
 - **Authentication** — email/password login with JWT (HS256), bcrypt password hashing, protected route dependency, seed script for admin/regular users
@@ -23,6 +24,7 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 ### Web Frontend (Next.js) — v0.2.0
 - **Layout** — sticky header (ClearNews logo, search, dark mode toggle, user menu), wrapping category pill tabs
 - **Article feed** — responsive card grid (1/2/3 cols), infinite scroll, skeleton loading, broken image fallback
+- **Reader view** — in-app article reading at `/article?url=...` with clean prose layout, skeleton loading, fallback for failed extractions
 - **Filters** — category tabs, debounced keyword search (400ms), race condition handling
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
@@ -38,6 +40,7 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 |--------|----------|------|-------------|
 | GET | `/health` | No | Health check |
 | GET | `/api/v1/articles` | No | Fetch articles (category, source, search, pagination) |
+| GET | `/api/v1/articles/reader` | No | Extract clean article content for reader view |
 | GET | `/api/v1/sources` | No | List configured sources |
 | GET | `/api/v1/categories` | No | List categories with counts (hides empty) |
 | POST | `/api/v1/auth/login` | No | Login, returns JWT |
@@ -65,9 +68,8 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 
 ## Future Enhancements (deferred)
 
-- Reader view (full article content extraction)
 - Sentiment filter (HuggingFace / FinBERT)
-- Additional source types (NewsAPI, Financial APIs)
+- Additional source types (NewsAPI)
 - Landing page, user settings, SSR
 
 See NOW.md for details on each.
