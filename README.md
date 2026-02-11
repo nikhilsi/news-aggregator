@@ -10,12 +10,15 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 ## What It Does
 
-- Aggregates news from 21 RSS sources across 8 categories
+- Aggregates news from 21 RSS sources across 8 categories (including 5 Google News topic feeds)
 - Filter by category: Science, Technology, Entertainment, Feel Good, Health, Sports, Offbeat
 - Clean card-based feed with infinite scroll
 - Dark mode with OS preference detection
 - Keyword search across titles and summaries
 - On-demand fetching with smart caching (no background jobs)
+- Google News URL resolution — decodes redirect URLs to real article URLs
+- Article deduplication — URL match + title keyword overlap across sources
+- Image extraction via og:image fallback for feeds without embedded images
 - Simple email/password authentication
 
 ## Tech Stack

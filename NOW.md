@@ -107,8 +107,10 @@ Docker Compose deployment to DigitalOcean with nginx, SSL, and security hardenin
 - [x] Next.js standalone output mode for Docker builds
 - [x] All 21 RSS sources enabled (3 API-based remain disabled)
 - [x] Categories endpoint hides empty categories
-- [x] Google News URL resolver — decodes opaque redirect URLs to real article URLs via batchexecute API
-- [x] og:image backfill now works for Google News sources (previously 0% → ~50% image rate)
+- [x] Google News URL resolver — decodes opaque redirect URLs to real article URLs via batchexecute API, throttled with Semaphore(10) to avoid rate limits. 100% resolution rate.
+- [x] og:image backfill now works for Google News sources (72% image rate on page 1)
+- [x] Browser User-Agent on shared HTTP client (sites block bot UAs)
+- [x] Article deduplication — URL exact match + title keyword overlap (0.6 threshold), prefers articles with images and direct feeds over Google News. ~33 dupes removed per fetch cycle.
 
 ---
 
@@ -123,7 +125,7 @@ Deferred until V1 is live and we can evaluate based on real usage.
 ### Backend
 - **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once we see if in-app reading is wanted.
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI. Decide on approach later.
-- **Deduplication** — URL exact match + fuzzy title matching with rapidfuzz (>85% similarity) + source priority ranking. Build once we see actual overlap in the frontend.
+- **~~Deduplication~~** — Done. URL exact match + title keyword overlap (0.6 threshold). See articles/service.py.
 - **Additional source types** — NewsAPI fetcher, Financial API fetcher (Alpha Vantage, FMP)
 
 ### Frontend

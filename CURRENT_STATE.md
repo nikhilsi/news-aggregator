@@ -2,9 +2,9 @@
 
 **Last Updated**: February 10, 2026
 
-## Status: Phase 2 Complete, Deployment Ready
+## Status: Live at getclearnews.com
 
-Backend and web frontend are fully functional. Deployment infrastructure is built and ready for DigitalOcean.
+Backend, web frontend, and deployment are complete. Site is live on DigitalOcean.
 
 ## What's Built
 
@@ -12,8 +12,9 @@ Backend and web frontend are fully functional. Deployment infrastructure is buil
 - **Project scaffolding** — directory structure, venv, config, SQLite database
 - **Source registry** — 24 sources defined in sources.yaml (21 RSS enabled, 3 API-based disabled), pydantic models, load/query helpers
 - **In-memory article cache** — per-source TTL (default 15 min), no database storage for articles
-- **RSS fetcher** — async fetch via httpx, parse with feedparser, normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images
-- **Article service** — orchestration layer: cache checks → concurrent fetch → merge → sort → filter → paginate
+- **RSS fetcher** — async fetch via httpx, parse with feedparser, normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images, Google News URL resolver (decodes redirect URLs to real article URLs via batchexecute API)
+- **Article service** — orchestration layer: cache checks → concurrent fetch → merge → deduplicate → sort → filter → paginate
+- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), prefers articles with images and direct feeds over Google News (~33 dupes removed per cycle)
 - **Keyword search** — case-insensitive search on title/summary, composes with all filters
 - **Authentication** — email/password login with JWT (HS256), bcrypt password hashing, protected route dependency, seed script for admin/regular users
 - **Production-ready** — configurable DB path and CORS origins via env vars
@@ -57,15 +58,13 @@ Backend and web frontend are fully functional. Deployment infrastructure is buil
 
 ## What's Next
 
-1. **Deploy to production** — Create DigitalOcean droplet, run setup scripts, go live at getclearnews.com
-2. **Visual polish** — Review light/dark mode, test all user flows, mobile responsiveness
-3. **Future enhancements** — See NOW.md
+1. **Visual polish** — Review light/dark mode, test all user flows, mobile responsiveness
+2. **Future enhancements** — See NOW.md
 
 ## Future Enhancements (deferred)
 
 - Reader view (full article content extraction)
 - Sentiment filter (HuggingFace / FinBERT)
-- Deduplication (URL match + fuzzy title matching)
 - Additional source types (NewsAPI, Financial APIs)
 - Landing page, user settings, SSR
 

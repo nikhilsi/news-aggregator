@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2026-02-10 — Google News Fix + Deduplication
+
+### Added
+- **Google News URL resolver**: Decodes opaque `news.google.com/rss/articles/CBMi...` redirect URLs to real article URLs using Google's batchexecute API. Runs at fetch time, before caching. Throttled with `asyncio.Semaphore(10)` to avoid rate limits. 100% resolution rate across all 5 Google News sources.
+- **Article deduplication**: Two-layer dedup in article service — URL exact match + title keyword overlap (0.6 threshold). Prefers articles with images and direct feeds over Google News aggregates. Removes ~33 dupes per fetch cycle (780 → 747 articles).
+- **Browser User-Agent**: Switched shared HTTP client from `NewsAggregator/0.1` to a Chrome-like User-Agent. Many news sites block bot UAs, which prevented og:image extraction. Image rate improved from ~52% to ~72%.
+
+---
+
 ## [0.3.0] - 2026-02-10 — Deployment Infrastructure + All Sources
 
 ### Added

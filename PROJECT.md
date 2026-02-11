@@ -64,9 +64,11 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
 4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, News APIs, Financial APIs)
 5. **Backend normalizes** all responses into a common article structure
-6. **Backend applies deduplication** (URL match + fuzzy title matching)
-7. **Backend caches** the normalized articles in memory with a timestamp
-8. **Backend returns** filtered, sorted articles to the client
+6. **For Google News sources**: backend resolves opaque redirect URLs to real article URLs via Google's batchexecute API
+7. **Backend backfills missing images** by fetching og:image from article pages
+8. **Backend caches** the fully enriched articles in memory with a timestamp
+9. **Backend applies deduplication** (URL exact match + title keyword overlap at 0.6 threshold)
+10. **Backend returns** filtered, sorted articles to the client
 
 **No background jobs.** All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, cache is empty — first request triggers fresh fetches.
 
@@ -267,11 +269,13 @@ Uses content extraction to fetch the full article from the source URL and return
 
 ## Deduplication
 
-Multiple sources will cover the same story. After fetching and before returning, the backend deduplicates using:
+Multiple sources cover the same story (especially Google News, which aggregates articles from publishers we also follow directly). After merging all sources and before sorting, the backend deduplicates using:
 
-1. **URL match** — Exact URL comparison (primary check)
-2. **Fuzzy title match** — If titles are >85% similar (using `rapidfuzz`), treat as duplicate
-3. **On duplicate:** Keep the version from the higher-priority source (source priority defined in `sources.yaml`)
+1. **URL exact match** — Same article from multiple sources (e.g., Ars Technica direct feed + Google News both resolve to the same URL)
+2. **Title keyword overlap** — Extracts significant keywords from titles (after stripping stop words and possessives). If keyword overlap ratio >= 0.6 (relative to the smaller keyword set), treated as duplicate.
+3. **Priority when keeping:** Prefer articles with images > without. Prefer direct feeds > Google News aggregates.
+
+Implementation: `app/articles/service.py` — `_deduplicate()` function. No external dependencies (uses stdlib `re` for keyword extraction).
 
 ---
 
@@ -307,13 +311,10 @@ news-aggregator/
 │   │   ├── sources/
 │   │   │   ├── router.py           # Source/category endpoints
 │   │   │   ├── registry.py         # Load and manage source configs
-│   │   │   ├── rss_fetcher.py      # RSS feed parser
-│   │   │   ├── news_api_fetcher.py # WorldNewsAPI client
-│   │   │   └── finance_fetcher.py  # Alpha Vantage + FMP client
+│   │   │   └── rss_fetcher.py      # RSS feed parser + Google News URL resolver + og:image backfill
 │   │   │
 │   │   └── common/
-│   │       ├── schemas.py          # Pydantic schemas (API response shapes)
-│   │       └── dedup.py            # Deduplication logic
+│   │       └── schemas.py          # Pydantic schemas (API response shapes)
 │   │
 │   ├── schema.sql                  # SQLite schema (users table only)
 │   ├── sources.yaml                # Source registry configuration

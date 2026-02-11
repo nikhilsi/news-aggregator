@@ -45,12 +45,12 @@ backend/
 │   │
 │   ├── articles/
 │   │   ├── router.py        # GET /api/v1/articles endpoint
-│   │   └── service.py       # Orchestrates cache + fetching + merging
+│   │   └── service.py       # Orchestrates cache + fetching + dedup + merging
 │   │
 │   ├── sources/
 │   │   ├── registry.py      # Loads sources.yaml, provides query helpers
 │   │   ├── router.py        # GET /api/v1/sources, /categories endpoints
-│   │   └── rss_fetcher.py   # RSS feed fetcher + normalization
+│   │   └── rss_fetcher.py   # RSS feed fetcher + normalization + Google News URL resolver + og:image backfill
 │   │
 │   ├── common/
 │   │   └── schemas.py       # Pydantic models for API responses
@@ -75,8 +75,14 @@ backend/
 ```
 Request → Article Service → check cache per source
                           → if stale: fetch via rss_fetcher (concurrent)
-                          → cache result
-                          → merge + sort + paginate → Response
+                              → parse RSS XML
+                              → normalize entries
+                              → resolve Google News URLs (batchexecute API, Semaphore(10))
+                              → backfill missing images (og:image from article pages)
+                          → cache result (final, ready-to-serve dicts)
+                          → merge all sources
+                          → deduplicate (URL match + title keyword overlap)
+                          → sort + paginate → Response
 ```
 
 ### Key Patterns
@@ -86,7 +92,9 @@ Request → Article Service → check cache per source
 - **SQLite for persistent data only**: Currently just the users table. Articles don't touch the database.
 - **Per-source isolation**: One broken feed never crashes the request. Errors are logged, the source is skipped, other sources still return data.
 - **Concurrent fetching**: Multiple stale sources are fetched in parallel via `asyncio.gather`.
-- **Shared HTTP client**: A single `httpx.AsyncClient` is created on startup and reused for all outbound requests (connection pooling).
+- **Shared HTTP client**: A single `httpx.AsyncClient` is created on startup and reused for all outbound requests (connection pooling, browser User-Agent).
+- **Google News URL resolution**: Google News RSS provides opaque redirect URLs. We decode them to real article URLs via Google's batchexecute API at fetch time, throttled with `asyncio.Semaphore(10)`.
+- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). Prefers articles with images and direct feeds over Google News.
 
 ### Adding a New Source
 
@@ -144,5 +152,4 @@ async def protected_route(user: dict = Depends(get_current_user)):
 | feedparser | RSS/Atom feed parsing |
 | httpx | Async HTTP client |
 | pyjwt + passlib | JWT auth + password hashing |
-| rapidfuzz | Fuzzy string matching (deduplication) |
 | pyyaml | Load sources.yaml |
