@@ -1,3 +1,15 @@
+"""
+FastAPI application entry point.
+
+Responsibilities:
+- App creation and middleware setup (CORS)
+- Lifespan management: DB init, source registry loading, shared HTTP client
+- Router registration
+- Health check endpoint
+
+Run with: uvicorn app.main:app --reload --port 8000
+"""
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -11,6 +23,7 @@ from app.sources.registry import load_sources
 from app.articles.router import router as articles_router
 from app.sources.router import router as sources_router
 
+# Configure structured logging for the entire app
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -20,11 +33,19 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize resources on startup, clean up on shutdown."""
+    """Manage app startup and shutdown.
+
+    Startup:
+      1. Initialize SQLite database (create tables if needed)
+      2. Load source registry from sources.yaml
+      3. Create shared httpx.AsyncClient (connection pooling for all outbound requests)
+
+    Shutdown:
+      httpx client is closed automatically via the async context manager.
+    """
     await init_db()
     load_sources()
 
-    # Shared HTTP client for all outbound requests (connection pooling)
     async with httpx.AsyncClient(
         follow_redirects=True,
         headers={"User-Agent": "NewsAggregator/0.1"},
@@ -39,6 +60,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS: allow the Next.js dev server to call the API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -47,11 +69,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# Register routers
 app.include_router(articles_router)
 app.include_router(sources_router)
 
 
 @app.get("/health")
 async def health_check():
+    """Simple health check — returns 200 if the server is running."""
     return {"status": "ok"}

@@ -1,4 +1,9 @@
-"""Article endpoints."""
+"""
+Article API endpoints.
+
+GET /api/v1/articles  — Fetch articles with optional category/source/pagination filters.
+                        Triggers on-demand fetching from RSS/API sources if cache is stale.
+"""
 
 from fastapi import APIRouter, Query
 
@@ -15,10 +20,14 @@ async def list_articles(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=50, description="Items per page"),
 ):
-    """Fetch articles with optional filters. Triggers on-demand fetching if cache is stale."""
+    """Fetch articles with optional filters.
+
+    If cached data is fresh, returns immediately. If stale, fetches from
+    sources on demand (concurrent), caches the result, then returns.
+    """
     articles = await get_articles(category=category, source_id=source)
 
-    # Pagination
+    # Apply pagination to the merged, sorted article list
     total = len(articles)
     total_pages = max(1, (total + per_page - 1) // per_page)
     start = (page - 1) * per_page

@@ -22,17 +22,15 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 - [x] GET /api/v1/sources endpoint
 - [x] GET /api/v1/categories endpoint
 
-### 3. RSS fetcher — `pending`
-- [ ] Parse RSS feeds with feedparser
-- [ ] Normalize RSS entries into article schema
-- [ ] Handle feed errors gracefully (timeouts, malformed XML)
-- [ ] Fetch multiple feeds concurrently (async)
-
-### 4. Article endpoint — `pending`
-- [ ] GET /api/v1/articles with category, pagination, sort/order
-- [ ] GET /api/v1/articles/:id for single article
+### 3. RSS fetcher + article endpoint — `done`
+- [x] Fetch raw XML via async httpx, parse with feedparser
+- [x] Normalize entries (images, dates, summaries with HTML stripping)
+- [x] Handle feed errors gracefully (timeouts, malformed XML, per-entry)
+- [x] Fetch multiple feeds concurrently (asyncio.gather)
+- [x] Article service: orchestrates cache checks + concurrent fetching
+- [x] GET /api/v1/articles with category, source, pagination
+- [ ] GET /api/v1/articles/:id for single article (reader view — later)
 - [ ] Sentiment filter parameter
-- [ ] Source filter parameter
 - [ ] Keyword search in title/summary
 
 ### 5. Authentication — `pending`

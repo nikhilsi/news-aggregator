@@ -1,4 +1,19 @@
-"""RSS feed fetcher — fetches and normalizes RSS feeds into common article dicts."""
+"""
+RSS feed fetcher — fetches and normalizes RSS feeds into common article dicts.
+
+This is the core data pipeline for RSS sources. It:
+1. Fetches raw XML via httpx (async, with timeout)
+2. Parses with feedparser (sync — just string parsing, no network)
+3. Normalizes each entry into a common dict format
+
+Normalization handles field variations across feeds:
+- Images: tries media:content → media:thumbnail → enclosures → <img> in HTML
+- Dates: tries published_parsed → updated_parsed → raw date string
+- Summaries: strips HTML, truncates to 500 chars
+
+Error handling is per-entry and per-feed — one bad entry or one broken feed
+never crashes the entire request. Errors are logged and skipped.
+"""
 
 import logging
 import re
@@ -14,12 +29,14 @@ from app.sources.registry import SourceConfig
 
 logger = logging.getLogger(__name__)
 
-# Timeout for fetching a single feed
+# Max time to wait for a single feed response
 FEED_TIMEOUT = 10.0
 
 
+# ── HTML Stripping ───────────────────────────────────────────────────────
+
 class _HTMLTextExtractor(HTMLParser):
-    """Strip HTML tags, keep text content."""
+    """Simple HTML-to-text converter using Python's built-in parser."""
 
     def __init__(self):
         super().__init__()
@@ -33,7 +50,7 @@ class _HTMLTextExtractor(HTMLParser):
 
 
 def strip_html(html: str | None) -> str | None:
-    """Remove HTML tags, return plain text."""
+    """Remove HTML tags, return plain text. Returns None if input is empty."""
     if not html:
         return None
     extractor = _HTMLTextExtractor()
@@ -41,12 +58,22 @@ def strip_html(html: str | None) -> str | None:
         extractor.feed(html)
         return extractor.get_text()
     except Exception:
-        # Fallback: regex strip
+        # Fallback for malformed HTML: brute-force regex strip
         return re.sub(r"<[^>]+>", "", html).strip()
 
 
+# ── Field Extraction ─────────────────────────────────────────────────────
+# Each function handles the variations in how RSS feeds provide a given field.
+
 def _extract_image_url(entry: dict) -> str | None:
-    """Try to extract an image URL from an RSS entry using multiple strategies."""
+    """Extract an image URL from an RSS entry.
+
+    Tries multiple strategies in priority order:
+    1. media:content (RSS media extension — most reliable when present)
+    2. media:thumbnail
+    3. enclosures with image MIME type
+    4. First <img> tag in summary or content HTML (last resort)
+    """
     # Strategy 1: media:content
     media = entry.get("media_content")
     if media:
@@ -71,7 +98,7 @@ def _extract_image_url(entry: dict) -> str | None:
             if "image" in enc.get("type", ""):
                 return enc.get("href") or enc.get("url")
 
-    # Strategy 4: first <img> in summary or content HTML
+    # Strategy 4: parse <img> from HTML content
     for field in ["summary", "content"]:
         html = ""
         if field == "content":
@@ -90,8 +117,12 @@ def _extract_image_url(entry: dict) -> str | None:
 
 
 def _parse_published_date(entry: dict) -> datetime | None:
-    """Extract published date from an RSS entry."""
-    # Strategy 1: published_parsed (feedparser's normalized struct_time)
+    """Extract published date from an RSS entry.
+
+    Tries feedparser's pre-parsed struct_time first, then falls back to
+    parsing the raw date string. Returns None if no date is available.
+    """
+    # feedparser's normalized struct_time (handles most date formats)
     parsed = entry.get("published_parsed") or entry.get("updated_parsed")
     if parsed:
         try:
@@ -99,7 +130,7 @@ def _parse_published_date(entry: dict) -> datetime | None:
         except Exception:
             pass
 
-    # Strategy 2: raw date string
+    # Fallback: parse the raw date string using email.utils
     raw = entry.get("published") or entry.get("updated")
     if raw:
         try:
@@ -111,8 +142,11 @@ def _parse_published_date(entry: dict) -> datetime | None:
 
 
 def _extract_summary(entry: dict) -> str | None:
-    """Extract a clean text summary from an RSS entry."""
-    # Prefer summary, fall back to content
+    """Extract a clean text summary from an RSS entry.
+
+    Prefers entry.summary, falls back to content[0].value.
+    Strips HTML and truncates to 500 characters.
+    """
     raw = entry.get("summary")
     if not raw:
         content_list = entry.get("content")
@@ -126,13 +160,16 @@ def _extract_summary(entry: dict) -> str | None:
 
 
 def _normalize_entry(entry: dict, source: SourceConfig) -> dict | None:
-    """Normalize a single feedparser entry into our common article dict.
+    """Normalize a single feedparser entry into the common article dict.
 
-    Returns None if the entry is missing required fields (title, link).
+    Returns None if the entry is missing required fields (title or link).
+    Source metadata (id, name, type, category) comes from the SourceConfig,
+    not from the feed entry itself.
     """
     title = entry.get("title")
     url = entry.get("link")
 
+    # Title and URL are required — skip entries without them
     if not title or not url:
         logger.warning("Skipping entry from %s: missing title or link", source.name)
         return None
@@ -146,18 +183,29 @@ def _normalize_entry(entry: dict, source: SourceConfig) -> dict | None:
         "source_name": source.name,
         "source_type": source.type,
         "category": source.category,
-        "sentiment": None,
+        "sentiment": None,  # RSS feeds don't provide sentiment — only API sources do
         "published_at": _parse_published_date(entry),
     }
 
 
+# ── Main Fetch Function ─────────────────────────────────────────────────
+
 async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dict]:
     """Fetch an RSS feed and return a list of normalized article dicts.
 
-    Never raises — returns an empty list on failure.
+    This function never raises exceptions — it returns an empty list on failure
+    and logs the error. This ensures one broken feed doesn't affect other sources.
+
+    Args:
+        source: Source configuration from the registry
+        client: Shared httpx async client (connection pooling)
+
+    Returns:
+        List of normalized article dicts, or empty list on failure
     """
     start = time.monotonic()
 
+    # Step 1: Fetch raw XML (async, with timeout)
     try:
         response = await client.get(source.url, timeout=FEED_TIMEOUT)
         response.raise_for_status()
@@ -171,13 +219,15 @@ async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
         logger.warning("Network error fetching %s: %s", source.name, str(e))
         return []
 
-    # Parse the raw XML (no network call — feedparser just parses the string)
+    # Step 2: Parse with feedparser (sync — just string parsing, fast)
     feed = feedparser.parse(response.text)
 
+    # feedparser sets bozo=True for malformed XML, but often still parses partial data
     if feed.bozo and not feed.entries:
         logger.warning("Malformed feed from %s: %s", source.name, feed.bozo_exception)
         return []
 
+    # Step 3: Normalize each entry (skip individual entries that fail)
     articles = []
     for entry in feed.entries:
         try:

@@ -1,4 +1,9 @@
-"""Source and category endpoints."""
+"""
+Source and category API endpoints.
+
+GET /api/v1/sources     — List all configured sources (enabled and disabled)
+GET /api/v1/categories  — List available categories with source counts
+"""
 
 from fastapi import APIRouter
 
@@ -27,6 +32,6 @@ async def list_sources():
 
 @router.get("/categories", response_model=list[CategoryResponse])
 async def list_categories():
-    """List all available categories with source counts."""
+    """List all available categories with the number of enabled sources in each."""
     cats = get_categories_with_counts()
     return [CategoryResponse(**c) for c in cats]

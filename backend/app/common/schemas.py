@@ -1,4 +1,13 @@
-"""Pydantic schemas for API responses."""
+"""
+Pydantic schemas for API responses.
+
+These define the shape of data returned by the API endpoints.
+They are NOT used for storage — articles are stored as plain dicts in the
+in-memory cache. These schemas serialize the dicts into clean JSON responses.
+
+All source types (RSS, News API, Financial API) normalize into dicts that
+match ArticleResponse. See sources/rss_fetcher.py for the normalization logic.
+"""
 
 from datetime import datetime
 
@@ -6,21 +15,23 @@ from pydantic import BaseModel
 
 
 class ArticleResponse(BaseModel):
-    """Article shape returned by the API. This is the common format all sources normalize into."""
+    """Single article in the API response."""
 
     title: str
     summary: str | None = None
-    url: str
-    image_url: str | None = None
-    source_id: str
-    source_name: str
-    source_type: str
-    category: str
-    sentiment: float | None = None
-    published_at: datetime | None = None
+    url: str                                # Original source URL (also used as unique ID for dedup)
+    image_url: str | None = None            # May be None — not all feeds provide images
+    source_id: str                          # ID from sources.yaml (e.g., "ars-technica-science")
+    source_name: str                        # Display name (e.g., "Ars Technica - Science")
+    source_type: str                        # "rss" | "news_api" | "financial_api"
+    category: str                           # Category from source config (e.g., "science")
+    sentiment: float | None = None          # -1.0 to 1.0 — only populated by sentiment-aware APIs
+    published_at: datetime | None = None    # When the article was published (None if feed doesn't provide it)
 
 
 class PaginationResponse(BaseModel):
+    """Pagination metadata included in list responses."""
+
     page: int
     per_page: int
     total: int
@@ -28,22 +39,26 @@ class PaginationResponse(BaseModel):
 
 
 class ArticleListResponse(BaseModel):
+    """Response shape for GET /api/v1/articles."""
+
     articles: list[ArticleResponse]
     pagination: PaginationResponse
 
 
 class SourceResponse(BaseModel):
-    """Source info returned by the API."""
+    """Source info returned by GET /api/v1/sources."""
 
     id: str
     name: str
-    type: str
+    type: str                               # "rss" | "news_api" | "financial_api"
     category: str
     enabled: bool
-    is_curated_positive: bool
+    is_curated_positive: bool               # If true, all articles from this source are considered positive
 
 
 class CategoryResponse(BaseModel):
-    id: str
-    name: str
-    source_count: int
+    """Category info returned by GET /api/v1/categories."""
+
+    id: str                                 # e.g., "science", "feel_good"
+    name: str                               # Display name: "Science", "Feel Good"
+    source_count: int                       # Number of enabled sources in this category
