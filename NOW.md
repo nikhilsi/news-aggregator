@@ -2,7 +2,7 @@
 
 **Last Updated**: February 10, 2026
 
-## Phase 1: Backend Foundation
+## Phase 1: Backend Foundation — `done`
 
 Build the FastAPI backend with core functionality.
 Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding APIs.
@@ -29,11 +29,9 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 - [x] Fetch multiple feeds concurrently (asyncio.gather)
 - [x] Article service: orchestrates cache checks + concurrent fetching
 - [x] GET /api/v1/articles with category, source, pagination
-- [ ] GET /api/v1/articles/:id for single article (reader view — later)
-- [ ] Sentiment filter parameter
 - [x] Keyword search in title/summary (case-insensitive, composes with category/source filters)
 
-### 5. Authentication — `done`
+### 4. Authentication — `done`
 - [x] User model + SQLite table (schema.sql — users table with email, password_hash, is_admin, is_active, etc.)
 - [x] Password hashing with bcrypt via passlib (app/auth/utils.py)
 - [x] JWT token creation + validation with pyjwt HS256 (app/auth/utils.py)
@@ -43,13 +41,33 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 - [x] JWT middleware for protected routes (app/auth/dependencies.py — get_current_user dependency)
 - [x] Create initial admin user (seed_admin.py CLI script)
 
-### 6. Deduplication — `pending`
-- [ ] URL exact match
-- [ ] Fuzzy title matching with rapidfuzz (>85% similarity)
-- [ ] Source priority ranking (higher priority source wins)
+---
+
+## Phase 2: Web Frontend — `up next`
+
+Next.js app consuming the backend API.
+
+- [ ] Project scaffolding (Next.js + Tailwind)
+- [ ] Layout (header, nav, responsive shell)
+- [ ] Article feed page (card grid, infinite scroll or pagination)
+- [ ] Category/source filters
+- [ ] Keyword search
+- [ ] Login page + auth context (JWT storage, protected routes)
+- [ ] User profile / settings page
 
 ---
 
-## Phase 2: Web Frontend (after Phase 1)
-
 ## Phase 3: iOS App (after Phase 2)
+
+---
+
+## Future Enhancements
+
+Deferred until V1 frontend is live and we can evaluate based on real usage.
+
+### Backend
+- **Reader view** — GET /api/v1/articles/:id with full content extraction (readability-lxml or trafilatura). Decide once FE is built and we see if in-app reading is wanted.
+- **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI. Decide on approach later.
+- **Deduplication** — URL exact match + fuzzy title matching with rapidfuzz (>85% similarity) + source priority ranking. Build once we see actual overlap in the frontend.
+- **Additional source types** — NewsAPI fetcher, Financial API fetcher (Alpha Vantage, FMP)
+- **Enable more sources** — Currently 4 of 24 enabled. Scale up after dedup is in place.
