@@ -33,13 +33,15 @@ Start with 3-5 RSS sources to prove the pipeline works end-to-end before adding 
 - [ ] Sentiment filter parameter
 - [ ] Keyword search in title/summary
 
-### 5. Authentication — `pending`
-- [ ] User model + SQLite table
-- [ ] POST /api/v1/auth/login (returns JWT)
-- [ ] POST /api/v1/auth/logout
-- [ ] GET /api/v1/auth/me
-- [ ] JWT middleware for protected routes
-- [ ] Create initial admin user (CLI or seed script)
+### 5. Authentication — `done`
+- [x] User model + SQLite table (schema.sql — users table with email, password_hash, is_admin, is_active, etc.)
+- [x] Password hashing with bcrypt via passlib (app/auth/utils.py)
+- [x] JWT token creation + validation with pyjwt HS256 (app/auth/utils.py)
+- [x] POST /api/v1/auth/login (returns JWT + user info, tracks failed attempts + last_login)
+- [x] POST /api/v1/auth/logout (client-side — stateless JWT)
+- [x] GET /api/v1/auth/me (returns current user profile)
+- [x] JWT middleware for protected routes (app/auth/dependencies.py — get_current_user dependency)
+- [x] Create initial admin user (seed_admin.py CLI script)
 
 ### 6. Deduplication — `pending`
 - [ ] URL exact match

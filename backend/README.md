@@ -19,8 +19,9 @@ uvicorn app.main:app --reload --port 8000
 | GET | `/api/v1/articles` | Fetch articles (supports category, source, pagination) |
 | GET | `/api/v1/sources` | List all configured sources |
 | GET | `/api/v1/categories` | List categories with source counts |
-| POST | `/api/v1/auth/login` | Login, returns JWT *(not yet implemented)* |
-| GET | `/api/v1/auth/me` | Get current user *(not yet implemented)* |
+| POST | `/api/v1/auth/login` | Login with email + password, returns JWT |
+| POST | `/api/v1/auth/logout` | Logout (client-side — JWT is stateless) |
+| GET | `/api/v1/auth/me` | Get current user profile (requires JWT) |
 
 ### Article Query Parameters
 
@@ -53,9 +54,13 @@ backend/
 │   ├── common/
 │   │   └── schemas.py       # Pydantic models for API responses
 │   │
-│   └── auth/                # Authentication (not yet implemented)
+│   └── auth/
+│       ├── utils.py         # Password hashing (bcrypt) + JWT encode/decode
+│       ├── dependencies.py  # get_current_user FastAPI dependency
+│       └── router.py        # POST /login, POST /logout, GET /me
 │
 ├── schema.sql               # SQLite schema (users table)
+├── seed_admin.py            # CLI script to create the initial admin user
 ├── sources.yaml             # Source registry — all news sources configured here
 ├── requirements.txt         # Python dependencies
 ├── .env.example             # Environment variable template
@@ -87,6 +92,38 @@ Request → Article Service → check cache per source
 1. Add an entry to `sources.yaml` with `enabled: true`
 2. Restart the server
 3. That's it — no code changes needed for RSS sources
+
+### Authentication
+
+JWT-based auth with email + password login. Tokens use HS256 (symmetric HMAC) and expire after 24 hours (configurable via `JWT_EXPIRE_MINUTES` in `.env`).
+
+**Creating the first admin user:**
+```bash
+cd backend
+source venv/bin/activate
+python seed_admin.py
+```
+
+**Login flow:**
+```
+POST /api/v1/auth/login  { email, password }
+  → validates credentials
+  → tracks failed_login_attempts + last_login
+  → returns { access_token, token_type, user }
+
+GET /api/v1/auth/me  (Authorization: Bearer <token>)
+  → validates JWT, looks up user, checks is_active
+  → returns { id, email, full_name, is_admin }
+```
+
+**Protecting routes:** Use the `get_current_user` dependency:
+```python
+from app.auth.dependencies import get_current_user
+
+@router.get("/protected")
+async def protected_route(user: dict = Depends(get_current_user)):
+    return {"email": user["email"]}
+```
 
 ### Source Types
 

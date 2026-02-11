@@ -22,6 +22,7 @@ from app.articles.service import set_http_client
 from app.sources.registry import load_sources
 from app.articles.router import router as articles_router
 from app.sources.router import router as sources_router
+from app.auth.router import router as auth_router
 
 # Configure structured logging for the entire app
 logging.basicConfig(
@@ -72,6 +73,7 @@ app.add_middleware(
 # Register routers
 app.include_router(articles_router)
 app.include_router(sources_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")
