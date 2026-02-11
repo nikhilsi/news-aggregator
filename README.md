@@ -1,6 +1,6 @@
 # ClearNews
 
-A personal news aggregator that pulls from 21+ RSS sources and serves them through a clean, filterable interface. No clickbait, no ad overload, no political noise (unless you want it).
+A personal news aggregator that pulls from 23 sources (RSS feeds + financial APIs) and serves them through a clean, filterable interface with an in-app reader view. No clickbait, no ad overload, no political noise (unless you want it).
 
 **Live at**: [getclearnews.com](https://getclearnews.com)
 
@@ -10,8 +10,9 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 ## What It Does
 
-- Aggregates news from 21 RSS sources across 8 categories (including 5 Google News topic feeds)
-- Filter by category: Science, Technology, Entertainment, Feel Good, Health, Sports, Offbeat
+- Aggregates news from 23 sources across 8 categories (21 RSS feeds + 2 financial API endpoints)
+- **Reader view** — click any article to read clean, extracted content in-app (modal overlay, no page reload)
+- Filter by category: Science, Technology, Entertainment, Feel Good, Finance, Health, Sports, Offbeat
 - Clean card-based feed with infinite scroll
 - Dark mode with OS preference detection
 - Keyword search across titles and summaries
@@ -19,6 +20,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 - Google News URL resolution — decodes redirect URLs to real article URLs
 - Article deduplication — URL match + title keyword overlap across sources
 - Image extraction via og:image fallback for feeds without embedded images
+- Financial news via FMP API (general news + market analysis)
 - Simple email/password authentication
 
 ## Tech Stack

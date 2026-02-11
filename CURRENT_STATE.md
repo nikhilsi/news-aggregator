@@ -21,10 +21,10 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 - **Authentication** — email/password login with JWT (HS256), bcrypt password hashing, protected route dependency, seed script for admin/regular users
 - **Production-ready** — configurable DB path and CORS origins via env vars
 
-### Web Frontend (Next.js) — v0.2.0
+### Web Frontend (Next.js) — v0.7.0
 - **Layout** — sticky header (ClearNews logo, search, dark mode toggle, user menu), wrapping category pill tabs
 - **Article feed** — responsive card grid (1/2/3 cols), infinite scroll, skeleton loading, broken image fallback
-- **Reader view** — in-app article reading at `/article?url=...` with clean prose layout, skeleton loading, fallback for failed extractions
+- **Reader view** — in-app article reading via full-screen modal overlay. Feed stays mounted underneath for instant back navigation. Content extraction from backend, skeleton loading, fallback for paywalled sites. Escape key and browser back close the modal.
 - **Filters** — category tabs, debounced keyword search (400ms), race condition handling
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
@@ -63,13 +63,4 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 
 ## What's Next
 
-1. **Visual polish** — Review light/dark mode, test all user flows, mobile responsiveness
-2. **Future enhancements** — See NOW.md
-
-## Future Enhancements (deferred)
-
-- Sentiment filter (HuggingFace / FinBERT)
-- Additional source types (NewsAPI)
-- Landing page, user settings, SSR
-
-See NOW.md for details on each.
+See NOW.md for current priorities and future enhancements.

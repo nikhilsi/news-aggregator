@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0] - 2026-02-10 — Reader View Modal Overlay
+
+### Changed
+- **Reader view is now a modal overlay**: Clicking an article opens a full-screen overlay instead of navigating to a new page. The feed stays mounted underneath, so closing the reader (Back button, Escape key, or browser back) returns instantly to the feed with scroll position preserved.
+- **Invisible history entry**: Uses `pushState` without a URL change to support browser back button without conflicting with Next.js App Router routing.
+- **Escape key hint**: `Esc` keyboard shortcut badge shown next to the Back button (hidden on mobile).
+
+### Technical
+- New `ReaderModal.tsx` component with body scroll lock, popstate listener, and keyboard handling.
+- `ArticleCard` changed from `<Link>` navigation to `<button>` with onClick callback.
+- `ArticleGrid` and home page wired with `onArticleClick` → modal state management.
+- Standalone `/article` page kept as fallback for direct URL access.
+
+---
+
 ## [0.6.0] - 2026-02-10 — Reader View
 
 ### Added
