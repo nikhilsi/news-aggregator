@@ -107,6 +107,8 @@ Docker Compose deployment to DigitalOcean with nginx, SSL, and security hardenin
 - [x] Next.js standalone output mode for Docker builds
 - [x] All 21 RSS sources enabled (3 API-based remain disabled)
 - [x] Categories endpoint hides empty categories
+- [x] Google News URL resolver — decodes opaque redirect URLs to real article URLs via batchexecute API
+- [x] og:image backfill now works for Google News sources (previously 0% → ~50% image rate)
 
 ---
 

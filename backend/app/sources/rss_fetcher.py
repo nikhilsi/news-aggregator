@@ -5,6 +5,8 @@ This is the core data pipeline for RSS sources. It:
 1. Fetches raw XML via httpx (async, with timeout)
 2. Parses with feedparser (sync — just string parsing, no network)
 3. Normalizes each entry into a common dict format
+4. Resolves Google News redirect URLs to real article URLs
+5. Backfills missing images via og:image from article pages
 
 Normalization handles field variations across feeds:
 - Images: tries media:content → media:thumbnail → enclosures → <img> in HTML
@@ -15,12 +17,14 @@ Error handling is per-entry and per-feed — one bad entry or one broken feed
 never crashes the entire request. Errors are logged and skipped.
 """
 
+import json
 import logging
 import re
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
+from urllib.parse import quote, urlparse
 
 import asyncio
 
@@ -249,6 +253,103 @@ async def _backfill_missing_images(
         logger.debug("Backfilled %d/%d missing images via og:image", found, len(missing))
 
 
+# ── Google News URL Resolver ────────────────────────────────────────────
+# Google News RSS feeds provide opaque redirect URLs (news.google.com/rss/articles/...)
+# instead of real article URLs. The real URL is encoded in a protobuf/base64 blob.
+# Newer URLs (post-July 2024) can't be decoded offline — they require two HTTP calls
+# to Google's batchexecute API: one to get a signature+timestamp, one to decode.
+#
+# We resolve these at fetch time so the cache stores final, ready-to-serve data.
+# This also lets the og:image backfill work, since it needs real article URLs.
+
+GNEWS_DECODE_TIMEOUT = 5.0
+
+
+def _is_google_news_url(url: str) -> bool:
+    """Check if a URL is a Google News redirect."""
+    return "news.google.com/" in url
+
+
+async def _resolve_single_google_url(
+    article_url: str, client: httpx.AsyncClient
+) -> str | None:
+    """Resolve a single Google News redirect URL to the real article URL.
+
+    Makes two HTTP calls to Google:
+    1. Fetch the article page to extract signature + timestamp
+    2. POST to batchexecute API with those params to get the decoded URL
+
+    Returns the decoded URL, or None on any failure.
+    """
+    parsed = urlparse(article_url)
+    base64_str = parsed.path.split("/")[-1]
+
+    # Step 1: Fetch article page to get decoding params
+    try:
+        resp = await client.get(article_url, follow_redirects=True, timeout=GNEWS_DECODE_TIMEOUT)
+    except Exception:
+        return None
+
+    sig_match = re.search(r'data-n-a-sg="([^"]+)"', resp.text)
+    ts_match = re.search(r'data-n-a-ts="([^"]+)"', resp.text)
+    if not sig_match or not ts_match:
+        return None
+
+    signature = sig_match.group(1)
+    timestamp = ts_match.group(1)
+
+    # Step 2: Decode via batchexecute API
+    try:
+        payload = [
+            "Fbv4je",
+            f'["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{base64_str}",{timestamp},"{signature}"]',
+        ]
+        resp2 = await client.post(
+            "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "User-Agent": "Mozilla/5.0 (compatible)",
+            },
+            data=f"f.req={quote(json.dumps([[payload]]))}",
+            timeout=GNEWS_DECODE_TIMEOUT,
+        )
+        parsed_data = json.loads(resp2.text.split("\n\n")[1])[:-2]
+        decoded_url = json.loads(parsed_data[0][2])[1]
+        return decoded_url
+    except Exception:
+        return None
+
+
+async def _resolve_google_news_urls(
+    articles: list[dict], client: httpx.AsyncClient
+) -> None:
+    """Resolve Google News redirect URLs to real article URLs.
+
+    Modifies articles in place. Runs concurrently for performance.
+    Only processes articles whose URL is a Google News redirect.
+    """
+    google_articles = [
+        (i, a) for i, a in enumerate(articles) if _is_google_news_url(a.get("url", ""))
+    ]
+    if not google_articles:
+        return
+
+    tasks = [_resolve_single_google_url(a["url"], client) for _, a in google_articles]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    resolved = 0
+    for (idx, _), result in zip(google_articles, results):
+        if isinstance(result, str) and result:
+            articles[idx]["url"] = result
+            resolved += 1
+
+    logger.info(
+        "Resolved %d/%d Google News URLs to real article URLs",
+        resolved,
+        len(google_articles),
+    )
+
+
 # ── Main Fetch Function ─────────────────────────────────────────────────
 
 async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dict]:
@@ -299,7 +400,11 @@ async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
             logger.warning("Error normalizing entry from %s: %s", source.name, str(e))
             continue
 
-    # Step 4: Backfill missing images by fetching og:image from article pages
+    # Step 4: Resolve Google News redirect URLs to real article URLs
+    # Must happen before og:image backfill — og:image needs real URLs to work.
+    await _resolve_google_news_urls(articles, client)
+
+    # Step 5: Backfill missing images by fetching og:image from article pages
     await _backfill_missing_images(articles, client)
 
     duration_ms = int((time.monotonic() - start) * 1000)
