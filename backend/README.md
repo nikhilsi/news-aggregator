@@ -92,6 +92,7 @@ Request → Article Service → check SWR cache per source
 
 ### Key Patterns
 
+- **Thread pool offloading**: CPU-bound operations use `asyncio.to_thread()` to avoid blocking the event loop: readability/trafilatura extraction, feedparser XML parsing, article deduplication, bcrypt password verification.
 - **SWR caching**: Stale-while-revalidate — fresh data served instantly, stale data served immediately with background refresh, expired data triggers synchronous fetch. Users almost never wait.
 - **Startup warmup**: All sources pre-fetched on server start (~25s). First request always hits warm cache.
 - **Force refresh**: `?refresh=true` bypasses SWR cache entirely — fetches all sources synchronously.
@@ -103,7 +104,7 @@ Request → Article Service → check SWR cache per source
 - **Concurrent fetching**: Multiple stale sources are fetched in parallel via `asyncio.gather`.
 - **Shared HTTP client**: A single `httpx.AsyncClient` is created on startup and reused for all outbound requests (connection pooling, browser User-Agent).
 - **Google News URL resolution**: Google News RSS provides opaque redirect URLs. We decode them to real article URLs via Google's batchexecute API at fetch time, throttled with `asyncio.Semaphore(10)`.
-- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). Prefers articles with images and direct feeds over Google News.
+- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). O(1) set-based removal tracking. Prefers articles with images and direct feeds over Google News.
 
 ### Adding a New Source
 

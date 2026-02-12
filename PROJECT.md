@@ -72,6 +72,8 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 
 **No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~25s), so the first user request hits a warm cache. SWR caching ensures users almost never wait for cold fetches.
 
+**Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication, bcrypt password verification) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
+
 ---
 
 ## Authentication
@@ -274,7 +276,7 @@ Multiple sources cover the same story (especially Google News, which aggregates 
 2. **Title keyword overlap** — Extracts significant keywords from titles (after stripping stop words and possessives). If keyword overlap ratio >= 0.6 (relative to the smaller keyword set), treated as duplicate.
 3. **Priority when keeping:** Prefer articles with images > without. Prefer direct feeds > Google News aggregates.
 
-Implementation: `app/articles/service.py` — `_deduplicate()` function. No external dependencies (uses stdlib `re` for keyword extraction).
+Implementation: `app/articles/service.py` — `_deduplicate()` function. No external dependencies (uses stdlib `re` for keyword extraction). Uses O(1) set-based removal tracking instead of O(n) list scans. Runs in thread pool via `asyncio.to_thread()`.
 
 ---
 
@@ -376,6 +378,7 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
 - **SSL**: Let's Encrypt with certbot auto-renewal
 - **Database**: SQLite bind-mounted to `/opt/app/data/` for persistence
 - **Security**: UFW firewall, fail2ban, rate limiting, non-root container users, security headers
+- **Deploy script**: Auto-cleans Docker build cache and old images after every deploy to prevent disk bloat
 
 ```
 Internet → Nginx (SSL + rate limiting)

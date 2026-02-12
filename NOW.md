@@ -9,11 +9,11 @@
 - **Phase 3: Deployment** — `done` — Live at getclearnews.com, Docker Compose, nginx, SSL, firewall
 - **Phase 4: iOS App** — `done` — SwiftUI, full feature parity with web (v1.0.0)
 - **Phase 5: Performance** — `done` — Structured logging, SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
+- **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops (reader extraction, feedparser, dedup, bcrypt), dedup algorithm optimization, Docker build cache cleanup in deploy script (v1.3.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
 ### Remaining manual tasks
-- [ ] Deploy v1.2.0 to production (pull-to-refresh + web UX improvements)
 - [ ] Test iOS app on iPhone + iPad physical devices
 - [ ] Visual review of web in browser (light + dark mode)
 - [ ] App Store submission (requires Apple Developer account)

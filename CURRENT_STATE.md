@@ -2,26 +2,27 @@
 
 **Last Updated**: February 12, 2026
 
-## Status: Live at getclearnews.com | iOS App built | Performance instrumented
+## Status: Live at getclearnews.com | iOS App built | Performance optimized
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has structured logging, SWR caching, and startup warmup deployed. Web and iOS have pull-to-refresh with force cache bypass. iOS app pending App Store submission.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has structured logging, SWR caching, startup warmup, and thread pool offloading for all CPU-bound operations. Web and iOS have pull-to-refresh with force cache bypass. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
 
 ## What's Built
 
-### Backend (FastAPI) — v1.1.0
+### Backend (FastAPI) — v1.3.0
 - **Project scaffolding** — directory structure, venv, config, SQLite database
 - **Source registry** — 24 sources defined in sources.yaml (21 RSS + 2 FMP enabled, 1 API-based disabled), pydantic models, load/query helpers
 - **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 4x TTL) serves immediately + background refresh, expired/missing fetches synchronously. Per-source TTL (default 15 min). Force refresh via `?refresh=true` query param.
 - **Startup cache warmup** — all 23 sources pre-fetched as background task on server start (~25s). First user request hits warm cache.
 - **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (24h), refresh requests (no-store)
+- **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication, bcrypt password verification. Event loop stays free for concurrent request handling.
 - **Structured logging** — JSON format for production, text for local dev (`LOG_FORMAT` env var). Request timing middleware with unique request IDs. Per-source fetch timing. Cache HIT/STALE/MISS logging.
-- **RSS fetcher** — async fetch via httpx, parse with feedparser, normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images, Google News URL resolver (decodes redirect URLs to real article URLs via batchexecute API)
+- **RSS fetcher** — async fetch via httpx, parse with feedparser (thread pool), normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images, Google News URL resolver (decodes redirect URLs to real article URLs via batchexecute API)
 - **FMP fetcher** — fetches financial news from FMP API (general-latest + fmp-articles endpoints), normalizes both response formats, HTML stripping for article content
-- **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → deduplicate → sort → filter → paginate
-- **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback), sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
-- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), prefers articles with images and direct feeds over Google News (~33 dupes removed per cycle)
+- **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → deduplicate (thread pool) → sort → filter → paginate
+- **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback) via thread pool, sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
+- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), O(1) set-based removal tracking, prefers articles with images and direct feeds over Google News (~33 dupes removed per cycle)
 - **Keyword search** — case-insensitive search on title/summary, composes with all filters
-- **Authentication** — email/password login with JWT (HS256), bcrypt password hashing, protected route dependency, seed script for admin/regular users
+- **Authentication** — email/password login with JWT (HS256), bcrypt password hashing (thread pool), protected route dependency, seed script for admin/regular users
 - **Production-ready** — configurable DB path and CORS origins via env vars
 
 ### Web Frontend (Next.js) — v1.2.0
@@ -50,8 +51,9 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 ### Deployment Infrastructure — v0.3.0
 - **Docker** — Dockerfiles for backend (Python 3.12) and frontend (Next.js standalone), docker-compose.prod.yml
 - **Nginx** — host-level reverse proxy with SSL termination, rate limiting (auth: 5/min, general: 10/sec)
-- **Scripts** — setup.sh, setup-ssl.sh, setup-firewall.sh (UFW + fail2ban), deploy.sh, stream-logs.sh
+- **Scripts** — setup.sh, setup-ssl.sh, setup-firewall.sh (UFW + fail2ban), deploy.sh (with auto Docker cleanup), stream-logs.sh
 - **Security** — non-root container users, rate limiting, firewall, fail2ban, security headers, HSTS
+- **Docker cleanup** — deploy.sh auto-prunes old images and build cache after each deploy to prevent disk bloat
 
 ### API Endpoints (all working)
 | Method | Endpoint | Auth | Description |

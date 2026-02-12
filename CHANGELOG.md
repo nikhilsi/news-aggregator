@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0] - 2026-02-12 — Async Performance + Docker Cleanup
+
+### Fixed
+- **Event loop blocking**: Offloaded all CPU-bound operations to Python's thread pool via `asyncio.to_thread()`. Previously, these operations blocked the single-threaded event loop, freezing all concurrent requests:
+  - Reader content extraction (readability-lxml + trafilatura): 500ms-2s per request
+  - RSS feed parsing (feedparser): 50-150ms per feed
+  - Article deduplication: 50-200ms per request
+  - Bcrypt password verification: 200-400ms per login
+- **Dedup algorithm**: Replaced O(n) `list.remove()` calls with O(1) set-based tracking via `removed_ids`. Single filter pass at the end instead of per-removal list scans.
+
+### Changed
+- **Deploy script**: Now auto-cleans Docker build cache and old images after every deploy (`docker system prune -af` + `docker builder prune -af`). Cleanup runs after containers start so running images are protected. Reclaimed 12GB on first run.
+
+---
+
 ## [1.2.0] - 2026-02-12 — Pull-to-Refresh + Client UX
 
 ### Added
