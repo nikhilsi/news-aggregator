@@ -9,6 +9,7 @@ provided by the frontend. Article metadata (title, source_name, etc.) is
 looked up from the article cache when available.
 """
 
+import asyncio
 import logging
 import re
 import time
@@ -178,12 +179,13 @@ async def extract_article_content(url: str) -> dict:
         return result
 
     # Try readability first (preserves HTML structure + images)
-    content_html, extracted_title = _extract_with_readability(html, url)
+    # Offload CPU-bound extraction to thread pool to avoid blocking the event loop
+    content_html, extracted_title = await asyncio.to_thread(_extract_with_readability, html, url)
     extractor_used = "readability"
 
     # Fall back to trafilatura if readability didn't get enough content
     if content_html is None:
-        content_html = _extract_with_trafilatura(html, url)
+        content_html = await asyncio.to_thread(_extract_with_trafilatura, html, url)
         extracted_title = None  # trafilatura doesn't give us a title separately
         extractor_used = "trafilatura"
 
@@ -194,8 +196,8 @@ async def extract_article_content(url: str) -> dict:
         cache.set(f"reader:{url}", result, READER_CACHE_TTL_MINUTES)
         return result
 
-    # Sanitize the extracted HTML
-    content_html = _sanitize_html(content_html)
+    # Sanitize the extracted HTML (offload regex work to thread pool)
+    content_html = await asyncio.to_thread(_sanitize_html, content_html)
     word_count = _count_words(_html_to_text(content_html))
 
     # Extract author from the raw HTML

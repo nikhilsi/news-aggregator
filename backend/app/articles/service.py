@@ -116,6 +116,7 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
     """Remove duplicate articles using URL match and title keyword overlap.
 
     Keeps the higher-priority version of each duplicate pair.
+    Uses a set for O(1) membership checks instead of O(n) list.remove().
     """
     if not articles:
         return articles
@@ -124,6 +125,8 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
     url_seen: dict[str, dict] = {}
     # Index: list of (keywords, article) for title comparison
     title_index: list[tuple[set[str], dict]] = []
+    # Track removed articles by id() for O(1) discard instead of O(n) list.remove()
+    removed_ids: set[int] = set()
     kept: list[dict] = []
     removed = 0
 
@@ -135,11 +138,9 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
         if url in url_seen:
             existing = url_seen[url]
             if priority > _article_priority(existing):
-                # New article is better — swap
-                kept.remove(existing)
+                # New article is better — mark old as removed, replace
+                removed_ids.add(id(existing))
                 url_seen[url] = article
-                # Also update title_index
-                title_index = [(kw, a) for kw, a in title_index if a is not existing]
                 keywords = _title_keywords(article.get("title", ""))
                 title_index.append((keywords, article))
                 kept.append(article)
@@ -150,13 +151,13 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
         keywords = _title_keywords(article.get("title", ""))
         is_dupe = False
         for existing_kw, existing_article in title_index:
+            if id(existing_article) in removed_ids:
+                continue
             if _titles_match(keywords, existing_kw):
                 # Found a title match — keep the better one
                 if priority > _article_priority(existing_article):
-                    kept.remove(existing_article)
-                    title_index.remove((existing_kw, existing_article))
+                    removed_ids.add(id(existing_article))
                     url_seen.pop(existing_article.get("url", ""), None)
-                    # Add the new article instead
                     url_seen[url] = article
                     title_index.append((keywords, article))
                     kept.append(article)
@@ -168,6 +169,10 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
             url_seen[url] = article
             title_index.append((keywords, article))
             kept.append(article)
+
+    # Filter out removed articles in one pass
+    if removed_ids:
+        kept = [a for a in kept if id(a) not in removed_ids]
 
     if removed:
         logger.info("Dedup: removed %d duplicates, %d → %d articles", removed, len(articles), len(kept))
@@ -304,9 +309,9 @@ async def get_articles(
         fetched = await _fetch_and_cache_sources(sources_to_fetch)
         all_articles.extend(fetched)
 
-    # Deduplicate before sorting
+    # Deduplicate before sorting (CPU-bound — offload to thread pool)
     before_dedup = len(all_articles)
-    all_articles = _deduplicate(all_articles)
+    all_articles = await asyncio.to_thread(_deduplicate, all_articles)
 
     # Sort by published_at descending — most recent first
     # Articles without a published_at (None) sort to the end

@@ -387,8 +387,8 @@ async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
         logger.warning("Network error fetching %s: %s", source.name, str(e))
         return []
 
-    # Step 2: Parse with feedparser (sync — just string parsing, fast)
-    feed = feedparser.parse(response.text)
+    # Step 2: Parse with feedparser (CPU-bound — offload to thread pool)
+    feed = await asyncio.to_thread(feedparser.parse, response.text)
 
     # feedparser sets bozo=True for malformed XML, but often still parses partial data
     if feed.bozo and not feed.entries:

@@ -7,6 +7,7 @@ Endpoints:
     GET  /api/v1/auth/me      — Get current user profile (requires valid JWT)
 """
 
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -76,8 +77,8 @@ async def login(body: LoginRequest):
                 detail="Account is inactive",
             )
 
-        # Verify password
-        if not verify_password(body.password, user["password_hash"]):
+        # Verify password (bcrypt is intentionally slow — offload to thread pool)
+        if not await asyncio.to_thread(verify_password, body.password, user["password_hash"]):
             # Increment failed login attempts
             await db.execute(
                 "UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?",

@@ -42,6 +42,11 @@ echo "🔨 Rebuilding containers..."
 docker compose -f docker-compose.prod.yml build --no-cache
 
 echo ""
+echo "🧹 Cleaning old Docker build cache..."
+docker system prune -af --filter "until=1h"
+docker builder prune -af
+
+echo ""
 echo "🚀 Starting containers..."
 docker compose -f docker-compose.prod.yml up -d
 
