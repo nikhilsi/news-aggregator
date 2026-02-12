@@ -16,7 +16,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 | **Database** | SQLite | Users and persistent data only |
 | **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
 | **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Standalone output for Docker, dark mode, infinite scroll |
-| **iOS App** | Swift / SwiftUI | Native iOS app with full feature parity to web |
+| **iOS App** | Swift / SwiftUI | Native iOS app, 26 files, zero packages, @Observable + .environment() |
 | **Deployment** | DigitalOcean Droplet / Docker Compose | Dedicated droplet, nginx reverse proxy, Let's Encrypt SSL |
 
 ---
@@ -324,7 +324,19 @@ news-aggregator/
 │   └── Dockerfile
 │
 ├── web/                            # Next.js web frontend
-├── ios/                            # SwiftUI iOS app (planned)
+├── ios/                            # SwiftUI iOS app
+│   └── ClearNews/ClearNews/ClearNews/
+│       ├── ClearNewsApp.swift      # @main entry, services, .environment()
+│       ├── ContentView.swift       # TabView (Home + Settings)
+│       ├── Models/                 # Article, ReaderContent, Category, Auth
+│       ├── Services/               # APIClient, ArticleService, CategoryService, AuthService
+│       ├── Settings/               # AppSettings (appearance, font scale)
+│       ├── Views/Home/             # HomeView, ArticleListView, ArticleCardView, CategoryTabsView
+│       ├── Views/Reader/           # ReaderView, ReaderWebView (WKWebView)
+│       ├── Views/Settings/         # SettingsView, LoginView, AboutView
+│       ├── Views/Shared/           # ErrorView, EmptyStateView, RelativeTimeText, SkeletonView
+│       └── Utilities/              # Constants, KeychainHelper
+├── iosplan.md                      # iOS architecture & build plan
 ├── deployment/
 │   ├── docker/                     # Dockerfiles + docker-compose.prod.yml
 │   ├── nginx/                      # Host-level nginx config
@@ -373,11 +385,13 @@ Internet → Nginx (SSL + rate limiting)
 
 See [deployment/README.md](deployment/README.md) for setup and deploy instructions.
 
-### iOS App (planned)
+### iOS App (built)
 
+- Native SwiftUI app, 26 Swift files, zero external dependencies
 - Built and tested locally via Xcode
+- Points to production API (https://getclearnews.com/api/v1) by default
 - Distributed via TestFlight for family/friends (requires Apple Developer account — $99/year)
-- Points to the same backend API as the web app
+- See [iosplan.md](iosplan.md) for full architecture and build plan
 
 ---
 

@@ -27,7 +27,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 - **Backend**: Python 3.12 / FastAPI / SQLite
 - **Web**: Next.js 16 (React 19) / Tailwind CSS v4
-- **iOS**: SwiftUI (planned)
+- **iOS**: SwiftUI (26 files, zero external packages)
 - **Deployment**: DigitalOcean Droplet / Docker Compose / Nginx / Let's Encrypt
 
 ## Project Structure
@@ -36,7 +36,8 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 news-aggregator/
 ├── backend/           # FastAPI REST API
 ├── web/               # Next.js web frontend
-├── ios/               # SwiftUI iOS app (planned)
+├── ios/               # SwiftUI iOS app
+├── iosplan.md         # iOS architecture & build plan
 ├── deployment/        # Docker, nginx, setup/deploy scripts
 │   ├── docker/        # Dockerfiles + docker-compose.prod.yml
 │   ├── nginx/         # Host-level nginx config
@@ -75,6 +76,10 @@ cp .env.example .env.local
 npm run dev  # Runs on port 3000
 ```
 
+### iOS App
+
+Open `ios/ClearNews/ClearNews/ClearNews.xcodeproj` in Xcode and run (Cmd+R). Points to the production API by default — no backend setup needed.
+
 ### Deployment
 
 See [deployment/README.md](deployment/README.md) for the full production setup guide.
@@ -88,6 +93,7 @@ See [deployment/README.md](deployment/README.md) for the full production setup g
 - **[deployment/README.md](deployment/README.md)** — Production deployment guide
 - **[backend/README.md](backend/README.md)** — API endpoints, services, folder structure
 - **[web/README.md](web/README.md)** — Pages, components, hooks
+- **[iosplan.md](iosplan.md)** — iOS architecture & build plan
 
 ## License
 

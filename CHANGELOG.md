@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.0] - 2026-02-11 — iOS App
+
+### Added
+- **Native iOS app** (SwiftUI): Full feature parity with the web frontend. 26 Swift files, zero external dependencies.
+- **Article feed**: Article cards with AsyncImage, LazyVStack infinite scroll, pull-to-refresh, shimmer skeleton loading.
+- **Category filtering**: Horizontal scroll capsule pills, filters articles via API.
+- **Search**: `.searchable` with 400ms debounce via `.task(id:)`.
+- **Reader view**: WKWebView rendering extracted HTML content with dark mode CSS, responsive images, configurable font size. External links open in Safari. Fallback for paywalled sites.
+- **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), about page. All persisted via UserDefaults.
+- **Authentication**: JWT stored in Keychain via Security framework. Login form, auto-validates saved token on launch.
+- **Shared components**: ErrorView, EmptyStateView, RelativeTimeText ("2h ago"), SkeletonView with shimmer animation.
+
+### Architecture
+- `@Observable` services (ArticleService, CategoryService, AuthService, AppSettings) injected via `.environment()`.
+- Singleton `APIClient` wrapping URLSession with generic `get<T>`/`post<Body,T>`, JWT injection, flexible ISO 8601 date decoding, FastAPI error detail extraction.
+- Stale request tracking via `currentRequestId` counter (same pattern as web).
+- Network-first design: every screen has 4 states (loading, success, error, empty).
+
+---
+
 ## [0.7.0] - 2026-02-10 — Reader View Modal Overlay
 
 ### Changed

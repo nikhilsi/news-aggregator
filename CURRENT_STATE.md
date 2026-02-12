@@ -2,9 +2,9 @@
 
 **Last Updated**: February 11, 2026
 
-## Status: Live at getclearnews.com | iOS App in progress
+## Status: Live at getclearnews.com | iOS App built
 
-Backend, web frontend, and deployment are complete. Site is live on DigitalOcean. iOS app architecture planned, implementation starting.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. iOS app has full feature parity with web, pending App Store submission.
 
 ## What's Built
 
@@ -28,6 +28,17 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 - **Filters** — category tabs, debounced keyword search (400ms), race condition handling
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
+
+### iOS App (SwiftUI) — v1.0.0
+- **Article feed** — article cards with AsyncImage, LazyVStack, infinite scroll sentinel, pull-to-refresh, shimmer skeleton loading
+- **Categories** — horizontal scroll capsule pills, filter articles by category
+- **Search** — `.searchable` with 400ms debounce via `.task(id:)`, composes with category filter
+- **Reader view** — WKWebView rendering extracted HTML content, dark mode CSS, responsive images, external links open in Safari, font size control, fallback for paywalled sites with "Read on {source}" button
+- **Settings** — theme picker (system/light/dark), reader font size (S/M/L/XL), about page, all persisted via UserDefaults
+- **Authentication** — JWT stored in Keychain, login form, auto-validates saved token on launch, sign out
+- **Architecture** — @Observable services, .environment() injection, singleton APIClient, zero external packages
+- **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
+- **26 Swift files**, 0 external dependencies
 
 ### Deployment Infrastructure — v0.3.0
 - **Docker** — Dockerfiles for backend (Python 3.12) and frontend (Next.js standalone), docker-compose.prod.yml
@@ -60,12 +71,6 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 | Offbeat | Atlas Obscura | 1 |
 
 **Disabled** (require API keys): WorldNewsAPI
-
-### iOS App (SwiftUI) — v0.0.0 (planned)
-- **Status**: Architecture planned, implementation not started
-- **Target**: iOS 17+, universal (iPhone + iPad), zero external Swift packages
-- **Architecture**: MVVM-lite with @Observable services, URLSession API client, WKWebView reader
-- **Plan document**: See iosplan.md for full architecture and build order
 
 ## What's Next
 
