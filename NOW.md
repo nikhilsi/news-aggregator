@@ -13,11 +13,6 @@
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
-### Remaining manual tasks
-- [ ] Test iOS app on iPhone + iPad physical devices
-- [ ] Visual review of web in browser (light + dark mode)
-- [ ] App Store submission (requires Apple Developer account)
-
 ---
 
 ## Future Enhancements

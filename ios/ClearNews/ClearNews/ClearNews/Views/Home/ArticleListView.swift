@@ -2,7 +2,15 @@ import SwiftUI
 
 struct ArticleListView: View {
     @Environment(ArticleService.self) private var articleService
+    @Environment(\.horizontalSizeClass) private var sizeClass
     var onArticleTap: (Article) -> Void
+
+    /// 1 column on iPhone (compact), 2 columns on iPad (regular)
+    private var columns: [GridItem] {
+        sizeClass == .regular
+            ? [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
+            : [GridItem(.flexible())]
+    }
 
     var body: some View {
         if articleService.isLoading {
@@ -20,7 +28,7 @@ struct ArticleListView: View {
 
     private var articleList: some View {
         ScrollView {
-            LazyVStack(spacing: 16) {
+            LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(articleService.articles) { article in
                     ArticleCardView(article: article)
                         .onTapGesture { onArticleTap(article) }
