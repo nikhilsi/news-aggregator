@@ -16,7 +16,8 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 - Clean card-based feed with infinite scroll
 - Dark mode with OS preference detection
 - Keyword search across titles and summaries
-- On-demand fetching with smart caching (no background jobs)
+- On-demand fetching with SWR caching (stale-while-revalidate) and startup warmup
+- Pull-to-refresh / force refresh on both web and iOS (bypasses cache for fresh data)
 - Google News URL resolution — decodes redirect URLs to real article URLs
 - Article deduplication — URL match + title keyword overlap across sources
 - Image extraction via og:image fallback for feeds without embedded images

@@ -9,7 +9,7 @@
  * Layout: 1 column on mobile, 2 on tablet (md), 3 on desktop (lg).
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Article } from '@/lib/types';
 import ArticleCard from './ArticleCard';
 
@@ -20,6 +20,7 @@ interface ArticleGridProps {
   hasMore: boolean;
   loadMore: () => void;
   onArticleClick: (article: Article) => void;
+  onRetry: () => void;
 }
 
 export default function ArticleGrid({
@@ -29,8 +30,10 @@ export default function ArticleGrid({
   hasMore,
   loadMore,
   onArticleClick,
+  onRetry,
 }: ArticleGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [showSlowHint, setShowSlowHint] = useState(false);
 
   // Set up Intersection Observer for infinite scroll
   useEffect(() => {
@@ -51,14 +54,37 @@ export default function ArticleGrid({
     return () => observer.disconnect();
   }, [hasMore, loading, loadMore]);
 
-  // Error state
+  // Show "Fetching fresh articles..." hint after 3s of loading with no articles
+  useEffect(() => {
+    if (loading && articles.length === 0) {
+      const timer = setTimeout(() => setShowSlowHint(true), 3000);
+      return () => {
+        clearTimeout(timer);
+        setShowSlowHint(false);
+      };
+    }
+    setShowSlowHint(false);
+  }, [loading, articles.length]);
+
+  // Error state with retry button
   if (error && articles.length === 0) {
+    const isTimeout = error === 'timeout';
     return (
       <div className="py-12 text-center">
         <p className="text-gray-500 dark:text-gray-400">
-          Failed to load articles. Please try again later.
+          {isTimeout
+            ? 'Taking longer than expected. The server may be fetching fresh data.'
+            : 'Failed to load articles.'}
         </p>
-        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">{error}</p>
+        {!isTimeout && (
+          <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">{error}</p>
+        )}
+        <button
+          onClick={onRetry}
+          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -66,10 +92,17 @@ export default function ArticleGrid({
   // Initial loading state
   if (loading && articles.length === 0) {
     return (
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <ArticleCardSkeleton key={i} />
-        ))}
+      <div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ArticleCardSkeleton key={i} />
+          ))}
+        </div>
+        {showSlowHint && (
+          <p className="mt-4 text-center text-sm text-gray-400 dark:text-gray-500">
+            Fetching fresh articles...
+          </p>
+        )}
       </div>
     );
   }

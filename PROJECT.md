@@ -70,7 +70,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 9. **Backend applies deduplication** (URL exact match + title keyword overlap at 0.6 threshold)
 10. **Backend returns** filtered, sorted articles to the client
 
-**No background jobs.** All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, cache is empty — first request triggers fresh fetches.
+**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~25s), so the first user request hits a warm cache. SWR caching ensures users almost never wait for cold fetches.
 
 ---
 
@@ -201,13 +201,11 @@ GET    /api/v1/articles/reader     # Extract clean article content for reader vi
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | `category` | string | `all` | Filter by category |
-| `sentiment` | string | `null` | `positive`, `negative`, `neutral`, or null for all |
 | `source` | string | `null` | Filter by specific source ID |
 | `search` | string | `null` | Keyword search in title/summary |
 | `page` | int | `1` | Pagination |
 | `per_page` | int | `20` | Items per page (max 50) |
-| `sort` | string | `published_at` | Sort field |
-| `order` | string | `desc` | `asc` or `desc` |
+| `refresh` | bool | `false` | Force fresh fetch — bypasses SWR cache, fetches all sources |
 
 #### Example Response
 
@@ -256,14 +254,15 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 - **Cache layer:** In-memory Python dict (not SQLite — articles are transient)
 - **Cache key:** Source ID
 - **Default TTL:** 15 minutes (configurable per-source in `sources.yaml`)
-- **On request:**
-  1. Find enabled sources for the requested category
-  2. For each source, check if cached articles exist and are fresh
-  3. If fresh, use cached data
-  4. If stale/missing, fetch from source, normalize, cache, return
+- **Stale-while-revalidate (SWR):** Three-state cache with background refresh
+  - **HIT** (fresh, < TTL): return immediately
+  - **STALE** (TTL to 4x TTL, e.g., 15-60min): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
+  - **MISS** (> 4x TTL or never fetched): fetch synchronously
+- **Force refresh:** `?refresh=true` query param bypasses SWR entirely — fetches all sources synchronously, caches fresh results
+- **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~25s). First user request hits warm cache.
+- **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (24h), refresh requests (no-store). Browsers and URLSession cache natively.
 - **No eviction logic needed** — stale entries are overwritten on next fetch
-- **Server restart** = empty cache = first request fetches fresh data
-- **No background jobs** — all fetching and cache management is triggered by user requests
+- **No background jobs** — all fetching is on-demand (except startup warmup, which is a one-time task)
 
 ---
 
@@ -293,10 +292,11 @@ news-aggregator/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py                 # FastAPI app entry point
+│   │   ├── main.py                 # FastAPI app entry point, middleware, lifespan
 │   │   ├── config.py               # App configuration, env vars
+│   │   ├── logging_config.py       # Structured logging setup (JSON/text)
 │   │   ├── database.py             # SQLite connection and setup (users only)
-│   │   ├── cache.py                # In-memory article cache
+│   │   ├── cache.py                # In-memory SWR article cache
 │   │   │
 │   │   ├── auth/
 │   │   │   ├── router.py           # Auth endpoints

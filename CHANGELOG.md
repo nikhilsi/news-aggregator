@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.2.0] - 2026-02-12 — Pull-to-Refresh + Client UX
+
+### Added
+- **Force refresh API**: `GET /api/v1/articles?refresh=true` bypasses SWR cache and fetches all sources fresh. Both web and iOS clients use this for user-initiated refresh.
+- **Cache-Control headers**: Backend middleware sets `Cache-Control` on all API responses — articles (5min), categories/sources (24h), refresh requests (no-store). Browsers and URLSession cache responses natively.
+- **Web: refresh button**: Circular arrow icon in the header (next to theme toggle) triggers a force refresh.
+- **Web: fetch timeout**: All API calls timeout after 15 seconds via AbortController. Previously, requests could hang indefinitely.
+- **Web: retry button on errors**: Error state now shows a "Try again" button. Timeout errors get a distinct "Taking longer than expected" message.
+- **Web: slow-loading hint**: After 3 seconds of loading with no articles, shows "Fetching fresh articles..." below the skeleton cards.
+- **iOS: pull-to-refresh sends `refresh=true`**: The existing pull-to-refresh gesture now passes `refresh=true` to the backend, ensuring genuinely fresh data instead of cached responses.
+
+### Fixed
+- **Web: flash of empty state**: Switching categories no longer flashes empty skeleton cards. Previous articles stay visible while new ones load.
+
+---
+
+## [1.1.0] - 2026-02-12 — Backend Instrumentation + Cold Cache Fix
+
+### Added
+- **Structured logging**: JSON format for production (machine-parseable), human-readable text for local dev. Controlled by `LOG_FORMAT` env var. Uses `python-json-logger`.
+- **Request timing middleware**: Every API request logged with unique request ID, method, path, status code, and duration in milliseconds.
+- **Per-source fetch timing**: Each RSS/FMP source fetch logged with source name, article count, and duration.
+- **Stale-while-revalidate (SWR) cache**: Three-state cache — HIT (fresh, < TTL), STALE (expired but within 4x TTL window, serves immediately + background refresh), MISS (no data, fetches synchronously). Users almost never wait for cold fetches.
+- **Startup cache warmup**: All 23 sources pre-fetched as a background task on server start. First user request hits warm cache (~200ms) instead of cold fetches (~20s).
+- **Cache status logging**: Every request logs cache HIT/STALE/MISS counts, dedup stats, and background refresh activity.
+- **Reader cache hit logging**: Reader view logs cache hits at INFO level for observability.
+
+### Changed
+- Suppressed noisy `httpx`/`httpcore` loggers (set to WARNING level).
+
+---
+
 ## [1.0.0] - 2026-02-11 — iOS App
 
 ### Added

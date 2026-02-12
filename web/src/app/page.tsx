@@ -21,7 +21,7 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  const { articles, loading, error, hasMore, loadMore } = useArticles(category, search);
+  const { articles, loading, error, hasMore, loadMore, refresh } = useArticles(category, search);
 
   // Memoize search handler to avoid re-creating on every render (SearchBar uses it in useEffect)
   const handleSearch = useCallback((query: string) => {
@@ -38,7 +38,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <Header onSearch={handleSearch} />
+      <Header onSearch={handleSearch} onRefresh={refresh} />
 
       {/* Category tabs — sticky below the header */}
       <div className="sticky top-[53px] z-40 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-950">
@@ -56,6 +56,7 @@ export default function HomePage() {
           hasMore={hasMore}
           loadMore={loadMore}
           onArticleClick={handleArticleClick}
+          onRetry={refresh}
         />
       </main>
 

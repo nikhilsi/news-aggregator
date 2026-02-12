@@ -227,6 +227,7 @@ async def _background_refresh(sources: list[SourceConfig]) -> None:
 async def get_articles(
     category: str = "all",
     source_id: str | None = None,
+    refresh: bool = False,
 ) -> list[dict]:
     """Get articles for a category or specific source.
 
@@ -235,9 +236,12 @@ async def get_articles(
     - Stale cache → return stale data, kick off background refresh
     - No cache → fetch synchronously (first-ever request for this source)
 
+    Pass refresh=True to bypass cache entirely and fetch all sources fresh.
+
     Args:
         category: Category filter ("all", "science", "tech", etc.)
         source_id: Optional — filter to a single source by ID
+        refresh: Force fresh fetch, bypass SWR cache
 
     Returns:
         Sorted list of article dicts from all relevant sources
@@ -258,37 +262,42 @@ async def get_articles(
     sources_to_fetch: list[SourceConfig] = []  # MISS — must fetch synchronously
     sources_to_refresh: list[SourceConfig] = []  # STALE — refresh in background
 
-    # Check cache for each source using SWR
-    hits = 0
-    stale = 0
-    misses = 0
-    for source in sources:
-        result = cache.get_swr(source.id)
-        if result.status == CacheStatus.HIT:
-            hits += 1
-            all_articles.extend(result.articles)
-        elif result.status == CacheStatus.STALE:
-            stale += 1
-            all_articles.extend(result.articles)
-            # Schedule background refresh if not already refreshing
-            if not cache.is_refreshing(source.id):
-                sources_to_refresh.append(source)
-        else:  # MISS
-            misses += 1
-            sources_to_fetch.append(source)
+    if refresh:
+        # Force refresh — skip cache, fetch all sources synchronously
+        logger.info("Force refresh requested — fetching all %d sources", len(sources))
+        sources_to_fetch = list(sources)
+    else:
+        # Normal SWR cache check
+        hits = 0
+        stale = 0
+        misses = 0
+        for source in sources:
+            result = cache.get_swr(source.id)
+            if result.status == CacheStatus.HIT:
+                hits += 1
+                all_articles.extend(result.articles)
+            elif result.status == CacheStatus.STALE:
+                stale += 1
+                all_articles.extend(result.articles)
+                # Schedule background refresh if not already refreshing
+                if not cache.is_refreshing(source.id):
+                    sources_to_refresh.append(source)
+            else:  # MISS
+                misses += 1
+                sources_to_fetch.append(source)
 
-    logger.info(
-        "Cache: %d HIT, %d STALE, %d MISS out of %d sources",
-        hits, stale, misses, len(sources),
-    )
+        logger.info(
+            "Cache: %d HIT, %d STALE, %d MISS out of %d sources",
+            hits, stale, misses, len(sources),
+        )
 
-    # Kick off background refresh for stale sources (fire-and-forget)
-    if sources_to_refresh:
-        for s in sources_to_refresh:
-            cache.set_refreshing(s.id)
-        refresh_names = [s.name for s in sources_to_refresh]
-        logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
-        asyncio.create_task(_background_refresh(sources_to_refresh))
+        # Kick off background refresh for stale sources (fire-and-forget)
+        if sources_to_refresh:
+            for s in sources_to_refresh:
+                cache.set_refreshing(s.id)
+            refresh_names = [s.name for s in sources_to_refresh]
+            logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
+            asyncio.create_task(_background_refresh(sources_to_refresh))
 
     # Fetch MISS sources synchronously — we have no data to serve for these
     if sources_to_fetch:

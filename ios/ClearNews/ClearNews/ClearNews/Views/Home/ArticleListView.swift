@@ -45,7 +45,7 @@ struct ArticleListView: View {
             .padding(.vertical, 8)
         }
         .refreshable {
-            await articleService.fetchArticles()
+            await articleService.fetchArticles(refresh: true)
         }
     }
 }

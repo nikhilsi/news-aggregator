@@ -45,13 +45,15 @@ async def list_articles(
     search: str | None = Query(None, description="Search keyword in title/summary"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=50, description="Items per page"),
+    refresh: bool = Query(False, description="Force refresh — skip cache, fetch all sources fresh"),
 ):
     """Fetch articles with optional filters.
 
     If cached data is fresh, returns immediately. If stale, fetches from
     sources on demand (concurrent), caches the result, then returns.
+    Pass refresh=true to bypass cache and fetch fresh data from all sources.
     """
-    articles = await get_articles(category=category, source_id=source)
+    articles = await get_articles(category=category, source_id=source, refresh=refresh)
 
     # Apply keyword search filter (case-insensitive match on title + summary)
     if search:

@@ -12,11 +12,13 @@ interface UseArticlesReturn {
   error: string | null;
   hasMore: boolean;
   loadMore: () => void;
+  refresh: () => void;
 }
 
 /**
  * Hook that fetches articles from the API with infinite scroll support.
  * Resets to page 1 when category or search changes.
+ * Exposes refresh() to force-fetch fresh data from all sources.
  */
 export function useArticles(category: string, search: string): UseArticlesReturn {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -24,24 +26,31 @@ export function useArticles(category: string, search: string): UseArticlesReturn
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [refreshFlag, setRefreshFlag] = useState(0);
 
   // Track current request to avoid race conditions
   const requestId = useRef(0);
 
-  // Reset when filters change
+  // Reset pagination when filters change (keep previous articles visible during load)
   useEffect(() => {
-    setArticles([]);
     setPage(1);
     setHasMore(true);
     setError(null);
   }, [category, search]);
 
-  // Fetch articles when page, category, or search changes
+  // Fetch articles when page, category, search, or refreshFlag changes
   useEffect(() => {
     const currentRequest = ++requestId.current;
+    const isRefresh = refreshFlag > 0 && page === 1;
     setLoading(true);
 
-    fetchArticles({ category, search: search || undefined, page, per_page: PER_PAGE })
+    fetchArticles({
+      category,
+      search: search || undefined,
+      page,
+      per_page: PER_PAGE,
+      refresh: isRefresh || undefined,
+    })
       .then((data) => {
         // Discard stale responses
         if (currentRequest !== requestId.current) return;
@@ -61,7 +70,7 @@ export function useArticles(category: string, search: string): UseArticlesReturn
         if (currentRequest !== requestId.current) return;
         setLoading(false);
       });
-  }, [category, search, page]);
+  }, [category, search, page, refreshFlag]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
@@ -69,5 +78,11 @@ export function useArticles(category: string, search: string): UseArticlesReturn
     }
   }, [loading, hasMore]);
 
-  return { articles, loading, error, hasMore, loadMore };
+  const refresh = useCallback(() => {
+    setPage(1);
+    setError(null);
+    setRefreshFlag((prev) => prev + 1);
+  }, []);
+
+  return { articles, loading, error, hasMore, loadMore, refresh };
 }

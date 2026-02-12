@@ -30,19 +30,21 @@ uvicorn app.main:app --reload --port 8000
 |-------|------|---------|-------------|
 | `category` | string | `all` | Filter: science, tech, feel_good, etc. |
 | `source` | string | — | Filter by source ID (e.g., `the-verge`) |
-| `page` | int | 1 | Page number |
 | `search` | string | — | Keyword search in title and summary (case-insensitive) |
+| `page` | int | 1 | Page number |
 | `per_page` | int | 20 | Items per page (max 50) |
+| `refresh` | bool | false | Force fresh fetch — bypasses SWR cache, fetches all sources |
 
 ## Folder Structure
 
 ```
 backend/
 ├── app/
-│   ├── main.py              # FastAPI entry point, lifespan, router wiring
+│   ├── main.py              # FastAPI entry point, lifespan, middleware (timing, Cache-Control)
 │   ├── config.py            # Settings from .env via pydantic-settings
+│   ├── logging_config.py    # Structured logging (JSON for prod, text for dev)
 │   ├── database.py          # SQLite connection (users only)
-│   ├── cache.py             # In-memory article cache with per-source TTL
+│   ├── cache.py             # In-memory SWR article cache (HIT/STALE/MISS)
 │   │
 │   ├── articles/
 │   │   ├── router.py        # GET /api/v1/articles + /articles/reader endpoints
@@ -76,8 +78,10 @@ backend/
 ### Data Flow
 
 ```
-Request → Article Service → check cache per source
-                          → if stale: fetch via appropriate fetcher (concurrent)
+Request → Article Service → check SWR cache per source
+                          → HIT (fresh): use cached data
+                          → STALE: serve cached data + background refresh
+                          → MISS (or refresh=true): fetch via appropriate fetcher (concurrent)
                               → RSS: parse XML → normalize → resolve Google News URLs → backfill images
                               → FMP: fetch JSON → normalize (general news or fmp-articles format)
                           → cache result (final, ready-to-serve dicts)
@@ -88,7 +92,11 @@ Request → Article Service → check cache per source
 
 ### Key Patterns
 
-- **On-demand fetching**: No background jobs. Articles are fetched when a user requests them.
+- **SWR caching**: Stale-while-revalidate — fresh data served instantly, stale data served immediately with background refresh, expired data triggers synchronous fetch. Users almost never wait.
+- **Startup warmup**: All sources pre-fetched on server start (~25s). First request always hits warm cache.
+- **Force refresh**: `?refresh=true` bypasses SWR cache entirely — fetches all sources synchronously.
+- **Cache-Control headers**: Middleware sets HTTP headers — articles (5min), categories/sources (24h), refresh (no-store).
+- **Structured logging**: JSON for production, text for local dev. Request timing, cache status, per-source fetch duration.
 - **In-memory cache**: Articles are transient — cached in a Python dict with per-source TTL (default 15 min). No database storage for articles.
 - **SQLite for persistent data only**: Currently just the users table. Articles don't touch the database.
 - **Per-source isolation**: One broken feed never crashes the request. Errors are logged, the source is skipped, other sources still return data.
@@ -154,3 +162,4 @@ async def protected_route(user: dict = Depends(get_current_user)):
 | httpx | Async HTTP client |
 | pyjwt + passlib | JWT auth + password hashing |
 | pyyaml | Load sources.yaml |
+| python-json-logger | Structured JSON logging for production |

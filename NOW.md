@@ -1,6 +1,6 @@
 # NOW — Current Priorities
 
-**Last Updated**: February 11, 2026
+**Last Updated**: February 12, 2026
 
 ## Completed Phases
 
@@ -8,10 +8,12 @@
 - **Phase 2: Web Frontend** — `done` — Next.js, article feed, reader modal overlay, dark mode, search, auth (v0.7.0)
 - **Phase 3: Deployment** — `done` — Live at getclearnews.com, Docker Compose, nginx, SSL, firewall
 - **Phase 4: iOS App** — `done` — SwiftUI, full feature parity with web (v1.0.0)
+- **Phase 5: Performance** — `done` — Structured logging, SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
 ### Remaining manual tasks
+- [ ] Deploy v1.2.0 to production (pull-to-refresh + web UX improvements)
 - [ ] Test iOS app on iPhone + iPad physical devices
 - [ ] Visual review of web in browser (light + dark mode)
 - [ ] App Store submission (requires Apple Developer account)
@@ -21,12 +23,10 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 ## Future Enhancements
 
 ### Backend
-- **Cold cache problem** — First request after cache expires triggers concurrent fetches from all 23 sources, causing 10-20s+ load times or timeouts. Need to rethink: background refresh, staggered fetching, or partial cache invalidation so users never hit a cold cache.
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI.
 - **Additional source types** — NewsAPI fetcher (WorldNewsAPI)
 
 ### Web Frontend
-- **Performance review** — Audit and fix perceived performance issues: reader view load time, modal transitions.
 - **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.
 - **User settings page** — Preferences, profile editing, source toggles.
 - **Landing page** — Public marketing-style page with value prop, login/signup CTA.

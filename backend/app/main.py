@@ -115,6 +115,24 @@ async def request_timing_middleware(request: Request, call_next):
     return response
 
 
+# Cache-Control middleware — centralized HTTP caching headers
+@app.middleware("http")
+async def cache_control_middleware(request: Request, call_next):
+    """Set Cache-Control headers based on endpoint."""
+    response = await call_next(request)
+    path = request.url.path
+
+    if path in ("/api/v1/categories", "/api/v1/sources"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+    elif path == "/api/v1/articles":
+        if request.query_params.get("refresh") == "true":
+            response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers["Cache-Control"] = "public, max-age=300"
+
+    return response
+
+
 # Register routers
 app.include_router(articles_router)
 app.include_router(sources_router)

@@ -13,7 +13,7 @@ final class ArticleService {
     private var currentPage = 1
     private var currentRequestId = 0
 
-    func fetchArticles() async {
+    func fetchArticles(refresh: Bool = false) async {
         currentPage = 1
         currentRequestId += 1
         let requestId = currentRequestId
@@ -26,7 +26,7 @@ final class ArticleService {
         do {
             let response: ArticleListResponse = try await APIClient.shared.get(
                 "/articles",
-                queryItems: buildQueryItems(page: 1)
+                queryItems: buildQueryItems(page: 1, refresh: refresh)
             )
 
             // Discard if a newer request was fired while this one was in-flight
@@ -80,7 +80,7 @@ final class ArticleService {
 
     // MARK: - Private
 
-    private func buildQueryItems(page: Int) -> [URLQueryItem] {
+    private func buildQueryItems(page: Int, refresh: Bool = false) -> [URLQueryItem] {
         var items = [
             URLQueryItem(name: "page", value: String(page)),
             URLQueryItem(name: "per_page", value: "20")
@@ -90,6 +90,9 @@ final class ArticleService {
         }
         if !searchQuery.isEmpty {
             items.append(URLQueryItem(name: "search", value: searchQuery))
+        }
+        if refresh {
+            items.append(URLQueryItem(name: "refresh", value: "true"))
         }
         return items
     }
