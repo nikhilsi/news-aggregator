@@ -1,10 +1,10 @@
 # Current State
 
-**Last Updated**: February 10, 2026
+**Last Updated**: February 11, 2026
 
-## Status: Live at getclearnews.com
+## Status: Live at getclearnews.com | iOS App in progress
 
-Backend, web frontend, and deployment are complete. Site is live on DigitalOcean.
+Backend, web frontend, and deployment are complete. Site is live on DigitalOcean. iOS app architecture planned, implementation starting.
 
 ## What's Built
 
@@ -60,6 +60,12 @@ Backend, web frontend, and deployment are complete. Site is live on DigitalOcean
 | Offbeat | Atlas Obscura | 1 |
 
 **Disabled** (require API keys): WorldNewsAPI
+
+### iOS App (SwiftUI) — v0.0.0 (planned)
+- **Status**: Architecture planned, implementation not started
+- **Target**: iOS 17+, universal (iPhone + iPad), zero external Swift packages
+- **Architecture**: MVVM-lite with @Observable services, URLSession API client, WKWebView reader
+- **Plan document**: See iosplan.md for full architecture and build order
 
 ## What's Next
 

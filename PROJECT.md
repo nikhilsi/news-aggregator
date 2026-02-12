@@ -118,7 +118,7 @@ Source-type fetchers may preserve additional fields from the raw response. The a
 - `science` — Science & discovery
 - `tech` — Technology & gadgets
 - `entertainment` — Culture, movies, music, gaming
-- `finance` — Markets, stocks, business (powered by AV/FMP)
+- `finance` — Markets, stocks, business (powered by FMP)
 - `health` — Health & wellness
 - `sports` — Sports news
 - `offbeat` — Weird, wonderful, unusual stories
@@ -193,7 +193,7 @@ GET    /api/v1/auth/me             # Get current user info
 
 ```
 GET    /api/v1/articles            # Fetch articles with filters
-GET    /api/v1/articles/:id        # Get single article with full content (reader view)
+GET    /api/v1/articles/reader     # Extract clean article content for reader view
 ```
 
 #### Query Parameters for `GET /api/v1/articles`
@@ -244,10 +244,10 @@ GET    /api/v1/categories          # List all available categories
 ### Reader View Endpoint
 
 ```
-GET    /api/v1/articles/:id/content    # Extract and return clean article content
+GET    /api/v1/articles/reader?url=<encoded-url>    # Extract and return clean article content
 ```
 
-Uses content extraction to fetch the full article from the source URL and return a clean, readable version stripped of ads, navigation, and clutter. Falls back to opening the original URL if extraction fails.
+Uses readability-lxml (primary) with trafilatura fallback to extract clean article content from the source URL. Returns `status: "ok"` with extracted HTML, or `status: "failed"` with reason code (forbidden, timeout, extraction_empty, error). Separate content cache with 60-minute TTL. Falls back gracefully for paywalled sites.
 
 ---
 
@@ -341,9 +341,8 @@ news-aggregator/
 # Backend
 SECRET_KEY=<jwt-secret-key>
 DATABASE_URL=sqlite:///./news_aggregator.db
-WORLD_NEWS_API_KEY=<your-key>
-ALPHA_VANTAGE_API_KEY=<your-key>
 FMP_API_KEY=<your-key>
+WORLD_NEWS_API_KEY=<your-key>              # Optional — not yet integrated
 CACHE_TTL_MINUTES=15
 
 # Web Frontend
@@ -384,10 +383,11 @@ See [deployment/README.md](deployment/README.md) for setup and deploy instructio
 
 ## TBD — To Be Decided
 
-1. **Financial news specifics** — Which AV and FMP endpoints to use, what data to display
-2. **Political news filter** — How aggressive the "hide political news" toggle should be
-3. **Source priority ranking** — When duplicates are found, which source wins
+1. **Political news filter** — How aggressive the "hide political news" toggle should be
 
 ### Resolved
 - **Brand name**: ClearNews (getclearnews.com)
 - **Default view**: All categories, sorted by published_at descending, 20 per page with infinite scroll
+- **Financial news**: FMP API — general-latest (WSJ/CNBC/Bloomberg aggregation) + fmp-articles (market analysis). Alpha Vantage removed.
+- **Source priority ranking**: Dedup prefers articles with images > without, direct feeds > Google News aggregates
+- **Reader view**: URL-based extraction via readability-lxml + trafilatura, modal overlay on frontend
