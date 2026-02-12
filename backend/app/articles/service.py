@@ -16,11 +16,13 @@ it delegates to the appropriate fetcher (rss_fetcher, etc.) based on source.type
 import asyncio
 import logging
 import re
+import time
 
 import httpx
 
 from app import cache
-from app.sources.registry import SourceConfig, get_sources_by_category, get_source_by_id
+from app.cache import CacheStatus
+from app.sources.registry import SourceConfig, get_sources_by_category, get_source_by_id, get_enabled_sources
 from app.sources.rss_fetcher import fetch_rss
 from app.sources.fmp_fetcher import fetch_fmp
 
@@ -173,14 +175,65 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
     return kept
 
 
+async def _fetch_and_cache_sources(sources: list[SourceConfig]) -> list[dict]:
+    """Fetch a list of sources concurrently and cache results. Returns all fetched articles."""
+    if not sources:
+        return []
+
+    fetch_names = [s.name for s in sources]
+    logger.info("Fetching %d sources: %s", len(sources), ", ".join(fetch_names))
+    fetch_start = time.monotonic()
+
+    tasks = [_fetch_source(s) for s in sources]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    fetch_duration_ms = int((time.monotonic() - fetch_start) * 1000)
+    all_fetched: list[dict] = []
+    total_fetched = 0
+
+    for source, result in zip(sources, results):
+        if isinstance(result, Exception):
+            logger.warning("Unexpected error fetching %s: %s", source.name, str(result))
+            continue
+        cache.set(source.id, result, source.cache_ttl_minutes)
+        all_fetched.extend(result)
+        total_fetched += len(result)
+
+    logger.info(
+        "Sources fetched: %d sources, %d articles, %dms",
+        len(sources), total_fetched, fetch_duration_ms,
+    )
+    return all_fetched
+
+
+async def _background_refresh(sources: list[SourceConfig]) -> None:
+    """Background task: refresh stale sources and update cache.
+
+    Fire-and-forget — catches all errors to avoid crashing the event loop.
+    """
+    source_names = [s.name for s in sources]
+    logger.info("Background refresh started for %d sources: %s", len(sources), ", ".join(source_names))
+
+    try:
+        await _fetch_and_cache_sources(sources)
+        logger.info("Background refresh completed for %d sources", len(sources))
+    except Exception as e:
+        logger.error("Background refresh failed: %s", str(e))
+    finally:
+        for source in sources:
+            cache.clear_refreshing(source.id)
+
+
 async def get_articles(
     category: str = "all",
     source_id: str | None = None,
 ) -> list[dict]:
     """Get articles for a category or specific source.
 
-    Uses cache where fresh, fetches where stale. Multiple stale sources
-    are fetched concurrently. Returns a merged list sorted by published_at desc.
+    Uses stale-while-revalidate (SWR) caching:
+    - Fresh cache → return immediately
+    - Stale cache → return stale data, kick off background refresh
+    - No cache → fetch synchronously (first-ever request for this source)
 
     Args:
         category: Category filter ("all", "science", "tech", etc.)
@@ -202,31 +255,48 @@ async def get_articles(
         return []
 
     all_articles: list[dict] = []
-    sources_to_fetch: list[SourceConfig] = []
+    sources_to_fetch: list[SourceConfig] = []  # MISS — must fetch synchronously
+    sources_to_refresh: list[SourceConfig] = []  # STALE — refresh in background
 
-    # Check cache for each source individually
+    # Check cache for each source using SWR
+    hits = 0
+    stale = 0
+    misses = 0
     for source in sources:
-        cached = cache.get(source.id)
-        if cached is not None:
-            logger.debug("Cache hit for %s (%d articles)", source.name, len(cached))
-            all_articles.extend(cached)
-        else:
+        result = cache.get_swr(source.id)
+        if result.status == CacheStatus.HIT:
+            hits += 1
+            all_articles.extend(result.articles)
+        elif result.status == CacheStatus.STALE:
+            stale += 1
+            all_articles.extend(result.articles)
+            # Schedule background refresh if not already refreshing
+            if not cache.is_refreshing(source.id):
+                sources_to_refresh.append(source)
+        else:  # MISS
+            misses += 1
             sources_to_fetch.append(source)
 
-    # Fetch all stale/missing sources concurrently
-    if sources_to_fetch:
-        tasks = [_fetch_source(s) for s in sources_to_fetch]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+    logger.info(
+        "Cache: %d HIT, %d STALE, %d MISS out of %d sources",
+        hits, stale, misses, len(sources),
+    )
 
-        for source, result in zip(sources_to_fetch, results):
-            if isinstance(result, Exception):
-                # Log but don't crash — other sources still return data
-                logger.warning("Unexpected error fetching %s: %s", source.name, str(result))
-                continue
-            cache.set(source.id, result, source.cache_ttl_minutes)
-            all_articles.extend(result)
+    # Kick off background refresh for stale sources (fire-and-forget)
+    if sources_to_refresh:
+        for s in sources_to_refresh:
+            cache.set_refreshing(s.id)
+        refresh_names = [s.name for s in sources_to_refresh]
+        logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
+        asyncio.create_task(_background_refresh(sources_to_refresh))
+
+    # Fetch MISS sources synchronously — we have no data to serve for these
+    if sources_to_fetch:
+        fetched = await _fetch_and_cache_sources(sources_to_fetch)
+        all_articles.extend(fetched)
 
     # Deduplicate before sorting
+    before_dedup = len(all_articles)
     all_articles = _deduplicate(all_articles)
 
     # Sort by published_at descending — most recent first
@@ -236,4 +306,27 @@ async def get_articles(
         reverse=True,
     )
 
+    logger.info(
+        "Returning %d articles (dedup removed %d)",
+        len(all_articles), before_dedup - len(all_articles),
+    )
+
     return all_articles
+
+
+async def warmup_cache() -> None:
+    """Pre-fetch all enabled sources to warm the cache on startup.
+
+    Called as a background task during app lifespan — does not block server startup.
+    """
+    sources = get_enabled_sources()
+    logger.info("Cache warmup started — %d sources", len(sources))
+    start = time.monotonic()
+
+    try:
+        await _fetch_and_cache_sources(sources)
+    except Exception as e:
+        logger.error("Cache warmup error: %s", str(e))
+
+    duration_ms = int((time.monotonic() - start) * 1000)
+    logger.info("Cache warmup completed in %dms", duration_ms)

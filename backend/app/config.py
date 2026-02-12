@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Default cache TTL for article fetching (can be overridden per-source in sources.yaml)
     cache_ttl_minutes: int = 15
 
+    # Logging format: "json" (production) or "text" (local dev)
+    log_format: str = "json"
+
     # API keys — only needed when corresponding sources are enabled in sources.yaml
     world_news_api_key: str = ""
     alpha_vantage_api_key: str = ""

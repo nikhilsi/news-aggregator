@@ -145,7 +145,7 @@ async def extract_article_content(url: str) -> dict:
     # Check reader content cache
     cached = cache.get(f"reader:{url}")
     if cached is not None:
-        logger.debug("Reader cache hit for %s", url)
+        logger.info("Reader cache HIT for %s", url[:80])
         return cached
 
     # Look up article metadata from the article list cache
@@ -204,7 +204,7 @@ async def extract_article_content(url: str) -> dict:
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info(
         "Reader extracted %d words from %s via %s in %dms",
-        word_count, url, extractor_used, duration_ms,
+        word_count, url[:80], extractor_used, duration_ms,
     )
 
     result = {
