@@ -1,0 +1,7 @@
+ClearNews is a news aggregator that fetches articles from publicly available RSS feeds and financial news APIs (over 40 sources). The app requires an internet connection to fetch articles from our backend server at getclearnews.com. No account or login is required — all features are available immediately.
+
+Key features to test: category tabs for filtering by topic, keyword search, pull-to-refresh for fresh articles, tap any article to open the built-in reader view (clean extracted content), share button on article cards and in reader toolbar, settings for theme and reader font size, About page with privacy policy and support links.
+
+The reader view extracts article content server-side for a clean reading experience. Some publishers block content extraction (paywalls, bot detection) — in those cases, the app shows a "Read on [source]" button to open the original article. This is expected behavior.
+
+No login is required. The app does not collect any personal data.

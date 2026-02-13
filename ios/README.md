@@ -1,6 +1,6 @@
 # iOS App — ClearNews (SwiftUI)
 
-Native iOS client for ClearNews. Full feature parity with the web frontend. 26 Swift files, zero external dependencies.
+Native iOS client for ClearNews. Full feature parity with the web frontend. 22 Swift files, zero external dependencies. Deployment target: iOS 17.0.
 
 ## Quick Start
 
@@ -17,10 +17,11 @@ The app connects to `https://getclearnews.com` by default (see `Utilities/Consta
 - **Search**: `.searchable` with 400ms debounce, composes with category filter
 - **Reader view**: WKWebView rendering extracted HTML content, dark mode CSS, responsive images, configurable font size, external links open in Safari, fallback for paywalled sites
 - **Share**: Share any article from the card footer or reader toolbar via native iOS share sheet
-- **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), about page
-- **Authentication**: JWT stored in Keychain, login form, auto-validates saved token on launch
+- **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), about page with content attribution + links
 - **Dynamic Type**: All text uses semantic fonts, padding/sizes scale via `@ScaledMetric`
 - **Haptic feedback**: Light impact on article card tap and category selection
+- **Accessibility**: Labels on all interactive controls, combined elements on error/empty states
+- **Privacy manifest**: PrivacyInfo.xcprivacy (UserDefaults CA92.1, no tracking, no collected data)
 
 ## Folder Structure
 
@@ -28,25 +29,23 @@ The app connects to `https://getclearnews.com` by default (see `Utilities/Consta
 ios/ClearNews/ClearNews/ClearNews/
 ├── ClearNewsApp.swift          # @main entry, URLCache config, environment injection
 ├── ContentView.swift           # TabView (Home + Settings)
+├── PrivacyInfo.xcprivacy       # Privacy manifest (UserDefaults CA92.1, no tracking)
 │
 ├── Models/
 │   ├── Article.swift           # Codable article model (url as Identifiable id)
-│   ├── Auth.swift              # LoginRequest, LoginResponse, User
 │   ├── Category.swift          # id, name, sourceCount
 │   └── ReaderContent.swift     # Reader extraction result + estimated read time
 │
 ├── Services/
-│   ├── APIClient.swift         # Singleton URLSession wrapper, generic get<T>/post<Body,T>, JWT injection, ISO 8601 date decoding
+│   ├── APIClient.swift         # Singleton URLSession wrapper, generic get<T>/post<Body,T>, ISO 8601 date decoding
 │   ├── ArticleService.swift    # @Observable — fetch, loadMore, selectCategory, updateSearch, stale request tracking
-│   ├── AuthService.swift       # @Observable — login, logout, validateSavedToken, Keychain persistence
 │   └── CategoryService.swift   # @Observable — fetches categories from API
 │
 ├── Settings/
 │   └── AppSettings.swift       # @Observable — appearance + readerFontScale, UserDefaults persistence
 │
 ├── Utilities/
-│   ├── Constants.swift         # baseURL, apiBaseURL
-│   └── KeychainHelper.swift    # Security framework wrapper (save/read/delete)
+│   └── Constants.swift         # baseURL, apiBaseURL
 │
 ├── Views/
 │   ├── Home/
@@ -60,39 +59,36 @@ ios/ClearNews/ClearNews/ClearNews/
 │   │   └── ReaderWebView.swift     # UIViewRepresentable — WKWebView, CSS injection, JS height reporting, font scaling
 │   │
 │   ├── Settings/
-│   │   ├── SettingsView.swift      # Theme, font size, account, about
-│   │   ├── LoginView.swift         # Email/password form with loading/error states
-│   │   └── AboutView.swift         # Version, build, description
+│   │   ├── SettingsView.swift      # Theme, font size, about
+│   │   └── AboutView.swift         # Version, build, content sources, links to privacy/support
 │   │
 │   └── Shared/
-│       ├── EmptyStateView.swift    # Icon + message
-│       ├── ErrorView.swift         # Icon + message + optional retry button
+│       ├── EmptyStateView.swift    # Icon + message (accessibility combined)
+│       ├── ErrorView.swift         # Icon + message + optional retry button (accessibility combined)
 │       ├── RelativeTimeText.swift  # "just now", "5m ago", "2h ago", "3d ago", "Feb 8"
 │       └── SkeletonView.swift      # Shimmer animation skeleton cards
 │
 └── Assets.xcassets/
     ├── AccentColor.colorset/
-    └── AppIcon.appiconset/     # Size definitions only — no images yet
+    └── AppIcon.appiconset/     # Size definitions only — icon images pending
 ```
 
 ## Architecture
 
 ### Services & Dependency Injection
 
-Four `@Observable` services created as `@State` in `ClearNewsApp.swift` and injected via `.environment()`:
+Three `@Observable` services created as `@State` in `ClearNewsApp.swift` and injected via `.environment()`:
 
 | Service | Responsibility |
 |---------|---------------|
 | `ArticleService` | Article fetching, pagination, category/search filtering, stale request tracking |
 | `CategoryService` | Fetches category list from API |
-| `AuthService` | JWT login/logout, Keychain persistence, token validation on launch |
 | `AppSettings` | Theme + reader font size, UserDefaults persistence |
 
 ### APIClient
 
 Singleton wrapping `URLSession` with:
 - Generic `get<T>` / `post<Body, T>` methods with Codable decoding
-- JWT token injection via `Authorization: Bearer` header
 - Custom `ISO8601DateDecoder` handling both fractional and non-fractional seconds
 - FastAPI error detail extraction for user-friendly error messages
 - 30s request / 60s resource timeouts
@@ -114,4 +110,4 @@ Singleton wrapping `URLSession` with:
 
 ## Dependencies
 
-None. The app uses only Apple frameworks: SwiftUI, WebKit, Security, Foundation.
+None. The app uses only Apple frameworks: SwiftUI, WebKit, Foundation.

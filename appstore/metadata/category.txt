@@ -1,0 +1,3 @@
+Primary: News
+Secondary: Reference
+Age Rating: 12+ (Infrequent/Mild Mature/Suggestive Themes — news content from third-party sources)

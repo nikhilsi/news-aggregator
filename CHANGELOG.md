@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.7.0] - 2026-02-13 — App Store Preparation
+
+### Removed
+- **iOS: Authentication removed entirely** — Login, Keychain, AuthService all removed. No user-facing features depend on auth, and it added unnecessary privacy complexity for App Store review. Backend auth remains for future use. Deleted 4 files: AuthService.swift, Auth.swift, LoginView.swift, KeychainHelper.swift.
+
+### Fixed
+- **iOS: Force-unwrap crashes** — Two `URL(string: article.url)!` force-unwraps in ReaderView.swift replaced with safe `if let` unwrapping. Previously, a malformed URL would crash the app.
+- **iOS: Deployment target** — Changed IPHONEOS_DEPLOYMENT_TARGET from 26.2 (Xcode default) to 17.0 (minimum for @Observable). App now available to iOS 17+ devices instead of requiring unreleased iOS.
+
+### Added
+- **iOS: PrivacyInfo.xcprivacy** — Privacy manifest declaring UserDefaults usage (reason CA92.1), no tracking, no collected data types. Required by Apple since Spring 2024.
+- **iOS: Accessibility labels** — ShareLink ("Share article"), reader close/share buttons, ErrorView and EmptyStateView (`.accessibilityElement(children: .combine)`, decorative icons hidden).
+- **iOS: Enhanced AboutView** — Added Content Sources section (RSS/API attribution) and Links section (Privacy Policy + Support pointing to getclearnews.com).
+- **Privacy policy page** — Static HTML at getclearnews.com/privacy served by nginx. Covers: no data collection, no tracking, device-only storage, network requests, children's privacy.
+- **Support page** — Static HTML at getclearnews.com/support served by nginx. FAQ covering article sources, reader limitations, update frequency, offline support, contact.
+- **Nginx static page routing** — Two `location =` blocks in nginx config for `/privacy` and `/support`, served directly without proxying to frontend.
+- **CFBundleDisplayName** — Set to "ClearNews" so home screen shows "ClearNews" while App Store name is "GetClearNews".
+- **App icon** — Added to Assets.xcassets/AppIcon.appiconset/ (1024x1024 PNG, multiple newspapers with magnifying glass on teal background).
+- **App Store metadata** — All pushed via App Store Connect API: subtitle ("News Without the Noise"), description, keywords, categories (News/Reference), age rating (12+), copyright, privacy/support/marketing URLs, review notes, export compliance.
+- **Screenshots** — 6 iPhone 6.9" + 5 iPad 13" captured from simulators and uploaded via API.
+- **TestFlight** — "Family Testers" beta group created with 3 testers, build submitted for beta review.
+
+---
+
 ## [1.6.0] - 2026-02-13 — Cold Cache Performance Overhaul
 
 ### Changed

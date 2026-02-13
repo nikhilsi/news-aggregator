@@ -1,0 +1,10 @@
+Initial release.
+
+• 40+ news sources across 13 categories
+• Built-in reader view for clean, distraction-free reading
+• Category filtering and keyword search
+• Dark mode with system, light, and dark themes
+• Pull to refresh for the latest headlines
+• Share articles via native share sheet
+• Adjustable reader font size
+• No account required — no ads, no tracking

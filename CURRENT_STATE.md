@@ -2,9 +2,9 @@
 
 **Last Updated**: February 13, 2026
 
-## Status: Live at getclearnews.com | iOS App built | 41 sources across 13 categories
+## Status: Live at getclearnews.com | iOS build in TestFlight beta review | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app hardened for App Store (auth removed, privacy manifest added, accessibility labels, force-unwrap crashes fixed). Privacy policy and support pages live at getclearnews.com. Build v1.0 uploaded to App Store Connect as "GetClearNews", all metadata pushed via API, TestFlight submitted for beta review with 3 testers.
 
 ## What's Built
 
@@ -40,24 +40,26 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
 
-### iOS App (SwiftUI) — v1.6.0
+### iOS App (SwiftUI) — v1.7.0
 - **Article feed** — article cards with AsyncImage, LazyVStack, infinite scroll sentinel, pull-to-refresh (sends `refresh=true` to backend for genuinely fresh data), shimmer skeleton loading
 - **Categories** — horizontal scroll capsule pills, filter articles by category
 - **Search** — `.searchable` with 400ms debounce via `.task(id:)`, composes with category filter
 - **Reader view** — WKWebView rendering extracted HTML content, dark mode CSS, responsive images, external links open in Safari, font size control, fallback for paywalled sites with "Read on {source}" button
 - **Share** — native iOS share sheet from article card footer and reader toolbar (ShareLink with article URL + title)
-- **Settings** — theme picker (system/light/dark), reader font size (S/M/L/XL), about page, all persisted via UserDefaults
-- **Authentication** — JWT stored in Keychain, login form, auto-validates saved token on launch, sign out
+- **Settings** — theme picker (system/light/dark), reader font size (S/M/L/XL), about page with content attribution and links to privacy/support pages, all persisted via UserDefaults
 - **Architecture** — @Observable services, .environment() injection, singleton APIClient, zero external packages
 - **Dynamic Type** — all text uses semantic fonts (.headline, .subheadline, .caption), padding/icon sizes scale via @ScaledMetric
 - **Haptic feedback** — light impact on article card tap and category pill selection
 - **Auto-retry on partial data** — when backend returns `complete: false` (cold cache), ArticleService silently re-fetches after 3 seconds to get the full article set
+- **Accessibility** — labels on share buttons, reader toolbar buttons, combined accessibility elements on error/empty states, decorative icons hidden
+- **Privacy manifest** — PrivacyInfo.xcprivacy declares UserDefaults usage (CA92.1), no tracking, no collected data types
 - **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
-- **26 Swift files**, 0 external dependencies
+- **22 Swift files**, 0 external dependencies, deployment target iOS 17.0
 
 ### Deployment Infrastructure — v0.3.0
 - **Docker** — Dockerfiles for backend (Python 3.12) and frontend (Next.js standalone), docker-compose.prod.yml
-- **Nginx** — host-level reverse proxy with SSL termination, rate limiting (auth: 5/min, general: 10/sec)
+- **Nginx** — host-level reverse proxy with SSL termination, rate limiting (auth: 5/min, general: 10/sec), static pages for privacy policy and support
+- **Static pages** — privacy policy (`/privacy`) and support/FAQ (`/support`) served directly by nginx as static HTML (dark mode aware)
 - **Scripts** — setup.sh, setup-ssl.sh, setup-firewall.sh (UFW + fail2ban), deploy.sh (with auto Docker cleanup), stream-logs.sh
 - **Security** — non-root container users, rate limiting, firewall, fail2ban, security headers, HSTS
 - **Docker cleanup** — deploy.sh auto-prunes old images and build cache after each deploy to prevent disk bloat

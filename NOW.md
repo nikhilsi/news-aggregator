@@ -12,8 +12,56 @@
 - **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
 - **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
 - **Phase 8: Cold cache performance** — `done` — Extended SWR stale window to 24h, progressive response with 3s deadline, dedup bucketed by category, categories moved to sources.yaml, Cache-Control fix (v1.6.0)
+- **Phase 9: App Store submission** — `in progress` — Code hardened (v1.7.0), build uploaded to App Store Connect, all metadata pushed via API, TestFlight submitted for beta review with 3 testers
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
+
+---
+
+## Phase 9: App Store Submission — Current Progress
+
+### Done
+- [x] Code hardening: auth removed, force-unwraps fixed, deployment target → iOS 17.0
+- [x] PrivacyInfo.xcprivacy added (UserDefaults CA92.1, no tracking, no collected data)
+- [x] Accessibility labels on interactive controls
+- [x] AboutView enhanced with content attribution + links to privacy/support
+- [x] Privacy policy page live at getclearnews.com/privacy
+- [x] Support page live at getclearnews.com/support
+- [x] Support email configured: support@getclearnews.com
+- [x] App registered on App Store Connect as "GetClearNews"
+- [x] App icon finalized and added to Assets.xcassets/AppIcon.appiconset/
+- [x] CFBundleDisplayName set to "ClearNews" (home screen name)
+- [x] Build archived and uploaded to App Store Connect — v1.0 (build 1), VALID
+- [x] Build attached to App Store version 1.0
+- [x] All metadata pushed via App Store Connect API:
+  - Subtitle: "News Without the Noise"
+  - Description (1465 chars), Keywords (96/100 chars)
+  - Privacy URL, Support URL, Marketing URL (getclearnews.com)
+  - Categories: News (primary), Reference (secondary)
+  - Age rating: 12+ (mild news content: horror/fear, mature themes, realistic violence)
+  - Copyright: 2026 Nikhil Singhal
+  - Content rights declaration
+  - Review notes (976 chars) with contact info
+  - Export compliance: no non-exempt encryption
+- [x] Screenshots captured and uploaded (6 iPhone 6.9" + 5 iPad 13")
+- [x] TestFlight: "Family Testers" group created, 3 testers added (nikhilsi@gmail.com, ss310505@gmail.com, me190507@gmail.com)
+- [x] Build submitted for beta review — state: WAITING_FOR_REVIEW
+
+### Remaining
+- [ ] TestFlight beta review approval (typically 24-48h for first build)
+- [ ] Self-test via TestFlight on real device
+- [ ] After TestFlight validation: submit for App Store review
+
+### App Store Connect IDs (for API reference)
+- App ID: `6759177704`
+- Version ID: `6fd4b58f-55fd-405e-9753-31a6db675016`
+- Build ID: `02ab0175-6420-4502-80b9-857ccf646ce6`
+- Beta Group ID: `33175c0f-4245-44fe-9c80-e50409a6fa55`
+- API Key ID: `5R9VGXLC4T`
+- Issuer ID: `562ca730-1c40-4be0-b733-40ab7d8cc103`
+- API Key file: `~/Downloads/AuthKey_5R9VGXLC4T.p8`
+
+**Reference:** docs/app-store-submission-playbook.md (learnings from GitaVani project)
 
 ---
 
@@ -30,6 +78,5 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - **Landing page** — Public marketing-style page with value prop, login/signup CTA.
 
 ### iOS App
-- **App Store submission** — Screenshots, description, privacy policy, TestFlight distribution. See docs/app-store-submission-playbook.md.
 - **Image caching** — NSCache-based image cache if AsyncImage flicker becomes noticeable on fast scrolling.
 - **iPad optimization** — NavigationSplitView for iPad-specific layout.
