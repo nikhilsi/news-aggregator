@@ -117,14 +117,18 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
 
     Keeps the higher-priority version of each duplicate pair.
     Uses a set for O(1) membership checks instead of O(n) list.remove().
+
+    Title comparison is bucketed by category — articles in different categories
+    are never title-duplicates (e.g., India Today won't dupe CBS Sports).
+    URL dedup remains global (same URL can appear in any category).
     """
     if not articles:
         return articles
 
-    # Index: URL → best article seen so far
+    # Index: URL → best article seen so far (global — cross-category)
     url_seen: dict[str, dict] = {}
-    # Index: list of (keywords, article) for title comparison
-    title_index: list[tuple[set[str], dict]] = []
+    # Per-category title index — only compare titles within the same category
+    cat_title_index: dict[str, list[tuple[set[str], dict]]] = {}
     # Track removed articles by id() for O(1) discard instead of O(n) list.remove()
     removed_ids: set[int] = set()
     kept: list[dict] = []
@@ -132,9 +136,10 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
 
     for article in articles:
         url = article.get("url", "")
+        cat = article.get("category", "")
         priority = _article_priority(article)
 
-        # Layer 1: URL exact match
+        # Layer 1: URL exact match (global)
         if url in url_seen:
             existing = url_seen[url]
             if priority > _article_priority(existing):
@@ -142,15 +147,16 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
                 removed_ids.add(id(existing))
                 url_seen[url] = article
                 keywords = _title_keywords(article.get("title", ""))
-                title_index.append((keywords, article))
+                cat_title_index.setdefault(cat, []).append((keywords, article))
                 kept.append(article)
             removed += 1
             continue
 
-        # Layer 2: Title keyword overlap
+        # Layer 2: Title keyword overlap (within category only)
         keywords = _title_keywords(article.get("title", ""))
+        bucket = cat_title_index.get(cat, [])
         is_dupe = False
-        for existing_kw, existing_article in title_index:
+        for existing_kw, existing_article in bucket:
             if id(existing_article) in removed_ids:
                 continue
             if _titles_match(keywords, existing_kw):
@@ -159,7 +165,7 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
                     removed_ids.add(id(existing_article))
                     url_seen.pop(existing_article.get("url", ""), None)
                     url_seen[url] = article
-                    title_index.append((keywords, article))
+                    cat_title_index.setdefault(cat, []).append((keywords, article))
                     kept.append(article)
                 removed += 1
                 is_dupe = True
@@ -167,7 +173,7 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
 
         if not is_dupe:
             url_seen[url] = article
-            title_index.append((keywords, article))
+            cat_title_index.setdefault(cat, []).append((keywords, article))
             kept.append(article)
 
     # Filter out removed articles in one pass
