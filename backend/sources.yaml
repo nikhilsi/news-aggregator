@@ -124,11 +124,68 @@ sources:
     enabled: true
     cache_ttl_minutes: 15
 
+  # ── General News ─────────────────────────────────────────────────────
+  - id: ap-news
+    name: AP News
+    type: rss
+    url: https://feedx.net/rss/ap.xml
+    category: general
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  # ── Health ──────────────────────────────────────────────────────────────
+  - id: npr-health
+    name: NPR Health
+    type: rss
+    url: https://feeds.npr.org/103537970/rss.xml
+    category: health
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: bbc-health
+    name: BBC Health
+    type: rss
+    url: https://feeds.bbci.co.uk/news/health/rss.xml
+    category: health
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  # ── Sports ──────────────────────────────────────────────────────────────
+  - id: cbs-sports
+    name: CBS Sports
+    type: rss
+    url: https://www.cbssports.com/rss/headlines/
+    category: sports
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
   # ── Offbeat / Weird / Fun ──────────────────────────────────────────────
   - id: atlas-obscura
     name: Atlas Obscura
     type: rss
     url: https://www.atlasobscura.com/feeds/latest
+    category: offbeat
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: mental-floss
+    name: Mental Floss
+    type: rss
+    url: https://www.mentalfloss.com/feed
+    category: offbeat
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: upi-odd
+    name: UPI Odd News
+    type: rss
+    url: https://rss.upi.com/news/odd_news.rss
     category: offbeat
     is_curated_positive: false
     enabled: true
@@ -153,6 +210,79 @@ sources:
     enabled: true
     cache_ttl_minutes: 15
 
+  - id: variety
+    name: Variety
+    type: rss
+    url: https://variety.com/feed/
+    category: entertainment
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: kotaku
+    name: Kotaku
+    type: rss
+    url: https://kotaku.com/rss
+    category: entertainment
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  # ── Local (Seattle) ────────────────────────────────────────────────────
+  - id: seattle-times
+    name: Seattle Times
+    type: rss
+    url: https://www.seattletimes.com/feed/
+    category: local
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: geekwire
+    name: GeekWire
+    type: rss
+    url: https://www.geekwire.com/feed/
+    category: local
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: seattle-eater
+    name: Seattle Eater
+    type: rss
+    url: https://seattle.eater.com/rss/index.xml
+    category: local
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: mynorthwest
+    name: MyNorthwest
+    type: rss
+    url: https://mynorthwest.com/feed/
+    category: local
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: crosscut
+    name: Crosscut
+    type: rss
+    url: https://crosscut.com/feed
+    category: local
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: smithsonian
+    name: Smithsonian Magazine
+    type: rss
+    url: https://www.smithsonianmag.com/rss/latest_articles/
+    category: science
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
   # ── Google News (RSS) ──────────────────────────────────────────────────
   - id: google-news-science
     name: Google News - Science
@@ -160,7 +290,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: science
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   - id: google-news-tech
@@ -169,7 +299,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pIUWlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: tech
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   - id: google-news-entertainment
@@ -178,7 +308,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: entertainment
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   - id: google-news-health
@@ -187,7 +317,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtVnVLQUFQAQ?hl=en-US&gl=US&ceid=US:en"
     category: health
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   - id: google-news-sports
@@ -196,7 +326,7 @@ sources:
     url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
     category: sports
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   # ── News APIs ──────────────────────────────────────────────────────────
