@@ -1,10 +1,12 @@
 """
 Source registry — loads and manages source configurations from sources.yaml.
 
-Sources are loaded once on app startup (via load_sources()) and cached in memory.
-The registry provides helper functions to query sources by category, ID, or status.
+Sources and categories are loaded once on app startup (via load_sources()) and
+cached in memory. The registry provides helper functions to query by category, ID,
+or status.
 
-To add/remove/toggle sources, edit backend/sources.yaml — no code changes needed.
+To add/remove/toggle sources or categories, edit backend/sources.yaml — no code
+changes needed.
 """
 
 from pathlib import Path
@@ -16,23 +18,11 @@ from pydantic import BaseModel
 # Path to sources.yaml — lives in backend/ alongside schema.sql
 SOURCES_PATH = Path(__file__).resolve().parent.parent.parent / "sources.yaml"
 
-# Category ID → display name mapping
-# "all" is a virtual category that includes every enabled source
-CATEGORIES = {
-    "all": "All",
-    "general": "General",
-    "local": "Local",
-    "feel_good": "Feel Good",
-    "science": "Science",
-    "tech": "Technology",
-    "entertainment": "Entertainment",
-    "finance": "Finance",
-    "health": "Health",
-    "sports": "Sports",
-    "offbeat": "Offbeat",
-    "travel": "Travel",
-    "india": "India",
-}
+
+class CategoryConfig(BaseModel):
+    """Category definition from sources.yaml."""
+    id: str                                  # e.g., "science", "feel_good"
+    name: str                                # Display name: "Science", "Feel Good"
 
 
 class SourceConfig(BaseModel):
@@ -53,15 +43,17 @@ class SourceConfig(BaseModel):
     cache_ttl_minutes: int = 15              # How long fetched articles are cached
 
 
-# Module-level source list — loaded once on startup, read by all requests
+# Module-level lists — loaded once on startup, read by all requests
 _sources: list[SourceConfig] = []
+_categories: list[CategoryConfig] = []
 
 
 def load_sources() -> list[SourceConfig]:
-    """Load and validate all sources from sources.yaml. Called once on app startup."""
-    global _sources
+    """Load and validate all sources and categories from sources.yaml. Called once on app startup."""
+    global _sources, _categories
     raw = yaml.safe_load(SOURCES_PATH.read_text())
     _sources = [SourceConfig(**s) for s in raw["sources"]]
+    _categories = [CategoryConfig(**c) for c in raw.get("categories", [])]
     return _sources
 
 
@@ -95,6 +87,7 @@ def get_source_by_id(source_id: str) -> Optional[SourceConfig]:
 def get_categories_with_counts() -> list[dict]:
     """Return all categories with the count of enabled sources in each.
 
+    Categories and their display order come from sources.yaml.
     Used by the GET /api/v1/categories endpoint.
     """
     enabled = get_enabled_sources()
@@ -103,10 +96,10 @@ def get_categories_with_counts() -> list[dict]:
         counts[s.category] = counts.get(s.category, 0) + 1
 
     result = []
-    for cat_id, cat_name in CATEGORIES.items():
-        if cat_id == "all":
-            result.append({"id": cat_id, "name": cat_name, "source_count": len(enabled)})
-        elif counts.get(cat_id, 0) > 0:
+    for cat in _categories:
+        if cat.id == "all":
+            result.append({"id": cat.id, "name": cat.name, "source_count": len(enabled)})
+        elif counts.get(cat.id, 0) > 0:
             # Only include categories that have at least one enabled source
-            result.append({"id": cat_id, "name": cat_name, "source_count": counts[cat_id]})
+            result.append({"id": cat.id, "name": cat.name, "source_count": counts[cat.id]})
     return result

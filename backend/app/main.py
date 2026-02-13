@@ -123,7 +123,7 @@ async def cache_control_middleware(request: Request, call_next):
     path = request.url.path
 
     if path in ("/api/v1/categories", "/api/v1/sources"):
-        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["Cache-Control"] = "public, max-age=300"
     elif path == "/api/v1/articles":
         if request.query_params.get("refresh") == "true":
             response.headers["Cache-Control"] = "no-store"

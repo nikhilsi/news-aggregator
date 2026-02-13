@@ -1,8 +1,39 @@
 # News Aggregator — Source Registry
 #
-# All sources are listed here. Set enabled: true/false to control which are active.
-# Start with a few enabled sources; expand as features are built and tested.
+# Categories and sources are defined here. No code changes needed to add/remove either.
+# Set enabled: true/false to toggle sources without removing config.
 
+# ── Categories ──────────────────────────────────────────────────────────
+# Display order matches the order below. "all" is always first.
+categories:
+  - id: all
+    name: All
+  - id: general
+    name: General
+  - id: local
+    name: Local
+  - id: feel_good
+    name: Feel Good
+  - id: science
+    name: Science
+  - id: tech
+    name: Technology
+  - id: entertainment
+    name: Entertainment
+  - id: finance
+    name: Finance
+  - id: health
+    name: Health
+  - id: sports
+    name: Sports
+  - id: offbeat
+    name: Offbeat
+  - id: travel
+    name: Travel
+  - id: india
+    name: India
+
+# ── Sources ─────────────────────────────────────────────────────────────
 sources:
   # ── Feel Good / Positive News ──────────────────────────────────────────
   - id: good-news-network
