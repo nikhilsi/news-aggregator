@@ -2,17 +2,17 @@
 
 **Last Updated**: February 12, 2026
 
-## Status: Live at getclearnews.com | iOS App built | 40 sources across 13 categories
+## Status: Live at getclearnews.com | iOS App built | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching, startup warmup (~11s), thread pool offloading, two-tier article sorting, and 40 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching, startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
 
 ## What's Built
 
 ### Backend (FastAPI) — v1.4.0
 - **Project scaffolding** — directory structure, venv, config, SQLite database
-- **Source registry** — 47 sources in sources.yaml (38 RSS + 2 FMP enabled, 7 disabled), pydantic models, load/query helpers. Category list defined in registry.py.
+- **Source registry** — 48 sources in sources.yaml (39 RSS + 2 FMP enabled, 7 disabled), pydantic models, load/query helpers. Category list defined in registry.py.
 - **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 4x TTL) serves immediately + background refresh, expired/missing fetches synchronously. Per-source TTL (default 15 min). Force refresh via `?refresh=true` query param.
-- **Startup cache warmup** — all 40 sources pre-fetched as background task on server start (~11s). First user request hits warm cache.
+- **Startup cache warmup** — all 41 sources pre-fetched as background task on server start (~11s). First user request hits warm cache.
 - **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (24h), refresh requests (no-store)
 - **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication, bcrypt password verification. Event loop stays free for concurrent request handling.
 - **Text logging** — human-readable text format for all environments. Request timing middleware with unique request IDs. Per-source fetch timing. Cache HIT/STALE/MISS logging.
@@ -21,7 +21,7 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → deduplicate (thread pool) → two-tier sort → filter → paginate
 - **Two-tier sorting** — "All" tab: 1 per source capped at 3 per category in tier 1, rest chronological. Category tabs: top 5 per source in tier 1, rest chronological. No articles discarded.
 - **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback) via thread pool, sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
-- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), O(1) set-based removal tracking, prefers articles with images (~105 dupes removed per cycle with 40 sources)
+- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), O(1) set-based removal tracking, prefers articles with images (~105 dupes removed per cycle with 41 sources)
 - **Keyword search** — case-insensitive search on title/summary, composes with all filters
 - **Authentication** — email/password login with JWT (HS256), bcrypt password hashing (thread pool), protected route dependency, seed script for admin/regular users
 - **Production-ready** — configurable DB path and CORS origins via env vars
@@ -71,10 +71,10 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 | POST | `/api/v1/auth/logout` | No | Logout (client-side) |
 | GET | `/api/v1/auth/me` | Yes | Current user profile |
 
-### Sources (40 of 47 enabled)
+### Sources (41 of 48 enabled)
 | Category | Sources | Count |
 |----------|---------|-------|
-| General | AP News | 1 |
+| General | AP News, Fox News | 2 |
 | Local (Seattle) | GeekWire, Seattle Eater, MyNorthwest, Crosscut | 4 |
 | Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
 | Science | Ars Technica Science, NASA, New Scientist, Scientific American | 4 |

@@ -134,6 +134,15 @@ sources:
     enabled: true
     cache_ttl_minutes: 15
 
+  - id: fox-news
+    name: Fox News
+    type: rss
+    url: https://feeds.foxnews.com/foxnews/latest
+    category: general
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
   # ── Health ──────────────────────────────────────────────────────────────
   - id: npr-health
     name: NPR Health

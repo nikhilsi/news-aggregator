@@ -148,7 +148,7 @@ async def protected_route(user: dict = Depends(get_current_user)):
 
 | Type | Fetcher | Status |
 |------|---------|--------|
-| `rss` | `rss_fetcher.py` | Working (38 sources) |
+| `rss` | `rss_fetcher.py` | Working (39 sources) |
 | `financial_api` | `fmp_fetcher.py` | Working (2 FMP sources) |
 | `news_api` | — | Not yet implemented |
 

@@ -171,7 +171,7 @@ users (
 
 Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove, or toggle sources without code changes.
 
-**Current sources:** 47 total (38 RSS + 2 Financial API enabled, 7 disabled). See `backend/sources.yaml` for the full list with URLs.
+**Current sources:** 48 total (39 RSS + 2 Financial API enabled, 7 disabled). See `backend/sources.yaml` for the full list with URLs.
 
 **Source types and how they're fetched:**
 - **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds). Includes og:image backfill for feeds without embedded images.
