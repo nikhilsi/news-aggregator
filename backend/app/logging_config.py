@@ -1,9 +1,7 @@
 """
 Centralized logging configuration.
 
-Two modes controlled by settings.log_format:
-- "json" (default, production): Structured JSON via python-json-logger
-- "text" (local dev): Human-readable colored output
+Human-readable text format for all environments.
 
 Usage:
     from app.logging_config import setup_logging
@@ -13,17 +11,9 @@ Usage:
 import logging
 import sys
 
-from pythonjsonlogger.json import JsonFormatter
-
 
 def setup_logging() -> None:
-    """Configure logging for the entire application.
-
-    Reads LOG_FORMAT from settings to choose between JSON and text output.
-    Also configures uvicorn loggers to use the same format.
-    """
-    from app.config import settings
-
+    """Configure logging for the entire application."""
     root = logging.getLogger()
     root.setLevel(logging.INFO)
 
@@ -31,18 +21,10 @@ def setup_logging() -> None:
     root.handlers.clear()
 
     handler = logging.StreamHandler(sys.stdout)
-
-    if settings.log_format == "text":
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)-5s [%(name)s] %(message)s",
-            datefmt="%H:%M:%S",
-        ))
-    else:
-        handler.setFormatter(JsonFormatter(
-            "%(asctime)s %(levelname)s %(name)s %(message)s",
-            timestamp=True,
-            rename_fields={"asctime": "timestamp", "levelname": "level"},
-        ))
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s %(levelname)-5s [%(name)s] %(message)s",
+        datefmt="%H:%M:%S",
+    ))
 
     root.addHandler(handler)
 

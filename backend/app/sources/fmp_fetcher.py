@@ -99,7 +99,8 @@ async def fetch_fmp(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
     start = time.monotonic()
 
     # Get API key from environment
-    api_key = os.environ.get(source.api_key_env or "", "")
+    from app.config import settings
+    api_key = getattr(settings, (source.api_key_env or "").lower(), "") or os.environ.get(source.api_key_env or "", "")
     if not api_key:
         logger.warning("No API key for %s (env var: %s)", source.name, source.api_key_env)
         return []
