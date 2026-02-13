@@ -26,6 +26,7 @@ out/
 ios/build/
 ios/DerivedData/
 xcuserdata/
+*.xcarchive/
 
 # IDE
 .vscode/
