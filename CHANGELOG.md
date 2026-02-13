@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0] - 2026-02-12 — Source Expansion + Two-Tier Sorting
+
+### Added
+- **20 new RSS sources**: AP News (general), NPR Health, BBC Health (health), CBS Sports (sports), Variety, Kotaku (entertainment), Mental Floss, UPI Odd News (offbeat), GeekWire, Seattle Eater, MyNorthwest, Crosscut (local/Seattle), Condé Nast Traveler, The Guardian Travel, Matador Network, Frommer's (travel), BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu (india). Total: 40 enabled sources across 13 categories.
+- **5 new categories**: General, Local (Seattle), Travel, India, plus Offbeat expanded from 1 to 3 sources.
+- **Two-tier article sorting**: "All" tab shows a diverse top section (1 per source, capped at 3 per category) followed by everything else chronologically. Category tabs show top 5 per source then the rest. No articles discarded.
+
+### Changed
+- **Logging simplified**: Removed `python-json-logger` dependency. All environments now use human-readable text format. No more `LOG_FORMAT` env var.
+- **FMP API key loading**: Reads from pydantic settings first, falls back to `os.environ`. Previously only checked `os.environ`, which missed keys loaded from `.env` by pydantic-settings.
+
+### Removed
+- **Google News feeds disabled** (5 sources): Each article required 2 HTTP round-trips to resolve redirect URLs via Google's batchexecute API (~700 extra HTTP calls per refresh). Warmup dropped from ~25s to ~11s.
+- **Smithsonian Magazine disabled**: Returns 403 from production server IP (datacenter bot detection).
+- **Seattle Times removed**: Returns empty 202 response from production server IP.
+
+---
+
 ## [1.3.0] - 2026-02-12 — Async Performance + Docker Cleanup
 
 ### Fixed
@@ -34,7 +52,7 @@
 ## [1.1.0] - 2026-02-12 — Backend Instrumentation + Cold Cache Fix
 
 ### Added
-- **Structured logging**: JSON format for production (machine-parseable), human-readable text for local dev. Controlled by `LOG_FORMAT` env var. Uses `python-json-logger`.
+- **Structured logging**: Request timing middleware with unique request IDs, per-source fetch timing, cache status logging. (Note: JSON logging was later removed in v1.4.0 — all environments now use text format.)
 - **Request timing middleware**: Every API request logged with unique request ID, method, path, status code, and duration in milliseconds.
 - **Per-source fetch timing**: Each RSS/FMP source fetch logged with source name, article count, and duration.
 - **Stale-while-revalidate (SWR) cache**: Three-state cache — HIT (fresh, < TTL), STALE (expired but within 4x TTL window, serves immediately + background refresh), MISS (no data, fetches synchronously). Users almost never wait for cold fetches.

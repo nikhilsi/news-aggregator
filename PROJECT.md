@@ -62,15 +62,15 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 1. **User opens app** (web or iOS)
 2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech`)
 3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
-4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, News APIs, Financial APIs)
+4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, Financial APIs)
 5. **Backend normalizes** all responses into a common article structure
-6. **For Google News sources**: backend resolves opaque redirect URLs to real article URLs via Google's batchexecute API
-7. **Backend backfills missing images** by fetching og:image from article pages
-8. **Backend caches** the fully enriched articles in memory with a timestamp
-9. **Backend applies deduplication** (URL exact match + title keyword overlap at 0.6 threshold)
+6. **Backend backfills missing images** by fetching og:image from article pages
+7. **Backend caches** the fully enriched articles in memory with a timestamp
+8. **Backend applies deduplication** (URL exact match + title keyword overlap at 0.6 threshold)
+9. **Backend applies two-tier sorting** — diverse top section, then chronological (see Sorting section)
 10. **Backend returns** filtered, sorted articles to the client
 
-**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~25s), so the first user request hits a warm cache. SWR caching ensures users almost never wait for cold fetches.
+**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~11s), so the first user request hits a warm cache. SWR caching ensures users almost never wait for cold fetches.
 
 **Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication, bcrypt password verification) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
 
@@ -116,6 +116,8 @@ Source-type fetchers may preserve additional fields from the raw response. The a
 ### Categories
 
 - `all` — Everything, unfiltered
+- `general` — General news (AP News)
+- `local` — Local Seattle area news
 - `feel_good` — Curated positive/uplifting news
 - `science` — Science & discovery
 - `tech` — Technology & gadgets
@@ -124,8 +126,10 @@ Source-type fetchers may preserve additional fields from the raw response. The a
 - `health` — Health & wellness
 - `sports` — Sports news
 - `offbeat` — Weird, wonderful, unusual stories
+- `travel` — Travel news, guides, destinations
+- `india` — India news from major English-language outlets
 
-Categories are assigned based on source configuration. A single source maps to one primary category.
+Categories are assigned based on source configuration. A single source maps to one primary category. The category list is defined in `backend/app/sources/registry.py` — new categories must be added there.
 
 ### Source Configuration
 
@@ -167,12 +171,14 @@ users (
 
 Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove, or toggle sources without code changes.
 
-**Current sources:** 24 total (21 RSS feeds, 1 News API, 2 Financial APIs). 23 enabled, 1 disabled (WorldNewsAPI). See `backend/sources.yaml` for the full list with URLs.
+**Current sources:** 47 total (38 RSS + 2 Financial API enabled, 7 disabled). See `backend/sources.yaml` for the full list with URLs.
 
 **Source types and how they're fetched:**
-- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds).
+- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds). Includes og:image backfill for feeds without embedded images.
 - **News API** (`type: news_api`) — WorldNewsAPI. Not yet implemented (disabled).
 - **Financial API** (`type: financial_api`) — FMP (Financial Modeling Prep). Two endpoints: general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Dedicated fetcher (`fmp_fetcher.py`).
+
+**Disabled sources:** WorldNewsAPI (not implemented), 5 Google News feeds (disabled for performance — each article required 2 HTTP round-trips to resolve redirect URLs), Smithsonian Magazine (403 from production server IP).
 
 ---
 
@@ -261,7 +267,7 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
   - **STALE** (TTL to 4x TTL, e.g., 15-60min): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
   - **MISS** (> 4x TTL or never fetched): fetch synchronously
 - **Force refresh:** `?refresh=true` query param bypasses SWR entirely — fetches all sources synchronously, caches fresh results
-- **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~25s). First user request hits warm cache.
+- **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~11s). First user request hits warm cache.
 - **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (24h), refresh requests (no-store). Browsers and URLSession cache natively.
 - **No eviction logic needed** — stale entries are overwritten on next fetch
 - **No background jobs** — all fetching is on-demand (except startup warmup, which is a one-time task)
@@ -270,13 +276,31 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 
 ## Deduplication
 
-Multiple sources cover the same story (especially Google News, which aggregates articles from publishers we also follow directly). After merging all sources and before sorting, the backend deduplicates using:
+Multiple sources cover the same story. After merging all sources and before sorting, the backend deduplicates using:
 
-1. **URL exact match** — Same article from multiple sources (e.g., Ars Technica direct feed + Google News both resolve to the same URL)
+1. **URL exact match** — Same article appearing in multiple sources
 2. **Title keyword overlap** — Extracts significant keywords from titles (after stripping stop words and possessives). If keyword overlap ratio >= 0.6 (relative to the smaller keyword set), treated as duplicate.
-3. **Priority when keeping:** Prefer articles with images > without. Prefer direct feeds > Google News aggregates.
+3. **Priority when keeping:** Prefer articles with images > without.
 
 Implementation: `app/articles/service.py` — `_deduplicate()` function. No external dependencies (uses stdlib `re` for keyword extraction). Uses O(1) set-based removal tracking instead of O(n) list scans. Runs in thread pool via `asyncio.to_thread()`.
+
+---
+
+## Article Sorting
+
+Articles use a two-tier sort to ensure diversity at the top of the feed while keeping all articles accessible:
+
+**"All" tab:**
+- **Tier 1:** 1 most recent article per source, capped at 3 per category (~30 articles). Sorted by time.
+- **Tier 2:** All remaining articles, sorted chronologically.
+
+**Category tabs:**
+- **Tier 1:** Top 5 articles per source. Sorted by time.
+- **Tier 2:** All remaining articles, sorted chronologically.
+
+No articles are discarded — tier 2 contains everything not promoted to tier 1. This prevents high-volume sources (e.g., India Today at 133 articles, Frommer's at 300) or timezone-ahead regions from dominating the feed.
+
+Implementation: `app/articles/service.py` — `_tiered_sort()` function.
 
 ---
 
@@ -296,7 +320,7 @@ news-aggregator/
 │   │   ├── __init__.py
 │   │   ├── main.py                 # FastAPI app entry point, middleware, lifespan
 │   │   ├── config.py               # App configuration, env vars
-│   │   ├── logging_config.py       # Structured logging setup (JSON/text)
+│   │   ├── logging_config.py       # Logging setup (text format)
 │   │   ├── database.py             # SQLite connection and setup (users only)
 │   │   ├── cache.py                # In-memory SWR article cache
 │   │   │
@@ -313,7 +337,7 @@ news-aggregator/
 │   │   ├── sources/
 │   │   │   ├── router.py           # Source/category endpoints
 │   │   │   ├── registry.py         # Load and manage source configs
-│   │   │   ├── rss_fetcher.py      # RSS feed parser + Google News URL resolver + og:image backfill
+│   │   │   ├── rss_fetcher.py      # RSS feed parser + og:image backfill
 │   │   │   └── fmp_fetcher.py      # FMP financial API fetcher (general news + market analysis)
 │   │   │
 │   │   └── common/
@@ -404,7 +428,8 @@ See [deployment/README.md](deployment/README.md) for setup and deploy instructio
 
 ### Resolved
 - **Brand name**: ClearNews (getclearnews.com)
-- **Default view**: All categories, sorted by published_at descending, 20 per page with infinite scroll
+- **Default view**: All categories, two-tier sort (diverse top section + chronological), 20 per page with infinite scroll
 - **Financial news**: FMP API — general-latest (WSJ/CNBC/Bloomberg aggregation) + fmp-articles (market analysis). Alpha Vantage removed.
-- **Source priority ranking**: Dedup prefers articles with images > without, direct feeds > Google News aggregates
+- **Source priority ranking**: Dedup prefers articles with images > without
+- **Google News**: Disabled — URL resolution required 2 HTTP round-trips per article (~700 extra requests per refresh). Direct RSS feeds provide better performance.
 - **Reader view**: URL-based extraction via readability-lxml + trafilatura, modal overlay on frontend

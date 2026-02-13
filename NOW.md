@@ -4,12 +4,13 @@
 
 ## Completed Phases
 
-- **Phase 1: Backend** — `done` — FastAPI, 23 sources (21 RSS + 2 FMP), reader view, dedup, auth, caching
+- **Phase 1: Backend** — `done` — FastAPI, sources, reader view, dedup, auth, caching
 - **Phase 2: Web Frontend** — `done` — Next.js, article feed, reader modal overlay, dark mode, search, auth (v0.7.0)
 - **Phase 3: Deployment** — `done` — Live at getclearnews.com, Docker Compose, nginx, SSL, firewall
 - **Phase 4: iOS App** — `done` — SwiftUI, full feature parity with web (v1.0.0)
-- **Phase 5: Performance** — `done` — Structured logging, SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
-- **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops (reader extraction, feedparser, dedup, bcrypt), dedup algorithm optimization, Docker build cache cleanup in deploy script (v1.3.0)
+- **Phase 5: Performance** — `done` — SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
+- **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
+- **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
@@ -20,6 +21,7 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 ### Backend
 - **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI.
 - **Additional source types** — NewsAPI fetcher (WorldNewsAPI)
+- **Trending topics** — Google Trends RSS, Wikipedia most-read, Hacker News top stories as trend signals
 
 ### Web Frontend
 - **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.
@@ -27,6 +29,6 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - **Landing page** — Public marketing-style page with value prop, login/signup CTA.
 
 ### iOS App
-- **App Store submission** — Screenshots, description, privacy policy, TestFlight distribution.
+- **App Store submission** — Screenshots, description, privacy policy, TestFlight distribution. See docs/app-store-submission-playbook.md.
 - **Image caching** — NSCache-based image cache if AsyncImage flicker becomes noticeable on fast scrolling.
 - **iPad optimization** — NavigationSplitView for iPad-specific layout.

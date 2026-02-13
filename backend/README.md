@@ -42,7 +42,7 @@ backend/
 ├── app/
 │   ├── main.py              # FastAPI entry point, lifespan, middleware (timing, Cache-Control)
 │   ├── config.py            # Settings from .env via pydantic-settings
-│   ├── logging_config.py    # Structured logging (JSON for prod, text for dev)
+│   ├── logging_config.py    # Logging setup (text format, all environments)
 │   ├── database.py          # SQLite connection (users only)
 │   ├── cache.py             # In-memory SWR article cache (HIT/STALE/MISS)
 │   │
@@ -54,7 +54,7 @@ backend/
 │   ├── sources/
 │   │   ├── registry.py      # Loads sources.yaml, provides query helpers
 │   │   ├── router.py        # GET /api/v1/sources, /categories endpoints
-│   │   ├── rss_fetcher.py   # RSS feed fetcher + normalization + Google News URL resolver + og:image backfill
+│   │   ├── rss_fetcher.py   # RSS feed fetcher + normalization + og:image backfill
 │   │   └── fmp_fetcher.py   # FMP financial API fetcher (general news + market analysis)
 │   │
 │   ├── common/
@@ -82,29 +82,29 @@ Request → Article Service → check SWR cache per source
                           → HIT (fresh): use cached data
                           → STALE: serve cached data + background refresh
                           → MISS (or refresh=true): fetch via appropriate fetcher (concurrent)
-                              → RSS: parse XML → normalize → resolve Google News URLs → backfill images
+                              → RSS: parse XML → normalize → backfill images
                               → FMP: fetch JSON → normalize (general news or fmp-articles format)
                           → cache result (final, ready-to-serve dicts)
                           → merge all sources
                           → deduplicate (URL match + title keyword overlap)
-                          → sort + paginate → Response
+                          → two-tier sort + paginate → Response
 ```
 
 ### Key Patterns
 
 - **Thread pool offloading**: CPU-bound operations use `asyncio.to_thread()` to avoid blocking the event loop: readability/trafilatura extraction, feedparser XML parsing, article deduplication, bcrypt password verification.
 - **SWR caching**: Stale-while-revalidate — fresh data served instantly, stale data served immediately with background refresh, expired data triggers synchronous fetch. Users almost never wait.
-- **Startup warmup**: All sources pre-fetched on server start (~25s). First request always hits warm cache.
+- **Two-tier sorting**: "All" tab: 1 per source, capped at 3 per category in tier 1, rest chronological. Category tabs: top 5 per source in tier 1, rest chronological. No articles discarded.
+- **Startup warmup**: All sources pre-fetched on server start (~11s). First request always hits warm cache.
 - **Force refresh**: `?refresh=true` bypasses SWR cache entirely — fetches all sources synchronously.
 - **Cache-Control headers**: Middleware sets HTTP headers — articles (5min), categories/sources (24h), refresh (no-store).
-- **Structured logging**: JSON for production, text for local dev. Request timing, cache status, per-source fetch duration.
+- **Text logging**: Human-readable format for all environments. Request timing, cache status, per-source fetch duration.
 - **In-memory cache**: Articles are transient — cached in a Python dict with per-source TTL (default 15 min). No database storage for articles.
 - **SQLite for persistent data only**: Currently just the users table. Articles don't touch the database.
 - **Per-source isolation**: One broken feed never crashes the request. Errors are logged, the source is skipped, other sources still return data.
 - **Concurrent fetching**: Multiple stale sources are fetched in parallel via `asyncio.gather`.
 - **Shared HTTP client**: A single `httpx.AsyncClient` is created on startup and reused for all outbound requests (connection pooling, browser User-Agent).
-- **Google News URL resolution**: Google News RSS provides opaque redirect URLs. We decode them to real article URLs via Google's batchexecute API at fetch time, throttled with `asyncio.Semaphore(10)`.
-- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). O(1) set-based removal tracking. Prefers articles with images and direct feeds over Google News.
+- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). O(1) set-based removal tracking. Prefers articles with images.
 
 ### Adding a New Source
 
@@ -148,7 +148,7 @@ async def protected_route(user: dict = Depends(get_current_user)):
 
 | Type | Fetcher | Status |
 |------|---------|--------|
-| `rss` | `rss_fetcher.py` | Working (21 sources) |
+| `rss` | `rss_fetcher.py` | Working (38 sources) |
 | `financial_api` | `fmp_fetcher.py` | Working (2 FMP sources) |
 | `news_api` | — | Not yet implemented |
 
@@ -163,4 +163,4 @@ async def protected_route(user: dict = Depends(get_current_user)):
 | httpx | Async HTTP client |
 | pyjwt + passlib | JWT auth + password hashing |
 | pyyaml | Load sources.yaml |
-| python-json-logger | Structured JSON logging for production |
+| rapidfuzz | Fuzzy string matching (dedup) |

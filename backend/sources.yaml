@@ -229,15 +229,6 @@ sources:
     cache_ttl_minutes: 15
 
   # ── Local (Seattle) ────────────────────────────────────────────────────
-  - id: seattle-times
-    name: Seattle Times
-    type: rss
-    url: https://www.seattletimes.com/feed/
-    category: local
-    is_curated_positive: false
-    enabled: true
-    cache_ttl_minutes: 15
-
   - id: geekwire
     name: GeekWire
     type: rss
