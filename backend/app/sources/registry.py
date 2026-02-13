@@ -30,6 +30,7 @@ CATEGORIES = {
     "health": "Health",
     "sports": "Sports",
     "offbeat": "Offbeat",
+    "travel": "Travel",
 }
 
 

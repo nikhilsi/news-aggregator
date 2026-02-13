@@ -280,7 +280,7 @@ sources:
     url: https://www.smithsonianmag.com/rss/latest_articles/
     category: science
     is_curated_positive: false
-    enabled: true
+    enabled: false
     cache_ttl_minutes: 15
 
   # ── Google News (RSS) ──────────────────────────────────────────────────
@@ -349,6 +349,43 @@ sources:
     is_curated_positive: false
     enabled: true
     api_key_env: FMP_API_KEY
+    cache_ttl_minutes: 15
+
+  # ── Travel ────────────────────────────────────────────────────────────
+  - id: conde-nast-traveler
+    name: Condé Nast Traveler
+    type: rss
+    url: https://www.cntraveler.com/feed/rss
+    category: travel
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: guardian-travel
+    name: The Guardian Travel
+    type: rss
+    url: https://www.theguardian.com/uk/travel/rss
+    category: travel
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: matador-network
+    name: Matador Network
+    type: rss
+    url: https://matadornetwork.com/feed/
+    category: travel
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: frommers
+    name: Frommer's
+    type: rss
+    url: https://www.frommers.com/feed
+    category: travel
+    is_curated_positive: false
+    enabled: true
     cache_ttl_minutes: 15
 
   - id: fmp-articles
