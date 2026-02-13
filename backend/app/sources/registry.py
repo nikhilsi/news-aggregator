@@ -20,6 +20,8 @@ SOURCES_PATH = Path(__file__).resolve().parent.parent.parent / "sources.yaml"
 # "all" is a virtual category that includes every enabled source
 CATEGORIES = {
     "all": "All",
+    "general": "General",
+    "local": "Local",
     "feel_good": "Feel Good",
     "science": "Science",
     "tech": "Technology",
