@@ -180,6 +180,57 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
     return kept
 
 
+def _pub_key(article: dict) -> str:
+    """Sort key: published_at descending. Articles without a date sort to the end."""
+    return article.get("published_at") or ""
+
+
+def _tiered_sort(articles: list[dict], category: str) -> list[dict]:
+    """Two-tier sort: diverse top section, then everything else chronologically.
+
+    "All" tab: tier 1 = 1 most recent per source, capped at 3 per category.
+    Category tabs: tier 1 = top 5 per source.
+    Tier 2 = remaining articles sorted by published_at descending.
+    """
+    if not articles:
+        return articles
+
+    # Sort all articles by time first so "top N" picks are most recent
+    articles.sort(key=_pub_key, reverse=True)
+
+    tier1_set: set[int] = set()  # track by id() for O(1) lookup
+
+    if category == "all":
+        # Step 1: pick 1 most recent per source
+        seen_sources: dict[str, dict] = {}
+        for a in articles:
+            sid = a.get("source_id", "")
+            if sid not in seen_sources:
+                seen_sources[sid] = a
+
+        # Step 2: cap at 3 per category from that pool
+        cat_counts: dict[str, int] = {}
+        for a in seen_sources.values():
+            cat = a.get("category", "")
+            if cat_counts.get(cat, 0) < 3:
+                cat_counts[cat] = cat_counts.get(cat, 0) + 1
+                tier1_set.add(id(a))
+    else:
+        # Category tab: top 5 per source
+        source_counts: dict[str, int] = {}
+        for a in articles:
+            sid = a.get("source_id", "")
+            if source_counts.get(sid, 0) < 5:
+                source_counts[sid] = source_counts.get(sid, 0) + 1
+                tier1_set.add(id(a))
+
+    # Build tier 1 and tier 2 in one pass (articles already sorted by time)
+    tier1 = [a for a in articles if id(a) in tier1_set]
+    tier2 = [a for a in articles if id(a) not in tier1_set]
+
+    return tier1 + tier2
+
+
 async def _fetch_and_cache_sources(sources: list[SourceConfig]) -> list[dict]:
     """Fetch a list of sources concurrently and cache results. Returns all fetched articles."""
     if not sources:
@@ -313,12 +364,8 @@ async def get_articles(
     before_dedup = len(all_articles)
     all_articles = await asyncio.to_thread(_deduplicate, all_articles)
 
-    # Sort by published_at descending — most recent first
-    # Articles without a published_at (None) sort to the end
-    all_articles.sort(
-        key=lambda a: a.get("published_at") or "",
-        reverse=True,
-    )
+    # Two-tier sorting: diverse tier 1 on top, then chronological tier 2
+    all_articles = _tiered_sort(all_articles, category)
 
     logger.info(
         "Returning %d articles (dedup removed %d)",
