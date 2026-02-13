@@ -388,6 +388,61 @@ sources:
     enabled: true
     cache_ttl_minutes: 15
 
+  # ── India ──────────────────────────────────────────────────────────────
+  - id: bbc-india
+    name: BBC News India
+    type: rss
+    url: https://feeds.bbci.co.uk/news/world/asia/india/rss.xml
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: ndtv
+    name: NDTV
+    type: rss
+    url: https://feeds.feedburner.com/ndtvnews-top-stories
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: times-of-india
+    name: Times of India
+    type: rss
+    url: https://timesofindia.indiatimes.com/rssfeedstopstories.cms
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: india-today
+    name: India Today
+    type: rss
+    url: https://www.indiatoday.in/rss/home
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: scroll-in
+    name: Scroll.in
+    type: rss
+    url: http://feeds.feedburner.com/ScrollinArticles.rss
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
+  - id: the-hindu
+    name: The Hindu
+    type: rss
+    url: https://www.thehindu.com/feeder/default.rss
+    category: india
+    is_curated_positive: false
+    enabled: true
+    cache_ttl_minutes: 15
+
   - id: fmp-articles
     name: FMP - Market Analysis
     type: financial_api

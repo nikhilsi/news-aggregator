@@ -31,6 +31,7 @@ CATEGORIES = {
     "sports": "Sports",
     "offbeat": "Offbeat",
     "travel": "Travel",
+    "india": "India",
 }
 
 
