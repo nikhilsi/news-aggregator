@@ -29,8 +29,6 @@ enum APIError: LocalizedError {
 final class APIClient {
     static let shared = APIClient()
 
-    var token: String?
-
     private let session: URLSession
     private let decoder: JSONDecoder
 
@@ -119,10 +117,6 @@ final class APIClient {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
-
-        if let token {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
 
         return request
     }

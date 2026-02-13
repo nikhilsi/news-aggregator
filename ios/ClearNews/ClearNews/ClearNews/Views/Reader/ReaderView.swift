@@ -42,6 +42,7 @@ struct ReaderView: View {
                             Text("Back")
                         }
                     }
+                    .accessibilityLabel("Close reader")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
@@ -49,13 +50,16 @@ struct ReaderView: View {
                             ShareLink(item: url, subject: Text(article.title)) {
                                 Image(systemName: "square.and.arrow.up")
                             }
+                            .accessibilityLabel("Share article")
                         }
-                        Link(destination: URL(string: article.url)!) {
-                            HStack(spacing: 4) {
-                                Text("Original")
-                                Image(systemName: "arrow.up.right.square")
+                        if let originalURL = URL(string: article.url) {
+                            Link(destination: originalURL) {
+                                HStack(spacing: 4) {
+                                    Text("Original")
+                                    Image(systemName: "arrow.up.right.square")
+                                }
+                                .font(.subheadline)
                             }
-                            .font(.subheadline)
                         }
                     }
                 }
@@ -143,17 +147,19 @@ struct ReaderView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Link(destination: URL(string: article.url)!) {
-                HStack {
-                    Text("Read on \(article.sourceName)")
-                    Image(systemName: "arrow.up.right.square")
+            if let originalURL = URL(string: article.url) {
+                Link(destination: originalURL) {
+                    HStack {
+                        Text("Read on \(article.sourceName)")
+                        Image(systemName: "arrow.up.right.square")
+                    }
+                    .font(.subheadline.bold())
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(.blue)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .font(.subheadline.bold())
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.blue)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
         .frame(maxWidth: .infinity)

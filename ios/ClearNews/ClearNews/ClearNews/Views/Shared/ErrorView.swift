@@ -10,6 +10,7 @@ struct ErrorView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: iconSize))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -19,6 +20,7 @@ struct ErrorView: View {
                     .buttonStyle(.bordered)
             }
         }
+        .accessibilityElement(children: .combine)
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

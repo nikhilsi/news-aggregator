@@ -69,6 +69,7 @@ struct ArticleCardView: View {
                                 .fontWeight(.medium)
                                 .foregroundStyle(.primary)
                         }
+                        .accessibilityLabel("Share article")
                     }
                 }
             }

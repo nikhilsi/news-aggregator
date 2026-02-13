@@ -10,10 +10,12 @@ struct EmptyStateView: View {
             Image(systemName: icon)
                 .font(.system(size: iconSize))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -25,6 +25,37 @@ struct AboutView: View {
             } header: {
                 Text("About")
             }
+
+            Section {
+                Text("Articles are aggregated from publicly available RSS feeds and financial news APIs. All content belongs to its respective publishers. Tap \"Original\" in the reader to visit the source.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Content Sources")
+            }
+
+            Section {
+                Link(destination: URL(string: "https://getclearnews.com/privacy")!) {
+                    HStack {
+                        Text("Privacy Policy")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Link(destination: URL(string: "https://getclearnews.com/support")!) {
+                    HStack {
+                        Text("Support")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Links")
+            }
         }
         .navigationTitle("About ClearNews")
         .navigationBarTitleDisplayMode(.inline)

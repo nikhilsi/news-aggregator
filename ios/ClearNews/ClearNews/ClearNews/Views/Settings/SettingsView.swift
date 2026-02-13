@@ -2,8 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
-    @Environment(AuthService.self) private var authService
-    @State private var showingLogin = false
 
     var body: some View {
         @Bindable var settings = settings
@@ -37,46 +35,6 @@ struct SettingsView: View {
                     Text("Reader")
                 }
 
-                // Account
-                Section {
-                    if authService.isAuthenticated, let user = authService.user {
-                        HStack {
-                            Image(systemName: "person.circle.fill")
-                                .foregroundStyle(.blue)
-                            VStack(alignment: .leading) {
-                                if let name = user.fullName {
-                                    Text(name)
-                                        .font(.subheadline.bold())
-                                }
-                                Text(user.email)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            authService.logout()
-                        } label: {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Sign Out")
-                            }
-                        }
-                    } else {
-                        Button {
-                            showingLogin = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "person.circle")
-                                    .foregroundStyle(.secondary)
-                                Text("Sign In")
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Account")
-                }
-
                 // About
                 Section {
                     NavigationLink {
@@ -91,9 +49,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $showingLogin) {
-                LoginView()
-            }
         }
     }
 }
