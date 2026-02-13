@@ -18,6 +18,7 @@ struct Article: Codable, Identifiable, Hashable {
 struct ArticleListResponse: Codable {
     let articles: [Article]
     let pagination: Pagination
+    let complete: Bool?
 }
 
 struct Pagination: Codable {

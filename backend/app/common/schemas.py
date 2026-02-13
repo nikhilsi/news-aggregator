@@ -43,6 +43,7 @@ class ArticleListResponse(BaseModel):
 
     articles: list[ArticleResponse]
     pagination: PaginationResponse
+    complete: bool = True              # False if some sources are still loading (cold cache)
 
 
 class ReaderResponse(BaseModel):

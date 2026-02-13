@@ -286,19 +286,109 @@ async def _background_refresh(sources: list[SourceConfig]) -> None:
             cache.clear_refreshing(source.id)
 
 
+# ── Progressive / deadline-based fetching ─────────────────────────────────
+# On cold cache, instead of blocking until all 41 sources return (~10s),
+# wait up to a deadline and return whatever is ready. Remaining sources
+# continue fetching in the background and get cached for the next request.
+
+_COLD_FETCH_DEADLINE = 3.0  # seconds — ~15-20 sources complete within this window
+
+
+async def _complete_pending_fetches(
+    pending_tasks: set[asyncio.Task],
+    task_to_source: dict[asyncio.Task, SourceConfig],
+) -> None:
+    """Background: await remaining fetch tasks and cache their results.
+
+    Fire-and-forget — catches all errors to avoid crashing the event loop.
+    """
+    try:
+        done, _ = await asyncio.wait(pending_tasks)
+        total = 0
+        for task in done:
+            source = task_to_source[task]
+            try:
+                result = task.result()
+                cache.set(source.id, result, source.cache_ttl_minutes)
+                total += len(result)
+            except Exception as e:
+                logger.warning("Background fetch error for %s: %s", source.name, str(e))
+        logger.info("Background fetch completed: %d sources, %d articles", len(done), total)
+    except Exception as e:
+        logger.error("Background fetch completion failed: %s", str(e))
+
+
+async def _fetch_with_deadline(
+    sources: list[SourceConfig], deadline: float = _COLD_FETCH_DEADLINE
+) -> tuple[list[dict], bool]:
+    """Fetch sources concurrently with a deadline for progressive response.
+
+    Returns (fetched_articles, all_complete). Sources that finish within the
+    deadline are cached and their articles returned. Remaining sources continue
+    fetching in a fire-and-forget background task that caches results as they
+    complete — the next request picks them up from cache.
+    """
+    if not sources:
+        return [], True
+
+    fetch_names = [s.name for s in sources]
+    logger.info("Fetching %d sources with %.0fs deadline: %s", len(sources), deadline, ", ".join(fetch_names))
+    fetch_start = time.monotonic()
+
+    # Create tasks mapped to sources
+    task_to_source: dict[asyncio.Task, SourceConfig] = {}
+    for source in sources:
+        task = asyncio.create_task(_fetch_source(source))
+        task_to_source[task] = source
+
+    # Wait up to deadline
+    done, pending = await asyncio.wait(task_to_source.keys(), timeout=deadline)
+
+    fetch_duration_ms = int((time.monotonic() - fetch_start) * 1000)
+
+    # Cache and collect completed results
+    all_fetched: list[dict] = []
+    total_fetched = 0
+    for task in done:
+        source = task_to_source[task]
+        try:
+            result = task.result()
+        except Exception as e:
+            logger.warning("Unexpected error fetching %s: %s", source.name, str(e))
+            continue
+        cache.set(source.id, result, source.cache_ttl_minutes)
+        all_fetched.extend(result)
+        total_fetched += len(result)
+
+    all_complete = len(pending) == 0
+
+    logger.info(
+        "Deadline fetch: %d/%d sources completed, %d articles, %dms%s",
+        len(done), len(sources), total_fetched, fetch_duration_ms,
+        "" if all_complete else f" ({len(pending)} still pending)",
+    )
+
+    # Kick off background task to complete remaining sources
+    if pending:
+        asyncio.create_task(_complete_pending_fetches(pending, task_to_source))
+
+    return all_fetched, all_complete
+
+
 async def get_articles(
     category: str = "all",
     source_id: str | None = None,
     refresh: bool = False,
-) -> list[dict]:
+) -> tuple[list[dict], bool]:
     """Get articles for a category or specific source.
 
     Uses stale-while-revalidate (SWR) caching:
     - Fresh cache → return immediately
     - Stale cache → return stale data, kick off background refresh
-    - No cache → fetch synchronously (first-ever request for this source)
+    - No cache → fetch with deadline (return partial data fast, rest in background)
 
-    Pass refresh=True to bypass cache entirely and fetch all sources fresh.
+    Pass refresh=True to bypass cache entirely and fetch all sources fresh
+    (no deadline — user explicitly requested fresh data).
 
     Args:
         category: Category filter ("all", "science", "tech", etc.)
@@ -306,26 +396,28 @@ async def get_articles(
         refresh: Force fresh fetch, bypass SWR cache
 
     Returns:
-        Sorted list of article dicts from all relevant sources
+        Tuple of (sorted article list, complete flag).
+        complete=False means some sources are still loading in the background.
     """
     # Determine which sources to query
     if source_id:
         source = get_source_by_id(source_id)
         if not source or not source.enabled:
-            return []
+            return [], True
         sources = [source]
     else:
         sources = get_sources_by_category(category)
 
     if not sources:
-        return []
+        return [], True
 
     all_articles: list[dict] = []
-    sources_to_fetch: list[SourceConfig] = []  # MISS — must fetch synchronously
+    sources_to_fetch: list[SourceConfig] = []  # MISS — must fetch
     sources_to_refresh: list[SourceConfig] = []  # STALE — refresh in background
+    complete = True
 
     if refresh:
-        # Force refresh — skip cache, fetch all sources synchronously
+        # Force refresh — user explicitly wants fresh data, wait for all sources
         logger.info("Force refresh requested — fetching all %d sources", len(sources))
         sources_to_fetch = list(sources)
     else:
@@ -361,10 +453,16 @@ async def get_articles(
             logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
             asyncio.create_task(_background_refresh(sources_to_refresh))
 
-    # Fetch MISS sources synchronously — we have no data to serve for these
+    # Fetch MISS sources
     if sources_to_fetch:
-        fetched = await _fetch_and_cache_sources(sources_to_fetch)
-        all_articles.extend(fetched)
+        if refresh:
+            # Force refresh: wait for all sources (no deadline)
+            fetched = await _fetch_and_cache_sources(sources_to_fetch)
+            all_articles.extend(fetched)
+        else:
+            # Normal cold cache: use deadline for faster partial response
+            fetched, complete = await _fetch_with_deadline(sources_to_fetch)
+            all_articles.extend(fetched)
 
     # Deduplicate before sorting (CPU-bound — offload to thread pool)
     before_dedup = len(all_articles)
@@ -374,11 +472,12 @@ async def get_articles(
     all_articles = _tiered_sort(all_articles, category)
 
     logger.info(
-        "Returning %d articles (dedup removed %d)",
+        "Returning %d articles (dedup removed %d)%s",
         len(all_articles), before_dedup - len(all_articles),
+        "" if complete else " [partial — more sources loading in background]",
     )
 
-    return all_articles
+    return all_articles, complete
 
 
 async def warmup_cache() -> None:

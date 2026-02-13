@@ -34,6 +34,23 @@ final class ArticleService {
 
             articles = response.articles
             hasMore = response.pagination.page < response.pagination.totalPages
+
+            // Auto-retry if backend returned partial data (cold cache)
+            if response.complete == false {
+                isLoading = false
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard requestId == currentRequestId else { return }
+
+                if let retryResponse: ArticleListResponse = try? await APIClient.shared.get(
+                    "/articles",
+                    queryItems: buildQueryItems(page: 1)
+                ) {
+                    guard requestId == currentRequestId else { return }
+                    articles = retryResponse.articles
+                    hasMore = retryResponse.pagination.page < retryResponse.pagination.totalPages
+                }
+                return
+            }
         } catch {
             guard requestId == currentRequestId else { return }
             self.error = error.localizedDescription

@@ -23,6 +23,7 @@ export interface Pagination {
 export interface ArticleListResponse {
   articles: Article[];
   pagination: Pagination;
+  complete?: boolean;
 }
 
 export interface Category {

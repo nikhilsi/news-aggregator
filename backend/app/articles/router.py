@@ -53,7 +53,7 @@ async def list_articles(
     sources on demand (concurrent), caches the result, then returns.
     Pass refresh=true to bypass cache and fetch fresh data from all sources.
     """
-    articles = await get_articles(category=category, source_id=source, refresh=refresh)
+    articles, complete = await get_articles(category=category, source_id=source, refresh=refresh)
 
     # Apply keyword search filter (case-insensitive match on title + summary)
     if search:
@@ -76,4 +76,5 @@ async def list_articles(
             total=total,
             total_pages=total_pages,
         ),
+        complete=complete,
     )
