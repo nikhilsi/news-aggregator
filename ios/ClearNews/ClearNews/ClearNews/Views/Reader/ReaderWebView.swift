@@ -108,6 +108,7 @@ struct ReaderWebView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
+    @MainActor
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         let parent: ReaderWebView
 
@@ -117,16 +118,14 @@ struct ReaderWebView: UIViewRepresentable {
         }
 
         // Open external links in Safari
-        nonisolated func webView(
+        func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
             if navigationAction.navigationType == .linkActivated,
                let url = navigationAction.request.url {
-                MainActor.assumeIsolated {
-                    UIApplication.shared.open(url)
-                }
+                UIApplication.shared.open(url)
                 decisionHandler(.cancel)
                 return
             }
@@ -134,14 +133,12 @@ struct ReaderWebView: UIViewRepresentable {
         }
 
         // Receive content height from JavaScript
-        nonisolated func userContentController(
+        func userContentController(
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
             if let height = message.body as? CGFloat {
-                MainActor.assumeIsolated {
-                    parent.contentHeight = height
-                }
+                parent.contentHeight = height
             }
         }
     }

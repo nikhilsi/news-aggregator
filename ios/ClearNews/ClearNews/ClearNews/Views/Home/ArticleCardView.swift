@@ -65,8 +65,9 @@ struct ArticleCardView: View {
                     if let url = URL(string: article.url) {
                         ShareLink(item: url, subject: Text(article.title)) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }
