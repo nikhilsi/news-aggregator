@@ -62,7 +62,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 1. **User opens app** (web or iOS)
 2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech`)
 3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
-4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, Financial APIs)
+4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, Financial APIs). Cold cache uses a 3-second deadline: returns whatever sources completed, remaining continue in background.
 5. **Backend normalizes** all responses into a common article structure
 6. **Backend backfills missing images** by fetching og:image from article pages
 7. **Backend caches** the fully enriched articles in memory with a timestamp
@@ -70,7 +70,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 9. **Backend applies two-tier sorting** — diverse top section, then chronological (see Sorting section)
 10. **Backend returns** filtered, sorted articles to the client
 
-**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~11s), so the first user request hits a warm cache. SWR caching ensures users almost never wait for cold fetches.
+**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~11s), so the first user request hits a warm cache. SWR caching (24h stale window) ensures users almost never wait for cold fetches. When they do (>24h gap), the progressive response returns partial data in ~3s instead of blocking for all sources (~10-12s).
 
 **Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication, bcrypt password verification) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
 
@@ -129,7 +129,7 @@ Source-type fetchers may preserve additional fields from the raw response. The a
 - `travel` — Travel news, guides, destinations
 - `india` — India news from major English-language outlets
 
-Categories are assigned based on source configuration. A single source maps to one primary category. The category list is defined in `backend/app/sources/registry.py` — new categories must be added there.
+Categories are assigned based on source configuration. A single source maps to one primary category. The category list is defined in the `categories` section of `backend/sources.yaml` — new categories must be added there.
 
 ### Source Configuration
 
@@ -236,7 +236,8 @@ GET    /api/v1/articles/reader     # Extract clean article content for reader vi
         "per_page": 20,
         "total": 142,
         "total_pages": 8
-    }
+    },
+    "complete": true
 }
 ```
 
@@ -264,11 +265,12 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 - **Default TTL:** 15 minutes (configurable per-source in `sources.yaml`)
 - **Stale-while-revalidate (SWR):** Three-state cache with background refresh
   - **HIT** (fresh, < TTL): return immediately
-  - **STALE** (TTL to 4x TTL, e.g., 15-60min): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
-  - **MISS** (> 4x TTL or never fetched): fetch synchronously
-- **Force refresh:** `?refresh=true` query param bypasses SWR entirely — fetches all sources synchronously, caches fresh results
+  - **STALE** (TTL to 96x TTL, e.g., 15min-24h): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
+  - **MISS** (> 96x TTL or never fetched): fetch with 3s deadline (progressive response)
+- **Progressive cold-cache response:** On MISS, uses `asyncio.wait` with a 3-second deadline instead of blocking for all sources. Returns whatever is ready (`complete: false`), remaining sources continue in a fire-and-forget background task. Clients auto-retry after 3s. Typical: ~900 articles in 3-4s vs ~1700 in 10-12s.
+- **Force refresh:** `?refresh=true` query param bypasses SWR entirely — fetches all sources (no deadline), caches fresh results
 - **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~11s). First user request hits warm cache.
-- **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (24h), refresh requests (no-store). Browsers and URLSession cache natively.
+- **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (5min), refresh requests (no-store). Browsers and URLSession cache natively.
 - **No eviction logic needed** — stale entries are overwritten on next fetch
 - **No background jobs** — all fetching is on-demand (except startup warmup, which is a one-time task)
 
@@ -278,8 +280,8 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 
 Multiple sources cover the same story. After merging all sources and before sorting, the backend deduplicates using:
 
-1. **URL exact match** — Same article appearing in multiple sources
-2. **Title keyword overlap** — Extracts significant keywords from titles (after stripping stop words and possessives). If keyword overlap ratio >= 0.6 (relative to the smaller keyword set), treated as duplicate.
+1. **URL exact match** (global) — Same article appearing in multiple sources
+2. **Title keyword overlap** (bucketed by category) — Extracts significant keywords from titles (after stripping stop words and possessives). If keyword overlap ratio >= 0.6 (relative to the smaller keyword set), treated as duplicate. Title comparison only runs within the same category — articles in different categories are never title-duplicates.
 3. **Priority when keeping:** Prefer articles with images > without.
 
 Implementation: `app/articles/service.py` — `_deduplicate()` function. No external dependencies (uses stdlib `re` for keyword extraction). Uses O(1) set-based removal tracking instead of O(n) list scans. Runs in thread pool via `asyncio.to_thread()`.

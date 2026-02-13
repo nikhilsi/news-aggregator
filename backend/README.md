@@ -81,7 +81,8 @@ backend/
 Request → Article Service → check SWR cache per source
                           → HIT (fresh): use cached data
                           → STALE: serve cached data + background refresh
-                          → MISS (or refresh=true): fetch via appropriate fetcher (concurrent)
+                          → MISS: fetch with 3s deadline (progressive — return partial, rest in background)
+                          → refresh=true: fetch all sources (no deadline)
                               → RSS: parse XML → normalize → backfill images
                               → FMP: fetch JSON → normalize (general news or fmp-articles format)
                           → cache result (final, ready-to-serve dicts)
@@ -93,18 +94,19 @@ Request → Article Service → check SWR cache per source
 ### Key Patterns
 
 - **Thread pool offloading**: CPU-bound operations use `asyncio.to_thread()` to avoid blocking the event loop: readability/trafilatura extraction, feedparser XML parsing, article deduplication, bcrypt password verification.
-- **SWR caching**: Stale-while-revalidate — fresh data served instantly, stale data served immediately with background refresh, expired data triggers synchronous fetch. Users almost never wait.
+- **SWR caching**: Stale-while-revalidate with 24h stale window (96x TTL) — fresh data served instantly, stale data served immediately with background refresh, expired/missing data triggers deadline-based progressive fetch. Users almost never wait.
 - **Two-tier sorting**: "All" tab: 1 per source, capped at 3 per category in tier 1, rest chronological. Category tabs: top 5 per source in tier 1, rest chronological. No articles discarded.
 - **Startup warmup**: All sources pre-fetched on server start (~11s). First request always hits warm cache.
-- **Force refresh**: `?refresh=true` bypasses SWR cache entirely — fetches all sources synchronously.
-- **Cache-Control headers**: Middleware sets HTTP headers — articles (5min), categories/sources (24h), refresh (no-store).
+- **Progressive cold-cache response**: On cache MISS, uses `asyncio.wait` with a 3-second deadline. Returns partial results (`complete: false` in response), remaining sources continue in background. Clients auto-retry after 3s.
+- **Force refresh**: `?refresh=true` bypasses SWR cache entirely — fetches all sources without deadline.
+- **Cache-Control headers**: Middleware sets HTTP headers — articles (5min), categories/sources (5min), refresh (no-store).
 - **Text logging**: Human-readable format for all environments. Request timing, cache status, per-source fetch duration.
 - **In-memory cache**: Articles are transient — cached in a Python dict with per-source TTL (default 15 min). No database storage for articles.
 - **SQLite for persistent data only**: Currently just the users table. Articles don't touch the database.
 - **Per-source isolation**: One broken feed never crashes the request. Errors are logged, the source is skipped, other sources still return data.
 - **Concurrent fetching**: Multiple stale sources are fetched in parallel via `asyncio.gather`.
 - **Shared HTTP client**: A single `httpx.AsyncClient` is created on startup and reused for all outbound requests (connection pooling, browser User-Agent).
-- **Deduplication**: Two-layer dedup after merging all sources — URL exact match + title keyword overlap (0.6 threshold). O(1) set-based removal tracking. Prefers articles with images.
+- **Deduplication**: Two-layer dedup after merging all sources — URL exact match (global) + title keyword overlap (0.6 threshold, bucketed by category). O(1) set-based removal tracking. Prefers articles with images.
 
 ### Adding a New Source
 

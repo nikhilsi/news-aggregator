@@ -66,6 +66,7 @@ web/src/
 - **Dark mode** — Class-based via Tailwind (`dark:` variants). Inline script in `<head>` prevents flash of wrong theme on load. Respects OS preference, persists user choice in localStorage.
 - **Infinite scroll** — Intersection Observer on a sentinel element at the bottom of the grid. Loads next page when sentinel enters viewport (with 200px root margin for early trigger).
 - **Debounced search** — SearchBar waits 400ms after user stops typing before calling the API.
+- **Auto-retry on partial data** — When backend returns `complete: false` (cold cache, partial sources), useArticles silently re-fetches after 3 seconds to get the full article set.
 - **Race condition handling** — useArticles tracks request IDs to discard stale responses when filters change quickly.
 - **Responsive grid** — 1 column mobile, 2 tablet (md), 3 desktop (lg).
 - **Skeleton loading** — Animated placeholder cards while articles load.

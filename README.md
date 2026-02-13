@@ -17,7 +17,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 - Clean card-based feed with infinite scroll
 - Dark mode with OS preference detection
 - Keyword search across titles and summaries
-- On-demand fetching with SWR caching (stale-while-revalidate) and startup warmup
+- On-demand fetching with SWR caching (24h stale window), progressive cold-cache response (3s deadline), and startup warmup
 - Pull-to-refresh / force refresh on both web and iOS (bypasses cache for fresh data)
 - Article deduplication — URL match + title keyword overlap across sources
 - Image extraction via og:image fallback for feeds without embedded images

@@ -100,6 +100,7 @@ Singleton wrapping `URLSession` with:
 ### Key Patterns
 
 - **Stale request tracking**: `currentRequestId` counter in ArticleService. When a new request fires, previous in-flight requests are ignored on completion. Prevents race conditions from rapid category/search switching.
+- **Auto-retry on partial data**: When backend returns `complete: false` (cold cache, partial sources), ArticleService waits 3 seconds then silently re-fetches to get the full article set.
 - **4-state views**: Every data-driven screen handles loading, error, empty, and success states explicitly.
 - **Pull-to-refresh**: Sends `refresh=true` to bypass backend SWR cache for genuinely fresh data.
 - **Search debounce**: `.task(id: searchText)` with 400ms `Task.sleep` — SwiftUI auto-cancels the previous task.
@@ -108,7 +109,7 @@ Singleton wrapping `URLSession` with:
 ### Caching
 
 - `URLCache.shared` set to 100MB memory / 200MB disk at app startup
-- Backend sets `Cache-Control` headers: articles (5min), categories/sources (24h)
+- Backend sets `Cache-Control` headers: articles (5min), categories/sources (5min)
 - No custom image cache — relies on URLSession/URLCache for AsyncImage
 
 ## Dependencies

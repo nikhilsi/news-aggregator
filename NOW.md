@@ -1,6 +1,6 @@
 # NOW — Current Priorities
 
-**Last Updated**: February 12, 2026
+**Last Updated**: February 13, 2026
 
 ## Completed Phases
 
@@ -11,6 +11,7 @@
 - **Phase 5: Performance** — `done` — SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
 - **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
 - **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
+- **Phase 8: Cold cache performance** — `done` — Extended SWR stale window to 24h, progressive response with 3s deadline, dedup bucketed by category, categories moved to sources.yaml, Cache-Control fix (v1.6.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 

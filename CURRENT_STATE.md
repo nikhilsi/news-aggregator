@@ -1,19 +1,20 @@
 # Current State
 
-**Last Updated**: February 12, 2026
+**Last Updated**: February 13, 2026
 
 ## Status: Live at getclearnews.com | iOS App built | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching, startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app pending App Store submission.
 
 ## What's Built
 
-### Backend (FastAPI) — v1.4.0
+### Backend (FastAPI) — v1.6.0
 - **Project scaffolding** — directory structure, venv, config, SQLite database
-- **Source registry** — 48 sources in sources.yaml (39 RSS + 2 FMP enabled, 7 disabled), pydantic models, load/query helpers. Category list defined in registry.py.
-- **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 4x TTL) serves immediately + background refresh, expired/missing fetches synchronously. Per-source TTL (default 15 min). Force refresh via `?refresh=true` query param.
+- **Source registry** — 48 sources in sources.yaml (39 RSS + 2 FMP enabled, 7 disabled), pydantic models, load/query helpers. Category list and source list both defined in sources.yaml.
+- **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 96x TTL, ~24h) serves immediately + background refresh, expired/missing fetches with 3s deadline (progressive response). Per-source TTL (default 15 min). Force refresh via `?refresh=true` query param.
+- **Progressive cold-cache response** — on cache MISS, uses `asyncio.wait` with a 3-second deadline. Returns whatever sources completed within the deadline (`complete: false`), remaining sources continue in background. Clients auto-retry after 3s to get the full set.
 - **Startup cache warmup** — all 41 sources pre-fetched as background task on server start (~11s). First user request hits warm cache.
-- **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (24h), refresh requests (no-store)
+- **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (5min), refresh requests (no-store)
 - **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication, bcrypt password verification. Event loop stays free for concurrent request handling.
 - **Text logging** — human-readable text format for all environments. Request timing middleware with unique request IDs. Per-source fetch timing. Cache HIT/STALE/MISS logging.
 - **RSS fetcher** — async fetch via httpx, parse with feedparser (thread pool), normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images
@@ -21,12 +22,12 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → deduplicate (thread pool) → two-tier sort → filter → paginate
 - **Two-tier sorting** — "All" tab: 1 per source capped at 3 per category in tier 1, rest chronological. Category tabs: top 5 per source in tier 1, rest chronological. No articles discarded.
 - **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback) via thread pool, sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
-- **Deduplication** — URL exact match + title keyword overlap (0.6 threshold), O(1) set-based removal tracking, prefers articles with images (~105 dupes removed per cycle with 41 sources)
+- **Deduplication** — URL exact match (global) + title keyword overlap (0.6 threshold, bucketed by category). O(1) set-based removal tracking, prefers articles with images (~105 dupes removed per cycle with 41 sources)
 - **Keyword search** — case-insensitive search on title/summary, composes with all filters
 - **Authentication** — email/password login with JWT (HS256), bcrypt password hashing (thread pool), protected route dependency, seed script for admin/regular users
 - **Production-ready** — configurable DB path and CORS origins via env vars
 
-### Web Frontend (Next.js) — v1.2.0
+### Web Frontend (Next.js) — v1.6.0
 - **Layout** — sticky header (ClearNews logo, search, refresh button, dark mode toggle, user menu), wrapping category pill tabs
 - **Article feed** — responsive card grid (1/2/3 cols), infinite scroll, skeleton loading, broken image fallback
 - **Refresh button** — header icon triggers force refresh from backend (bypasses cache)
@@ -34,11 +35,12 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Error handling** — retry button on errors, timeout-specific messaging ("Taking longer than expected"), slow-loading hint after 3s ("Fetching fresh articles...")
 - **Smooth transitions** — category/search changes keep previous articles visible while new data loads (no flash of empty state)
 - **Reader view** — in-app article reading via full-screen modal overlay. Feed stays mounted underneath for instant back navigation. Content extraction from backend, skeleton loading, fallback for paywalled sites. Escape key and browser back close the modal.
+- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache), useArticles hook silently re-fetches after 3 seconds to get the full article set
 - **Filters** — category tabs, debounced keyword search (400ms), race condition handling
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
 
-### iOS App (SwiftUI) — v1.5.0
+### iOS App (SwiftUI) — v1.6.0
 - **Article feed** — article cards with AsyncImage, LazyVStack, infinite scroll sentinel, pull-to-refresh (sends `refresh=true` to backend for genuinely fresh data), shimmer skeleton loading
 - **Categories** — horizontal scroll capsule pills, filter articles by category
 - **Search** — `.searchable` with 400ms debounce via `.task(id:)`, composes with category filter
@@ -49,6 +51,7 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Architecture** — @Observable services, .environment() injection, singleton APIClient, zero external packages
 - **Dynamic Type** — all text uses semantic fonts (.headline, .subheadline, .caption), padding/icon sizes scale via @ScaledMetric
 - **Haptic feedback** — light impact on article card tap and category pill selection
+- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache), ArticleService silently re-fetches after 3 seconds to get the full article set
 - **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
 - **26 Swift files**, 0 external dependencies
 

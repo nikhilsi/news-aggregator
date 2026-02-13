@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0] - 2026-02-13 — Cold Cache Performance Overhaul
+
+### Changed
+- **SWR stale window extended (1h → 24h)**: Changed `_SWR_MULTIPLIER` from 4 to 96. With a 15min TTL, stale data is now usable for up to 24 hours. Users get instant responses for the full day instead of hitting cold cache after 1 hour of inactivity.
+- **Progressive cold-cache response**: On cold cache, backend now uses `asyncio.wait` with a 3-second deadline instead of `asyncio.gather` (which waited for all ~41 sources). Returns whatever sources completed within the deadline (`complete: false` in response), while remaining sources continue fetching in a background task. Next request picks up the rest from cache. Typical first response: ~900 articles in 3-4s instead of ~1700 in 10-12s.
+- **Client auto-retry on partial data**: Web (useArticles hook) and iOS (ArticleService) both detect `complete: false` and silently re-fetch after 3 seconds to get the full article set. Users see partial content fast, then the feed fills in seamlessly.
+- **Dedup bucketed by category**: Title keyword overlap comparison now only runs within the same category (e.g., India Today won't dupe CBS Sports). URL dedup remains global. Reduces comparison work significantly with 13 categories.
+- **Categories moved to sources.yaml**: Category list (id + display name) is now defined in `sources.yaml` alongside sources, instead of a hardcoded `CATEGORIES` dict in `registry.py`. Single source of truth.
+- **Categories/sources Cache-Control fixed (24h → 5min)**: The 24-hour browser cache for `/categories` and `/sources` meant changes took a full day to appear. Reduced to 5 minutes.
+
+### Added
+- `complete` field on `ArticleListResponse` (backend schema, TypeScript type, Swift model) — `false` when some sources are still loading in background.
+- `_fetch_with_deadline()` and `_complete_pending_fetches()` functions in article service for deadline-based progressive fetching.
+
+---
+
 ## [1.5.0] - 2026-02-12 — iOS Share, Dynamic Type, Haptics
 
 ### Added
