@@ -31,7 +31,10 @@ struct ArticleListView: View {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(articleService.articles) { article in
                     ArticleCardView(article: article)
-                        .onTapGesture { onArticleTap(article) }
+                        .onTapGesture {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onArticleTap(article)
+                        }
                 }
 
                 // Infinite scroll sentinel

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2026-02-12 — iOS Share, Dynamic Type, Haptics
+
+### Added
+- **iOS: Share button**: ShareLink on article card footer and reader view toolbar. Shares article URL with title via native iOS share sheet.
+- **iOS: Dynamic Type support**: All padding and icon sizes now scale with accessibility text size settings via `@ScaledMetric` (ArticleCardView, CategoryTabsView, EmptyStateView, ErrorView). Text already used semantic fonts.
+- **iOS: Haptic feedback**: Light impact feedback on article card tap and category pill selection.
+- **iOS: README**: Added `ios/README.md` documenting architecture, folder structure, services, and key patterns.
+
+---
+
 ## [1.4.0] - 2026-02-12 — Source Expansion + Two-Tier Sorting
 
 ### Added

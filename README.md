@@ -28,7 +28,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 - **Backend**: Python 3.12 / FastAPI / SQLite
 - **Web**: Next.js 16 (React 19) / Tailwind CSS v4
-- **iOS**: SwiftUI (26 files, zero external packages)
+- **iOS**: SwiftUI (26 files, zero external packages, Dynamic Type, haptics)
 - **Deployment**: DigitalOcean Droplet / Docker Compose / Nginx / Let's Encrypt
 
 ## Project Structure
@@ -94,6 +94,7 @@ See [deployment/README.md](deployment/README.md) for the full production setup g
 - **[deployment/README.md](deployment/README.md)** — Production deployment guide
 - **[backend/README.md](backend/README.md)** — API endpoints, services, folder structure
 - **[web/README.md](web/README.md)** — Pages, components, hooks
+- **[ios/README.md](ios/README.md)** — iOS app structure, services, key patterns
 - **[iosplan.md](iosplan.md)** — iOS architecture & build plan
 
 ## License

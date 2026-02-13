@@ -38,14 +38,17 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Authentication** — login page, JWT in localStorage, conditional UI (user dropdown with logout)
 
-### iOS App (SwiftUI) — v1.2.0
+### iOS App (SwiftUI) — v1.5.0
 - **Article feed** — article cards with AsyncImage, LazyVStack, infinite scroll sentinel, pull-to-refresh (sends `refresh=true` to backend for genuinely fresh data), shimmer skeleton loading
 - **Categories** — horizontal scroll capsule pills, filter articles by category
 - **Search** — `.searchable` with 400ms debounce via `.task(id:)`, composes with category filter
 - **Reader view** — WKWebView rendering extracted HTML content, dark mode CSS, responsive images, external links open in Safari, font size control, fallback for paywalled sites with "Read on {source}" button
+- **Share** — native iOS share sheet from article card footer and reader toolbar (ShareLink with article URL + title)
 - **Settings** — theme picker (system/light/dark), reader font size (S/M/L/XL), about page, all persisted via UserDefaults
 - **Authentication** — JWT stored in Keychain, login form, auto-validates saved token on launch, sign out
 - **Architecture** — @Observable services, .environment() injection, singleton APIClient, zero external packages
+- **Dynamic Type** — all text uses semantic fonts (.headline, .subheadline, .caption), padding/icon sizes scale via @ScaledMetric
+- **Haptic feedback** — light impact on article card tap and category pill selection
 - **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
 - **26 Swift files**, 0 external dependencies
 

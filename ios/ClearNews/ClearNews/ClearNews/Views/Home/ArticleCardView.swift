@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ArticleCardView: View {
     let article: Article
+    @ScaledMetric(relativeTo: .subheadline) private var contentPadding: CGFloat = 12
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -48,7 +49,7 @@ struct ArticleCardView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Footer: source + time
+                // Footer: source + time + share
                 HStack {
                     Text(article.sourceName)
                         .font(.caption)
@@ -60,9 +61,17 @@ struct ArticleCardView: View {
                     if let publishedAt = article.publishedAt {
                         RelativeTimeText(date: publishedAt)
                     }
+
+                    if let url = URL(string: article.url) {
+                        ShareLink(item: url, subject: Text(article.title)) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
-            .padding(12)
+            .padding(contentPadding)
         }
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -44,12 +44,19 @@ struct ReaderView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Link(destination: URL(string: article.url)!) {
-                        HStack(spacing: 4) {
-                            Text("Original")
-                            Image(systemName: "arrow.up.right.square")
+                    HStack(spacing: 16) {
+                        if let url = URL(string: article.url) {
+                            ShareLink(item: url, subject: Text(article.title)) {
+                                Image(systemName: "square.and.arrow.up")
+                            }
                         }
-                        .font(.subheadline)
+                        Link(destination: URL(string: article.url)!) {
+                            HStack(spacing: 4) {
+                                Text("Original")
+                                Image(systemName: "arrow.up.right.square")
+                            }
+                            .font(.subheadline)
+                        }
                     }
                 }
             }
