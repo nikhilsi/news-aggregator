@@ -70,7 +70,7 @@ _cache: dict[str, CacheEntry] = {}
 _refreshing: set[str] = set()
 
 # SWR stale window multiplier — serve stale data up to this many times the TTL
-_SWR_MULTIPLIER = 4  # e.g., 15min TTL × 4 = stale data usable for up to 60min
+_SWR_MULTIPLIER = 96  # e.g., 15min TTL × 96 = stale data usable for up to 24h
 
 
 def get(source_id: str) -> list[dict] | None:
