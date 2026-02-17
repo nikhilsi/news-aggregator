@@ -1,6 +1,6 @@
 # NOW — Current Priorities
 
-**Last Updated**: February 13, 2026
+**Last Updated**: February 17, 2026
 
 ## Completed Phases
 
@@ -12,7 +12,7 @@
 - **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
 - **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
 - **Phase 8: Cold cache performance** — `done` — Extended SWR stale window to 24h, progressive response with 3s deadline, dedup bucketed by category, categories moved to sources.yaml, Cache-Control fix (v1.6.0)
-- **Phase 9: App Store submission** — `in progress` — Code hardened (v1.7.0), build uploaded to App Store Connect, all metadata pushed via API, TestFlight submitted for beta review with 3 testers
+- **Phase 9: App Store submission** — `in progress` — Code hardened (v1.7.0), build uploaded, metadata/screenshots pushed via API, TestFlight tested, submitted for App Store review
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
@@ -46,11 +46,14 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - [x] Screenshots captured and uploaded (6 iPhone 6.9" + 5 iPad 13")
 - [x] TestFlight: "Family Testers" group created, 3 testers added (nikhilsi@gmail.com, ss310505@gmail.com, me190507@gmail.com)
 - [x] Build submitted for beta review — state: WAITING_FOR_REVIEW
+- [x] Beta review approved (Feb 13) — build assigned to "Family Testers" group, invitations sent
+- [x] TestFlight tested on real device — all looks good
+- [x] Pricing set to Free via API
+- [x] App Privacy declaration published (no data collected) — manual step in App Store Connect
+- [x] Submitted for App Store review (Feb 17) — state: WAITING_FOR_REVIEW
 
 ### Remaining
-- [ ] TestFlight beta review approval (typically 24-48h for first build)
-- [ ] Self-test via TestFlight on real device
-- [ ] After TestFlight validation: submit for App Store review
+- [ ] App Store review approval (typically 24-48h)
 
 ### App Store Connect IDs (for API reference)
 - App ID: `6759177704`
@@ -60,6 +63,8 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - API Key ID: `5R9VGXLC4T`
 - Issuer ID: `562ca730-1c40-4be0-b733-40ab7d8cc103`
 - API Key file: `~/Downloads/AuthKey_5R9VGXLC4T.p8`
+
+- Review Submission ID: `632aa39d-d431-434d-8e3e-b8fe5d224de8`
 
 **Reference:** docs/app-store-submission-playbook.md (learnings from GitaVani project)
 

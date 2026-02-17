@@ -1,10 +1,10 @@
 # Current State
 
-**Last Updated**: February 13, 2026
+**Last Updated**: February 17, 2026
 
-## Status: Live at getclearnews.com | iOS build in TestFlight beta review | 41 sources across 13 categories
+## Status: Live at getclearnews.com | iOS v1.0 submitted for App Store review | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app hardened for App Store (auth removed, privacy manifest added, accessibility labels, force-unwrap crashes fixed). Privacy policy and support pages live at getclearnews.com. Build v1.0 uploaded to App Store Connect as "GetClearNews", all metadata pushed via API, TestFlight submitted for beta review with 3 testers.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app hardened for App Store (auth removed, privacy manifest added, accessibility labels, force-unwrap crashes fixed). Privacy policy and support pages live at getclearnews.com. Build v1.0 uploaded to App Store Connect as "GetClearNews", all metadata and screenshots pushed via API. TestFlight tested successfully on real device. App submitted for App Store review (Feb 17) — waiting for approval.
 
 ## What's Built
 

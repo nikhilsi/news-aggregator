@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.7.0] - 2026-02-13 — App Store Preparation
+## [1.7.0] - 2026-02-17 — App Store Submission
 
 ### Removed
 - **iOS: Authentication removed entirely** — Login, Keychain, AuthService all removed. No user-facing features depend on auth, and it added unnecessary privacy complexity for App Store review. Backend auth remains for future use. Deleted 4 files: AuthService.swift, Auth.swift, LoginView.swift, KeychainHelper.swift.
@@ -20,7 +20,10 @@
 - **App icon** — Added to Assets.xcassets/AppIcon.appiconset/ (1024x1024 PNG, multiple newspapers with magnifying glass on teal background).
 - **App Store metadata** — All pushed via App Store Connect API: subtitle ("News Without the Noise"), description, keywords, categories (News/Reference), age rating (12+), copyright, privacy/support/marketing URLs, review notes, export compliance.
 - **Screenshots** — 6 iPhone 6.9" + 5 iPad 13" captured from simulators and uploaded via API.
-- **TestFlight** — "Family Testers" beta group created with 3 testers, build submitted for beta review.
+- **TestFlight** — "Family Testers" beta group created with 3 testers, beta review approved, tested on real device.
+- **Pricing** — Set to Free via App Store Connect API.
+- **App Privacy** — Published "no data collected" declaration in App Store Connect.
+- **App Store submission** — Submitted for App Store review (Feb 17), release type: after approval.
 
 ---
 
