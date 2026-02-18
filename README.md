@@ -99,4 +99,4 @@ See [deployment/README.md](deployment/README.md) for the full production setup g
 
 ## License
 
-Private project. Not for distribution.
+MIT License — see [LICENSE](LICENSE) for details.

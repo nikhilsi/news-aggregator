@@ -27,7 +27,7 @@
 
 ## 🚨 Critical Rules
 
-### What Pisses Me Off (AVOID AT ALL COSTS)
+### Critical Rules (Non-Negotiable)
 1. **Unauthorized commits** - NEVER commit without explicit approval
 2. **Unauthorized deploys** - NEVER deploy to production unless explicitly told
 3. **Over-engineering** - KISS principle always

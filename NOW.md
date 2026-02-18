@@ -44,7 +44,7 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
   - Review notes (976 chars) with contact info
   - Export compliance: no non-exempt encryption
 - [x] Screenshots captured and uploaded (6 iPhone 6.9" + 5 iPad 13")
-- [x] TestFlight: "Family Testers" group created, 3 testers added (nikhilsi@gmail.com, ss310505@gmail.com, me190507@gmail.com)
+- [x] TestFlight: "Family Testers" group created, 3 testers added
 - [x] Build submitted for beta review — state: WAITING_FOR_REVIEW
 - [x] Beta review approved (Feb 13) — build assigned to "Family Testers" group, invitations sent
 - [x] TestFlight tested on real device — all looks good
@@ -54,17 +54,6 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 
 ### Remaining
 - [ ] App Store review approval (typically 24-48h)
-
-### App Store Connect IDs (for API reference)
-- App ID: `6759177704`
-- Version ID: `6fd4b58f-55fd-405e-9753-31a6db675016`
-- Build ID: `02ab0175-6420-4502-80b9-857ccf646ce6`
-- Beta Group ID: `33175c0f-4245-44fe-9c80-e50409a6fa55`
-- API Key ID: `5R9VGXLC4T`
-- Issuer ID: `562ca730-1c40-4be0-b733-40ab7d8cc103`
-- API Key file: `~/Downloads/AuthKey_5R9VGXLC4T.p8`
-
-- Review Submission ID: `632aa39d-d431-434d-8e3e-b8fe5d224de8`
 
 **Reference:** docs/app-store-submission-playbook.md (learnings from GitaVani project)
 
