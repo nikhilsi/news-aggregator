@@ -180,6 +180,10 @@ def _normalize_entry(entry: dict, source: SourceConfig) -> dict | None:
         logger.warning("Skipping entry from %s: missing title or link", source.name)
         return None
 
+    # Skip sponsored/ad content disguised as articles (e.g. India Today "visual stories")
+    if "/visualstories/" in url:
+        return None
+
     return {
         "title": strip_html(title) or title,
         "summary": _extract_summary(entry),
