@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.1] - 2026-03-01 — iOS App Store Update (v2.0 build 2)
+
+### Fixed
+- **Content swap on refresh** — Manual refresh no longer triggers auto-retry, which was causing articles to visibly rearrange 3 seconds after refresh (two-tier sort ran against partially-updated cache). Auto-retry now limited to cold cache (first visit) only. Fixed on both web and iOS.
+
+### Changed
+- **iOS version bumped to 2.0** (build 2) — Submitted to App Store with all v2.0.0 security/quality changes.
+
+---
+
 ## [2.0.0] - 2026-03-01 — Security Hardening + Auth Removal
 
 ### Removed
