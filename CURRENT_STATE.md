@@ -2,7 +2,7 @@
 
 **Last Updated**: March 1, 2026
 
-## Status: Live at getclearnews.com | iOS v1.0 on App Store | 41 sources across 13 categories
+## Status: Live at getclearnews.com | iOS v2.0 on App Store | 41 sources across 13 categories
 
 Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Authentication system removed (no user data stored, no database). Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), non-blocking refresh, background refresh loop (~25s per source), conditional HTTP requests (ETag/Last-Modified for 304 support), startup warmup (~11s), thread pool offloading, two-tier article sorting, content filtering (non-Latin script filter, visual stories ad filter), SSRF-protected reader endpoint, allowlist-based HTML sanitization (nh3), and 41 enabled sources across 13 categories. Web has pull-to-refresh with auto-retry on partial data, client-side HTML sanitization (DOMPurify), error boundary, accessible reader modal with focus trapping. iOS has pull-to-refresh with auto-retry, @MainActor concurrency safety, WebView Content Security Policy, accessibility improvements. Deployment hardened with .dockerignore, multi-stage Docker builds, container resource limits, pinned base images, comprehensive nginx security headers. Privacy policy and support pages live at getclearnews.com. App live on App Store as "GetClearNews".
 
@@ -39,7 +39,7 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Error handling** — retry button on errors, timeout-specific messaging ("Taking longer than expected"), slow-loading hint after 3s ("Fetching fresh articles...")
 - **Smooth transitions** — category/search changes keep previous articles visible while new data loads (no flash of empty state)
 - **Reader view** — in-app article reading via full-screen modal overlay with `role="dialog"`, `aria-modal`, focus trapping, and `aria-labelledby`. Feed stays mounted underneath for instant back navigation. Content extraction from backend, client-side DOMPurify sanitization, skeleton loading, fallback for paywalled sites. Escape key and browser back close the modal.
-- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache), useArticles hook silently re-fetches after 3 seconds to get the full article set
+- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache, not manual refresh), useArticles hook silently re-fetches after 3 seconds to get the full article set
 - **Filters** — category tabs, debounced keyword search (400ms), race condition handling
 - **Dark mode** — class-based Tailwind, localStorage persistence, OS preference detection, no flash on load
 - **Error boundary** — `error.tsx` catches unhandled exceptions with user-friendly retry UI
@@ -55,7 +55,7 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Architecture** — @MainActor @Observable services with private(set) properties, .environment() injection, singleton APIClient, zero external packages
 - **Dynamic Type** — all text uses semantic fonts (.headline, .subheadline, .caption), padding/icon sizes scale via @ScaledMetric
 - **Haptic feedback** — light impact on article card tap and category pill selection
-- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache), ArticleService silently re-fetches after 3 seconds to get the full article set
+- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache, not manual refresh), ArticleService silently re-fetches after 3 seconds to get the full article set
 - **Accessibility** — labels on share buttons, reader toolbar buttons, combined accessibility elements on error/empty states, decorative icons hidden, article cards announce as buttons with VoiceOver hint, category tabs convey selected state, WebView HTML includes `lang="en"`
 - **Privacy manifest** — PrivacyInfo.xcprivacy declares UserDefaults usage (CA92.1), no tracking, no collected data types
 - **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
