@@ -17,6 +17,7 @@ import asyncio
 import logging
 import re
 import time
+import unicodedata
 
 import httpx
 
@@ -184,6 +185,28 @@ def _deduplicate(articles: list[dict]) -> list[dict]:
         logger.info("Dedup: removed %d duplicates, %d → %d articles", removed, len(articles), len(kept))
 
     return kept
+
+
+def _is_non_latin_text(text: str, threshold: float = 0.2) -> bool:
+    """Check if text contains a high proportion of non-Latin script characters.
+
+    Used to filter Hindi/Devanagari articles from non-India tabs.
+    Returns True if more than `threshold` fraction of letters are non-Latin.
+    """
+    if not text:
+        return False
+    latin = 0
+    non_latin = 0
+    for char in text:
+        if unicodedata.category(char).startswith("L"):
+            if ord(char) <= 0x024F:  # Basic Latin + Latin Extended-A/B
+                latin += 1
+            else:
+                non_latin += 1
+    total = latin + non_latin
+    if total == 0:
+        return False
+    return (non_latin / total) > threshold
 
 
 def _pub_key(article: dict) -> str:
@@ -463,6 +486,10 @@ async def get_articles(
             # Normal cold cache: use deadline for faster partial response
             fetched, complete = await _fetch_with_deadline(sources_to_fetch)
             all_articles.extend(fetched)
+
+    # Filter non-Latin articles (e.g. Hindi) from all tabs except India
+    if category != "india":
+        all_articles = [a for a in all_articles if not _is_non_latin_text(a.get("title", ""))]
 
     # Deduplicate before sorting (CPU-bound — offload to thread pool)
     before_dedup = len(all_articles)
