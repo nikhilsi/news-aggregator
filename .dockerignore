@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Environment and secrets
+.env
+.env.*
+deployment/.env.production
+
+# Databases
+*.db
+*.db-journal
+*.sqlite3
+
+# Logs
+logs/
+
+# Platform-specific (not needed in Docker builds)
+ios/
+appstore/
+
+# Build artifacts
+node_modules/
+.next/
+out/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+.claude/
+
+# Documentation (not needed at runtime)
+*.md
+LICENSE
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Xcode
+*.xcarchive
+xcuserdata/
