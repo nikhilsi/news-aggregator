@@ -6,21 +6,13 @@ Uses pydantic-settings for typed, validated configuration.
 
 Usage:
     from app.config import settings
-    print(settings.secret_key)
+    print(settings.fmp_api_key)
 """
 
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # JWT authentication
-    secret_key: str = "change-me"          # Override in .env — generate with: python -c "import secrets; print(secrets.token_hex(32))"
-    jwt_algorithm: str = "HS256"           # HMAC-SHA256, symmetric signing
-    jwt_expire_minutes: int = 60 * 24      # Token lifetime: 24 hours
-
-    # SQLite database path (users table only — articles are cached in memory)
-    database_url: str = "sqlite:///./news_aggregator.db"
-
     # Default cache TTL for article fetching (can be overridden per-source in sources.yaml)
     cache_ttl_minutes: int = 15
 

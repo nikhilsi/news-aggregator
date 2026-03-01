@@ -6,20 +6,11 @@ uvicorn[standard]>=0.34.0,<1.0.0
 pydantic>=2.10.0,<3.0.0
 pydantic-settings>=2.7.0,<3.0.0
 
-# Database
-aiosqlite>=0.20.0,<1.0.0
-
 # RSS parsing
 feedparser>=6.0.0,<7.0.0
 
 # HTTP client (for API sources)
 httpx>=0.28.0,<1.0.0
-
-# Authentication
-pyjwt[cryptography]>=2.10.0,<3.0.0
-passlib[bcrypt]>=1.7.0,<2.0.0
-bcrypt>=4.0.0,<4.1.0             # Pin: passlib 1.7.x incompatible with bcrypt 4.1+
-email-validator>=2.0.0,<3.0.0
 
 # Deduplication
 rapidfuzz>=3.10.0,<4.0.0
@@ -27,6 +18,9 @@ rapidfuzz>=3.10.0,<4.0.0
 # Content extraction (reader view)
 trafilatura>=2.0.0,<3.0.0
 readability-lxml>=0.8.0,<1.0.0
+
+# HTML sanitization (reader view — allowlist-based, Rust-powered)
+nh3>=0.2.0,<1.0.0
 
 # YAML config
 pyyaml>=6.0.0,<7.0.0

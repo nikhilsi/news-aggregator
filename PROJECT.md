@@ -13,7 +13,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | **Backend** | Python 3.12+ / FastAPI | REST API serving both web and mobile clients |
-| **Database** | SQLite | Users and persistent data only |
+| **Database** | None (stateless) | All data is in-memory article cache — no persistent storage needed |
 | **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
 | **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Standalone output for Docker, dark mode, infinite scroll |
 | **iOS App** | Swift / SwiftUI | Native iOS app, 26 files, zero packages, @Observable + .environment() |
@@ -41,10 +41,6 @@ The core idea: a single place to consume news without clickbait, ad overload, an
        │  ┌───────────┐  │
        │  │ In-Memory  │  │
        │  │  Cache     │  │
-       │  └───────────┘  │
-       │  ┌───────────┐  │
-       │  │  SQLite    │  │
-       │  │  (users)   │  │
        │  └───────────┘  │
        └────────┬────────┘
                 │
@@ -78,20 +74,18 @@ Cache TTL is configurable per-source (default: 15 minutes). SWR caching (24h sta
 
 **Conditional HTTP requests**: RSS and FMP fetchers store `ETag` and `Last-Modified` response headers per source. On subsequent fetches, they send `If-None-Match` / `If-Modified-Since` headers. Feeds that haven't changed return `304 Not Modified` — the cache TTL is extended without re-parsing XML, saving CPU and bandwidth.
 
-**Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication, bcrypt password verification) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
+**Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
 
 ---
 
-## Authentication
+## Security
 
-Email/password authentication with JWT tokens.
-
-- Backend issues a JWT token on successful login
-- Token is sent with every subsequent request via `Authorization: Bearer <token>` header
-- Both web and iOS clients store the token locally (httpOnly cookie for web, Keychain for iOS)
-- Single user initially, with the ability to add more users later (family/friends)
-- Registration is invite-only or admin-created (no public signup)
-- User table tracks: email, password_hash, full_name, is_admin, is_active, failed_login_attempts, last_login
+- **SSRF protection** — reader endpoint validates URLs before fetching: blocks private IPs, loopback, link-local, reserved addresses, DNS rebinding prevention, HTTP(S)-only schemes
+- **HTML sanitization** — two-layer defense: backend uses nh3 (Rust-powered allowlist sanitizer), web frontend adds DOMPurify client-side, iOS uses Content Security Policy in WKWebView
+- **No authentication** — public read-only API. No user accounts, no passwords, no tokens, no database. All data is transient article cache.
+- **Nginx security headers** — HSTS, CSP, Referrer-Policy, Permissions-Policy, X-Content-Type-Options, X-Frame-Options, server_tokens off
+- **Docker hardening** — non-root users, multi-stage builds, .dockerignore, pinned base images, container resource limits
+- **Rate limiting** — nginx rate limits on all API endpoints (10 req/s per IP)
 
 ---
 
@@ -155,22 +149,6 @@ Sources are defined in `backend/sources.yaml`. See that file for the full list. 
 }
 ```
 
-### User (SQLite — Persistent)
-
-```sql
-users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(255),
-    is_admin BOOLEAN DEFAULT 0,
-    is_active BOOLEAN DEFAULT 1,
-    failed_login_attempts INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_login DATETIME
-)
-```
-
 ---
 
 ## Source Registry
@@ -193,14 +171,6 @@ Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove
 ### Base URL
 ```
 /api/v1
-```
-
-### Authentication Endpoints
-
-```
-POST   /api/v1/auth/login          # Login, returns JWT
-POST   /api/v1/auth/logout         # Invalidate token
-GET    /api/v1/auth/me             # Get current user info
 ```
 
 ### Article Endpoints
@@ -266,7 +236,7 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 
 ## Caching Strategy
 
-- **Cache layer:** In-memory Python dict (not SQLite — articles are transient)
+- **Cache layer:** In-memory Python dict (no database — articles are transient)
 - **Cache key:** Source ID
 - **Default TTL:** 15 minutes (configurable per-source in `sources.yaml`)
 - **Stale-while-revalidate (SWR):** Three-state cache with background refresh
@@ -330,18 +300,12 @@ news-aggregator/
 │   │   ├── main.py                 # FastAPI app entry point, middleware, lifespan
 │   │   ├── config.py               # App configuration, env vars
 │   │   ├── logging_config.py       # Logging setup (text format)
-│   │   ├── database.py             # SQLite connection and setup (users only)
 │   │   ├── cache.py                # In-memory SWR article cache
-│   │   │
-│   │   ├── auth/
-│   │   │   ├── router.py           # Auth endpoints
-│   │   │   ├── models.py           # User model
-│   │   │   └── utils.py            # JWT, password hashing
 │   │   │
 │   │   ├── articles/
 │   │   │   ├── router.py           # Article endpoints
 │   │   │   ├── service.py          # Business logic — fetch, cache, filter
-│   │   │   └── reader.py           # Content extraction for reader view
+│   │   │   └── reader.py           # Content extraction for reader view (SSRF-protected, nh3 sanitization)
 │   │   │
 │   │   ├── sources/
 │   │   │   ├── router.py           # Source/category endpoints
@@ -352,7 +316,6 @@ news-aggregator/
 │   │   └── common/
 │   │       └── schemas.py          # Pydantic schemas (API response shapes)
 │   │
-│   ├── schema.sql                  # SQLite schema (users table only)
 │   ├── sources.yaml                # Source registry configuration
 │   ├── requirements.txt
 │   ├── .env.example
@@ -363,14 +326,14 @@ news-aggregator/
 │   └── ClearNews/ClearNews/ClearNews/
 │       ├── ClearNewsApp.swift      # @main entry, services, .environment()
 │       ├── ContentView.swift       # TabView (Home + Settings)
-│       ├── Models/                 # Article, ReaderContent, Category, Auth
-│       ├── Services/               # APIClient, ArticleService, CategoryService, AuthService
+│       ├── Models/                 # Article, ReaderContent, Category
+│       ├── Services/               # APIClient, ArticleService, CategoryService
 │       ├── Settings/               # AppSettings (appearance, font scale)
 │       ├── Views/Home/             # HomeView, ArticleListView, ArticleCardView, CategoryTabsView
 │       ├── Views/Reader/           # ReaderView, ReaderWebView (WKWebView)
-│       ├── Views/Settings/         # SettingsView, LoginView, AboutView
+│       ├── Views/Settings/         # SettingsView, AboutView
 │       ├── Views/Shared/           # ErrorView, EmptyStateView, RelativeTimeText, SkeletonView
-│       └── Utilities/              # Constants, KeychainHelper
+│       └── Utilities/              # Constants
 ├── iosplan.md                      # iOS architecture & build plan
 ├── deployment/
 │   ├── docker/                     # Dockerfiles + docker-compose.prod.yml
@@ -386,11 +349,10 @@ news-aggregator/
 
 ```bash
 # Backend
-SECRET_KEY=<jwt-secret-key>
-DATABASE_URL=sqlite:///./news_aggregator.db
 FMP_API_KEY=<your-key>
 WORLD_NEWS_API_KEY=<your-key>              # Optional — not yet integrated
 CACHE_TTL_MINUTES=15
+CORS_ORIGINS=https://getclearnews.com      # Production only
 
 # Web Frontend
 NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
@@ -409,8 +371,8 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
   - Backend: FastAPI on Uvicorn (port 8000, localhost only)
   - Frontend: Next.js standalone (port 3000, localhost only)
 - **SSL**: Let's Encrypt with certbot auto-renewal
-- **Database**: SQLite bind-mounted to `/opt/app/data/` for persistence
-- **Security**: UFW firewall, fail2ban, rate limiting, non-root container users, security headers
+- **Stateless**: No database — all data is in-memory article cache. Logs bind-mounted to `/opt/app/logs/`
+- **Security**: UFW firewall, fail2ban, rate limiting, non-root container users, comprehensive security headers, container resource limits, multi-stage builds, .dockerignore
 - **Deploy script**: Auto-cleans Docker build cache and old images after every deploy to prevent disk bloat
 
 ```

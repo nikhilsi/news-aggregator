@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.0.0] - 2026-03-01 — Security Hardening + Auth Removal
+
+### Removed
+- **Authentication system** — Removed JWT auth, login, password hashing, SQLite database, users table, seed script. Auth was unused — no endpoints required it, iOS app had already removed it. Eliminated: `backend/app/auth/`, `backend/app/database.py`, `backend/schema.sql`, `backend/seed_admin.py`, `web/src/app/login/`, `web/src/context/AuthContext.tsx`, `web/src/components/UserMenu.tsx`. Removed dependencies: `pyjwt`, `passlib`, `bcrypt`, `email-validator`, `aiosqlite`.
+
+### Security
+- **SSRF protection on reader endpoint** — `/api/v1/articles/reader?url=` now validates URLs before fetching: blocks private IPs, loopback, link-local, reserved addresses, non-HTTP schemes. DNS resolution checked to prevent rebinding attacks. Returns 400 for invalid URLs.
+- **HTML sanitization replaced** — Switched from regex-based deny-list (bypassable) to `nh3` (Rust-powered allowlist sanitizer). Only explicitly allowed tags and attributes survive. No XSS bypass vectors possible.
+- **Client-side HTML sanitization** — Added DOMPurify to web frontend as defense-in-depth. Reader view HTML is sanitized both server-side (nh3) and client-side (DOMPurify) before rendering.
+- **iOS WebView CSP** — Added Content-Security-Policy meta tag to WKWebView HTML. Blocks injected scripts from executing. All non-link navigation types intercepted and opened in Safari instead.
+- **Swagger/ReDoc disabled in production** — API docs (`/docs`, `/redoc`, `/openapi.json`) no longer exposed on the production server.
+- **CORS restricted** — Allowed methods narrowed from `*` to `GET, OPTIONS`. Allowed headers narrowed to `Content-Type`.
+- **Nginx hardened** — Added `server_tokens off`, `Referrer-Policy`, `Permissions-Policy`, `client_max_body_size 1m`, `proxy_hide_header X-Powered-By`. Removed deprecated `X-XSS-Protection` (replaced with `0`). Removed `unsafe-eval` from CSP. Tightened SSL cipher suite to Mozilla intermediate recommendation. Added rate limiting to `/health`. Removed auth rate limit zone (no longer needed).
+- **Docker hardened** — Created `.dockerignore` to prevent secrets/git history from leaking into build context. Backend Dockerfile converted to multi-stage build (gcc removed from production image). Docker base images pinned to specific Alpine versions. Container resource limits added (512M/0.75 CPU backend, 256M/0.50 CPU frontend).
+- **`.env.production` added to `.gitignore`** — Prevents accidental commit of production secrets.
+- **Directory permissions fixed** — `chmod 777` replaced with `chmod 750` + proper ownership in setup script.
+
+### Improved
+- **Web: React Error Boundary** — Added `error.tsx` for graceful handling of unhandled exceptions.
+- **Web: Reader modal accessibility** — Added `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, focus trapping (Tab cycles within modal), and auto-focus on close button.
+- **Web: ArticleCard memoized** — Wrapped with `React.memo` to prevent unnecessary re-renders during infinite scroll.
+- **Web: Article image alt text** — Thumbnails now use article title as alt text for screen readers.
+- **iOS: @MainActor on services** — `ArticleService` and `CategoryService` annotated with `@MainActor` for correct Swift concurrency.
+- **iOS: private(set) on service properties** — UI-driving properties (articles, isLoading, error, etc.) no longer writable from outside the service.
+- **iOS: WebView reload prevention** — `updateUIView` now only reloads when HTML actually changes, preventing flicker.
+- **iOS: WKWebView cleanup** — Script message handler removed in `dismantleUIView` to prevent memory leaks.
+- **iOS: Double percent-encoding fixed** — Reader URL no longer double-encoded when passed to URLQueryItem.
+- **iOS: Static DateFormatter** — `RelativeTimeText` no longer allocates a new `DateFormatter` on every render.
+- **iOS: Accessibility** — Article cards announce as buttons with hint for VoiceOver. Category tabs convey selected state. WebView HTML includes `lang="en"`. Height message handler has bounds validation.
+- **iOS: Unused `post` method removed** from APIClient.
+
+---
+
 ## [1.9.0] - 2026-03-01 — Refresh Performance Overhaul
 
 ### Changed

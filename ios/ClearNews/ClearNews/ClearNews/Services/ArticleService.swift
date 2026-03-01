@@ -1,12 +1,13 @@
 import Foundation
 
+@MainActor
 @Observable
 final class ArticleService {
-    var articles: [Article] = []
-    var isLoading = false
-    var isLoadingMore = false
-    var error: String?
-    var hasMore = false
+    private(set) var articles: [Article] = []
+    private(set) var isLoading = false
+    private(set) var isLoadingMore = false
+    private(set) var error: String?
+    private(set) var hasMore = false
     var selectedCategory = "all"
     var searchQuery = ""
 

@@ -4,6 +4,12 @@ import SwiftUI
 struct RelativeTimeText: View {
     let date: Date
 
+    private static let shortDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
+
     var body: some View {
         Text(formatRelativeTime(date))
             .font(.caption)
@@ -22,8 +28,6 @@ struct RelativeTimeText: View {
         if days < 7 { return "\(days)d ago" }
 
         // Older than a week — show short date
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
+        return Self.shortDateFormatter.string(from: date)
     }
 }

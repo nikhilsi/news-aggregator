@@ -35,6 +35,9 @@ struct ArticleListView: View {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             onArticleTap(article)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHint("Opens reader view")
                 }
 
                 // Infinite scroll sentinel

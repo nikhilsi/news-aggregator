@@ -20,7 +20,7 @@ export default function CategoryTabs({ selected, onSelect }: CategoryTabsProps) 
   useEffect(() => {
     fetchCategories()
       .then(setCategories)
-      .catch((err) => console.error('Failed to load categories:', err));
+      .catch(() => {});
   }, []);
 
   // API already returns "All" as the first category — use the list directly

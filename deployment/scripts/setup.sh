@@ -51,10 +51,10 @@ echo "✅ System packages installed"
 # ── Create persistent directories ─────────────────────────────────────
 echo ""
 echo "📁 Creating data directories..."
-mkdir -p /opt/app/data
 mkdir -p /opt/app/logs
-chmod 777 /opt/app/data /opt/app/logs
-echo "✅ Directories created: /opt/app/data, /opt/app/logs"
+chown -R 1000:1000 /opt/app/logs
+chmod 750 /opt/app/logs
+echo "✅ Directories created: /opt/app/logs"
 
 # ── Create .env.production ────────────────────────────────────────────
 if [ ! -f "deployment/.env.production" ]; then
@@ -62,12 +62,8 @@ if [ ! -f "deployment/.env.production" ]; then
     echo "📝 Creating .env.production from template..."
     cp deployment/.env.production.example deployment/.env.production
 
-    # Generate a random SECRET_KEY
-    GENERATED_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
-    sed -i "s/SECRET_KEY=CHANGE_ME/SECRET_KEY=$GENERATED_KEY/" deployment/.env.production
-
-    echo "✅ .env.production created with generated SECRET_KEY"
-    echo "   Edit if needed: nano /opt/app/deployment/.env.production"
+    echo "✅ .env.production created"
+    echo "   Edit to add API keys: nano /opt/app/deployment/.env.production"
 else
     echo ""
     echo "⏭️  .env.production already exists, skipping"

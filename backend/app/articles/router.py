@@ -5,9 +5,9 @@ GET /api/v1/articles         — Fetch articles with optional category/source/se
 GET /api/v1/articles/reader  — Extract clean article content for reader view.
 """
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from app.articles.reader import extract_article_content
+from app.articles.reader import extract_article_content, validate_reader_url
 from app.articles.service import get_articles
 from app.common.schemas import ArticleListResponse, ArticleResponse, PaginationResponse, ReaderResponse
 
@@ -27,6 +27,9 @@ async def reader_view(
     Returns status="ok" with content on success, or status="failed"
     with a reason code on failure (forbidden, timeout, extraction_empty, error).
     """
+    url_error = validate_reader_url(url)
+    if url_error:
+        raise HTTPException(status_code=400, detail=url_error)
     result = await extract_article_content(url)
     return ReaderResponse(**result)
 

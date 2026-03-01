@@ -7,7 +7,8 @@
  * Browser back button closes the modal via pushState/popstate.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { Article, ReaderResponse } from '@/lib/types';
 import { fetchReaderContent } from '@/lib/api';
 import { timeAgo } from '@/lib/utils';
@@ -21,6 +22,8 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
   const [reader, setReader] = useState<ReaderResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch reader content on mount
   useEffect(() => {
@@ -65,10 +68,40 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  // Close on Escape key — go through history.back() so the URL reverts
+  // Focus the close button on mount
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
+
+  // Close on Escape key and trap focus within the modal
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') window.history.back();
+      if (e.key === 'Escape') {
+        window.history.back();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -90,11 +123,12 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
   const isOk = reader?.status === 'ok';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-white dark:bg-gray-950">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="reader-title" className="fixed inset-0 z-50 overflow-y-auto bg-white dark:bg-gray-950">
       {/* Top bar — sticky */}
       <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/80">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <button
+            ref={closeButtonRef}
             onClick={handleClose}
             className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
@@ -136,7 +170,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
 
         {/* Title */}
         {title && (
-          <h1 className="mb-4 text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
+          <h1 id="reader-title" className="mb-4 text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
             {title}
           </h1>
         )}
@@ -206,7 +240,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
               prose-img:rounded-lg prose-img:mx-auto
               prose-p:leading-relaxed
               prose-li:leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: reader.content_html }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reader.content_html) }}
           />
         )}
       </article>

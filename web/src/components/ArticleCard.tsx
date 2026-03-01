@@ -5,6 +5,7 @@
  * Clicking the card opens the reader modal overlay.
  */
 
+import { memo } from 'react';
 import { Article } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
 
@@ -13,7 +14,7 @@ interface ArticleCardProps {
   onClick: (article: Article) => void;
 }
 
-export default function ArticleCard({ article, onClick }: ArticleCardProps) {
+function ArticleCard({ article, onClick }: ArticleCardProps) {
   return (
     <button
       type="button"
@@ -25,7 +26,7 @@ export default function ArticleCard({ article, onClick }: ArticleCardProps) {
         {article.image_url && (
           <img
             src={article.image_url}
-            alt=""
+            alt={article.title}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
@@ -59,3 +60,5 @@ export default function ArticleCard({ article, onClick }: ArticleCardProps) {
     </button>
   );
 }
+
+export default memo(ArticleCard);

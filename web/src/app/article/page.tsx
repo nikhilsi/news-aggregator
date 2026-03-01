@@ -12,6 +12,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
+import DOMPurify from 'dompurify';
 import { fetchReaderContent } from '@/lib/api';
 import { ReaderResponse } from '@/lib/types';
 import { timeAgo } from '@/lib/utils';
@@ -186,7 +187,7 @@ function ReaderContent() {
               prose-img:rounded-lg prose-img:mx-auto
               prose-p:leading-relaxed
               prose-li:leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: reader.content_html }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reader.content_html) }}
           />
         )}
       </article>

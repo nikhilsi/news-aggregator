@@ -173,10 +173,9 @@ struct ReaderView: View {
         error = nil
 
         do {
-            let encodedUrl = article.url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? article.url
             readerContent = try await APIClient.shared.get(
                 "/articles/reader",
-                queryItems: [URLQueryItem(name: "url", value: encodedUrl)]
+                queryItems: [URLQueryItem(name: "url", value: article.url)]
             )
         } catch {
             self.error = error.localizedDescription

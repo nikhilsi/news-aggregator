@@ -91,13 +91,6 @@ final class APIClient {
         return try await execute(request)
     }
 
-    func post<Body: Encodable, T: Decodable>(_ path: String, body: Body) async throws -> T {
-        var request = try buildRequest(path: path, method: "POST")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
-        return try await execute(request)
-    }
-
     // MARK: - Private
 
     private func buildRequest(

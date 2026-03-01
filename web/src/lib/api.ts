@@ -3,9 +3,7 @@
 import {
   ArticleListResponse,
   Category,
-  LoginResponse,
   ReaderResponse,
-  User,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -72,18 +70,3 @@ export async function fetchCategories(): Promise<Category[]> {
   return request<Category[]>('/categories');
 }
 
-/* ── Auth ─────────────────────────────────────────────────── */
-
-export async function login(email: string, password: string): Promise<LoginResponse> {
-  return request<LoginResponse>('/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-export async function fetchMe(token: string): Promise<User> {
-  return request<User>('/auth/me', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}

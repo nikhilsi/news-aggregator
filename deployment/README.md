@@ -9,15 +9,13 @@ Nginx (host-level, SSL termination + rate limiting)
     ├── /api/*    → Backend container (FastAPI, port 8000)
     ├── /health   → Backend container
     └── /*        → Frontend container (Next.js, port 3000)
-                        ↓
-                   SQLite (/opt/app/data/)
 ```
 
 - **Host**: DigitalOcean Droplet (Ubuntu 24.04, $6/mo, sfo3)
 - **Domain**: getclearnews.com
 - **SSL**: Let's Encrypt with auto-renewal
 - **Containers**: Docker Compose (backend + frontend)
-- **Database**: SQLite bind-mounted to host for persistence
+- **Stateless**: No database — in-memory cache only
 
 ---
 
@@ -69,12 +67,6 @@ bash /opt/app/deployment/scripts/setup-ssl.sh
 
 # 3. Firewall + fail2ban
 bash /opt/app/deployment/scripts/setup-firewall.sh
-```
-
-### Create Admin User
-
-```bash
-docker exec -it clearnews-backend python seed_admin.py
 ```
 
 ---
@@ -151,8 +143,6 @@ fail2ban-client status sshd
 │   │   └── stream-logs.sh   # Stream remote logs locally
 │   ├── .env.production      # API keys (NOT in git)
 │   └── .env.production.example
-├── data/
-│   └── news_aggregator.db   # SQLite (bind-mounted into backend container)
 └── logs/
     └── deployments.log      # Deployment history
 ```
@@ -166,7 +156,7 @@ fail2ban-client status sshd
 | Containers won't start | `docker logs clearnews-backend` |
 | "No space left on device" | `docker system prune -af && docker volume prune -f` |
 | SSL cert expired | `certbot renew --force-renewal && systemctl reload nginx` |
-| Database locked | `docker restart clearnews-backend` |
+| High memory usage | Check container limits: `docker stats` |
 | 502 Bad Gateway | Check if containers are running: `docker ps` |
 | DNS not resolving | Wait 10 min, then `dig getclearnews.com` |
 

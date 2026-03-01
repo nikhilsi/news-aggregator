@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { AuthProvider } from '@/context/AuthContext';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout — wraps the entire app with theme and auth providers.
+ * Root layout — wraps the entire app with theme provider.
  *
  * The inline script in <head> reads the saved theme preference from localStorage
  * and applies the 'dark' class before React hydrates, preventing a flash of wrong theme.
@@ -51,9 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}
       >
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

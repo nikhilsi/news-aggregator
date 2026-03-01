@@ -54,20 +54,3 @@ export interface ReaderResponse {
   reason: string | null;           // "forbidden" | "timeout" | "extraction_empty" | "error"
 }
 
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: {
-    id: number;
-    email: string;
-    full_name: string | null;
-    is_admin: boolean;
-  };
-}
-
-export interface User {
-  id: number;
-  email: string;
-  full_name: string | null;
-  is_admin: boolean;
-}

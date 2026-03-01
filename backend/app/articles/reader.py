@@ -10,12 +10,16 @@ looked up from the article cache when available.
 """
 
 import asyncio
+import ipaddress
 import logging
 import re
+import socket
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import httpx
+import nh3
 import trafilatura
 from readability import Document as ReadabilityDocument
 
@@ -28,34 +32,75 @@ READER_CACHE_TTL_MINUTES = 60
 FETCH_TIMEOUT = 15.0
 MIN_WORD_COUNT = 50  # Below this, extraction is considered failed
 
-# Tags and attributes to strip for XSS prevention
-_UNSAFE_TAGS = re.compile(
-    r"<\s*/?\s*(script|iframe|frame|object|embed|form|style|link|meta)\b[^>]*>",
-    re.IGNORECASE | re.DOTALL,
-)
-_UNSAFE_TAG_BLOCKS = re.compile(
-    r"<\s*(script|style)\b[^>]*>.*?</\s*\1\s*>",
-    re.IGNORECASE | re.DOTALL,
-)
-_EVENT_HANDLERS = re.compile(r'\s+on\w+\s*=\s*"[^"]*"', re.IGNORECASE)
-_EVENT_HANDLERS_SQ = re.compile(r"\s+on\w+\s*=\s*'[^']*'", re.IGNORECASE)
-_JS_URLS = re.compile(r'(href|src|action)\s*=\s*"javascript:[^"]*"', re.IGNORECASE)
-_JS_URLS_SQ = re.compile(r"(href|src|action)\s*=\s*'javascript:[^']*'", re.IGNORECASE)
+# ── SSRF protection ──────────────────────────────────────────────────────
+
+_ALLOWED_SCHEMES = {"http", "https"}
+
+
+def _is_private_ip(hostname: str) -> bool:
+    """Check if a hostname resolves to a private/reserved IP address."""
+    try:
+        ip = ipaddress.ip_address(hostname)
+        return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+    except ValueError:
+        # Not an IP literal — resolve DNS to check the actual IP
+        try:
+            resolved = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            for _, _, _, _, sockaddr in resolved:
+                ip = ipaddress.ip_address(sockaddr[0])
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    return True
+        except (socket.gaierror, OSError):
+            return True  # DNS resolution failed — block to be safe
+        return False
+
+
+def validate_reader_url(url: str) -> str | None:
+    """Validate a URL for the reader endpoint. Returns an error message or None if valid."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        return "URL scheme not allowed"
+    if not parsed.hostname:
+        return "Invalid URL"
+    if _is_private_ip(parsed.hostname):
+        return "URL not allowed"
+    return None
+
+
+# ── HTML sanitization (allowlist-based via nh3) ──────────────────────────
+
+# Tags safe to render in the reader view
+_ALLOWED_TAGS = {
+    "p", "br", "b", "i", "em", "strong", "a", "img",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li", "blockquote", "pre", "code",
+    "figure", "figcaption", "div", "span", "table",
+    "thead", "tbody", "tr", "th", "td", "caption",
+    "sub", "sup", "hr", "mark", "del", "ins",
+}
+
+# Attributes safe to keep (per-tag)
+_ALLOWED_ATTRIBUTES: dict[str, set[str]] = {
+    "a": {"href", "title"},
+    "img": {"src", "alt", "width", "height", "loading"},
+    "td": {"colspan", "rowspan"},
+    "th": {"colspan", "rowspan"},
+}
 
 
 def _sanitize_html(html: str) -> str:
-    """Strip unsafe tags, event handlers, and javascript: URLs from HTML."""
-    # Remove script/style block content first
-    html = _UNSAFE_TAG_BLOCKS.sub("", html)
-    # Remove remaining unsafe tags (self-closing or orphaned)
-    html = _UNSAFE_TAGS.sub("", html)
-    # Remove event handlers
-    html = _EVENT_HANDLERS.sub("", html)
-    html = _EVENT_HANDLERS_SQ.sub("", html)
-    # Remove javascript: URLs
-    html = _JS_URLS.sub("", html)
-    html = _JS_URLS_SQ.sub("", html)
-    return html.strip()
+    """Sanitize HTML using allowlist-based nh3 (Rust-powered).
+
+    Only explicitly allowed tags and attributes survive. Everything else
+    is stripped — no regex bypass vectors possible.
+    """
+    return nh3.clean(
+        html,
+        tags=_ALLOWED_TAGS,
+        attributes=_ALLOWED_ATTRIBUTES,
+        link_rel="noopener noreferrer",
+        url_schemes={"http", "https", "data"},
+    )
 
 
 def _count_words(text: str) -> int:
@@ -143,6 +188,12 @@ async def extract_article_content(url: str) -> dict:
 
     Never raises — all errors are caught and returned as failed status.
     """
+    # Validate URL to prevent SSRF (block private/internal network addresses)
+    url_error = validate_reader_url(url)
+    if url_error:
+        logger.warning("Reader URL rejected (%s): %s", url_error, url[:80])
+        return _failed_response(url, "invalid_url")
+
     # Check reader content cache
     cached = cache.get(f"reader:{url}")
     if cached is not None:

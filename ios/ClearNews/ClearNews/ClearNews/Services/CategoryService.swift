@@ -1,9 +1,10 @@
 import Foundation
 
+@MainActor
 @Observable
 final class CategoryService {
-    var categories: [Category] = []
-    var isLoading = false
+    private(set) var categories: [Category] = []
+    private(set) var isLoading = false
 
     func fetchCategories() async {
         isLoading = true

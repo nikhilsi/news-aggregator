@@ -1,14 +1,12 @@
 'use client';
 
 /**
- * App header — logo/name, search bar, dark mode toggle, and user menu.
+ * App header — logo/name, search bar, refresh button, and dark mode toggle.
  * Sticky at the top of the viewport.
  */
 
-import { useAuth } from '@/context/AuthContext';
 import SearchBar from './SearchBar';
 import ThemeToggle from './ThemeToggle';
-import UserMenu from './UserMenu';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -17,8 +15,6 @@ interface HeaderProps {
 }
 
 export default function Header({ onSearch, onRefresh }: HeaderProps) {
-  const { isAuthenticated } = useAuth();
-
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/80">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
@@ -32,7 +28,7 @@ export default function Header({ onSearch, onRefresh }: HeaderProps) {
           <SearchBar onSearch={onSearch} />
         </div>
 
-        {/* Right side: refresh, theme toggle, auth */}
+        {/* Right side: refresh, theme toggle */}
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={onRefresh}
@@ -44,17 +40,6 @@ export default function Header({ onSearch, onRefresh }: HeaderProps) {
             </svg>
           </button>
           <ThemeToggle />
-
-          {isAuthenticated ? (
-            <UserMenu />
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            >
-              Login
-            </Link>
-          )}
         </div>
       </div>
     </header>

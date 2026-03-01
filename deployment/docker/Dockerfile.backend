@@ -1,22 +1,29 @@
+# ── Build stage (compile C extensions) ────────────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Production stage (no compiler) ───────────────────────────────────
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies (gcc for C extensions, curl for health checks)
-RUN apt-get update && apt-get install -y \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install only curl for health checks (no gcc in production image)
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pre-built Python packages from builder
+COPY --from=builder /install /usr/local
 
 # Copy application code + config
 COPY backend/ .
 
-# Create data directory for SQLite persistence (bind-mounted in production)
-RUN mkdir -p /app/data /app/logs
+# Create log directory
+RUN mkdir -p /app/logs
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser && \

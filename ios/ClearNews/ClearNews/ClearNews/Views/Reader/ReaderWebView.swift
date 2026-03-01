@@ -20,7 +20,13 @@ struct ReaderWebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         let fullHTML = wrapHTML(html)
+        guard fullHTML != context.coordinator.lastLoadedHTML else { return }
+        context.coordinator.lastLoadedHTML = fullHTML
         webView.loadHTMLString(fullHTML, baseURL: nil)
+    }
+
+    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "heightChange")
     }
 
     func makeCoordinator() -> Coordinator {
@@ -30,9 +36,10 @@ struct ReaderWebView: UIViewRepresentable {
     private func wrapHTML(_ content: String) -> String {
         """
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
         <style>
             :root {
                 color-scheme: light dark;
@@ -111,6 +118,7 @@ struct ReaderWebView: UIViewRepresentable {
     @MainActor
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         let parent: ReaderWebView
+        var lastLoadedHTML: String?
 
         init(_ parent: ReaderWebView) {
             self.parent = parent
@@ -123,11 +131,15 @@ struct ReaderWebView: UIViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            if navigationAction.navigationType == .linkActivated,
-               let url = navigationAction.request.url {
-                UIApplication.shared.open(url)
-                decisionHandler(.cancel)
-                return
+            if let url = navigationAction.request.url,
+               let scheme = url.scheme,
+               (scheme == "http" || scheme == "https") {
+                // Allow the initial about:blank / local HTML load
+                if navigationAction.navigationType != .other {
+                    UIApplication.shared.open(url)
+                    decisionHandler(.cancel)
+                    return
+                }
             }
             decisionHandler(.allow)
         }
@@ -137,7 +149,7 @@ struct ReaderWebView: UIViewRepresentable {
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
-            if let height = message.body as? CGFloat {
+            if let height = message.body as? CGFloat, height > 0, height < 100_000 {
                 parent.contentHeight = height
             }
         }

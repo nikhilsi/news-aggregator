@@ -78,18 +78,16 @@
 ```
 Next.js Web App  ──┐
                     ├──▶  FastAPI Backend  ──▶  RSS Feeds / News APIs / Financial APIs
-iOS SwiftUI App ───┘         │
-                          SQLite
-                         (cache)
+iOS SwiftUI App ───┘     (in-memory cache)
 ```
 
 **Key architectural decisions:**
+- **Stateless backend** - No database. All data is transient in-memory article cache. No user accounts.
 - **SWR caching + background refresh** - In-memory cache with 15min TTL and 24h stale window. Background asyncio loop refreshes stalest source every ~25s to keep cache warm. Conditional HTTP requests (ETag/Last-Modified) skip unchanged feeds.
 - **Non-blocking refresh** - Pull-to-refresh returns cached data instantly, refreshes in background. Clients auto-retry after 3s.
 - **Source registry** - All news sources defined in `sources.yaml`. Add/remove sources without code changes
 - **Hybrid sources** - RSS feeds (free, unlimited) + News APIs (WorldNewsAPI for sentiment) + Financial APIs (FMP, premium subscription)
-- **Reader view** - Clean article content extraction, not just linking to source URLs
-- **Simple auth** - Username/password with JWT tokens
+- **Reader view** - Clean article content extraction with SSRF protection and allowlist HTML sanitization (nh3)
 
 **For full architecture details, data models, API contracts, and source list, see PROJECT.md**
 
@@ -100,7 +98,7 @@ iOS SwiftUI App ───┘         │
 | Layer | Technology |
 |-------|-----------|
 | Backend | Python 3.12+ / FastAPI |
-| Cache/DB | SQLite |
+| Cache | In-memory (Python dict) |
 | Web Frontend | Next.js (React) / Tailwind |
 | iOS App | Swift / SwiftUI |
 | Deployment | DigitalOcean Droplet / Docker Compose |
@@ -116,9 +114,7 @@ which python  # Should show ./venv/bin/python
 ```
 
 **API Keys** (in `.env`):
-- `SECRET_KEY` - JWT signing key
 - `WORLD_NEWS_API_KEY` - https://worldnewsapi.com (Free tier, 500 req/day)
-- `ALPHA_VANTAGE_API_KEY` - https://www.alphavantage.co (Premium subscription)
 - `FMP_API_KEY` - https://financialmodelingprep.com (Premium subscription)
 
 **Starting Dev:**

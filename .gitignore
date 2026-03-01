@@ -11,6 +11,9 @@ venv/
 # Environment
 .env
 .env.local
+.env.production
+.env.*.local
+deployment/.env.production
 
 # SQLite
 *.db

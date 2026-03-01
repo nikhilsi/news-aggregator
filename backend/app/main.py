@@ -3,7 +3,7 @@ FastAPI application entry point.
 
 Responsibilities:
 - App creation and middleware setup (CORS)
-- Lifespan management: DB init, source registry loading, shared HTTP client
+- Lifespan management: source registry loading, shared HTTP client
 - Router registration
 - Health check endpoint
 
@@ -21,13 +21,11 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import init_db
 from app.logging_config import setup_logging
 from app.articles.service import set_http_client, warmup_cache, start_refresh_loop
 from app.sources.registry import load_sources
 from app.articles.router import router as articles_router
 from app.sources.router import router as sources_router
-from app.auth.router import router as auth_router
 
 # Configure structured logging for the entire app
 setup_logging()
@@ -38,14 +36,12 @@ async def lifespan(app: FastAPI):
     """Manage app startup and shutdown.
 
     Startup:
-      1. Initialize SQLite database (create tables if needed)
-      2. Load source registry from sources.yaml
-      3. Create shared httpx.AsyncClient (connection pooling for all outbound requests)
+      1. Load source registry from sources.yaml
+      2. Create shared httpx.AsyncClient (connection pooling for all outbound requests)
 
     Shutdown:
       httpx client is closed automatically via the async context manager.
     """
-    await init_db()
     load_sources()
 
     async with httpx.AsyncClient(
@@ -67,10 +63,16 @@ async def lifespan(app: FastAPI):
         yield
 
 
+# Disable interactive API docs in production (reduces attack surface)
+_is_prod = os.environ.get("CORS_ORIGINS", "").startswith("https://")
+
 app = FastAPI(
     title="News Aggregator API",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else "/openapi.json",
 )
 
 # CORS: allow the frontend to call the API
@@ -80,8 +82,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins.split(",")],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 # Request timing middleware — logs start/end of every request with duration
@@ -138,7 +140,6 @@ async def cache_control_middleware(request: Request, call_next):
 # Register routers
 app.include_router(articles_router)
 app.include_router(sources_router)
-app.include_router(auth_router)
 
 
 @app.get("/health")

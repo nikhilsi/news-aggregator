@@ -22,7 +22,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 - Article deduplication — URL match + title keyword overlap across sources
 - Image extraction via og:image fallback for feeds without embedded images
 - Financial news via FMP API (general news + market analysis)
-- Simple email/password authentication
+- Security hardened — SSRF protection, allowlist HTML sanitization (nh3 + DOMPurify), CSP headers, no auth needed (public read-only API)
 
 ## Tech Stack
 

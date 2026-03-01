@@ -4,8 +4,8 @@
 
 ## Completed Phases
 
-- **Phase 1: Backend** — `done` — FastAPI, sources, reader view, dedup, auth, caching
-- **Phase 2: Web Frontend** — `done` — Next.js, article feed, reader modal overlay, dark mode, search, auth (v0.7.0)
+- **Phase 1: Backend** — `done` — FastAPI, sources, reader view, dedup, caching
+- **Phase 2: Web Frontend** — `done` — Next.js, article feed, reader modal overlay, dark mode, search (v0.7.0)
 - **Phase 3: Deployment** — `done` — Live at getclearnews.com, Docker Compose, nginx, SSL, firewall
 - **Phase 4: iOS App** — `done` — SwiftUI, full feature parity with web (v1.0.0)
 - **Phase 5: Performance** — `done` — SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
@@ -15,6 +15,7 @@
 - **Phase 9: App Store submission** — `done` — Code hardened (v1.7.0), build uploaded, metadata/screenshots pushed via API, TestFlight tested, app live on App Store
 - **Phase 10: Content filtering** — `done` — India Today visual stories (ad) filter, non-Latin article filter for non-India tabs (v1.8.0)
 - **Phase 11: Refresh performance** — `done` — Non-blocking refresh, background refresh loop, conditional HTTP requests with ETag/Last-Modified (v1.9.0)
+- **Phase 12: Security hardening + auth removal** — `done` — Comprehensive code review, SSRF protection, nh3 HTML sanitization, DOMPurify client-side, iOS WebView CSP, @MainActor concurrency, .dockerignore, multi-stage Docker builds, nginx security headers, auth system removed (v2.0.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
