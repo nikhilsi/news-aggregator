@@ -36,8 +36,10 @@ final class ArticleService {
             articles = response.articles
             hasMore = response.pagination.page < response.pagination.totalPages
 
-            // Auto-retry if backend returned partial data (cold cache)
-            if response.complete == false {
+            // Auto-retry if backend returned partial data (cold cache only).
+            // Skip on manual refresh — user already has full cached data,
+            // and retrying mid-background-refresh causes a jarring content swap.
+            if response.complete == false && !refresh {
                 isLoading = false
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 guard requestId == currentRequestId else { return }

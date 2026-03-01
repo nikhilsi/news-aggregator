@@ -76,8 +76,10 @@ export function useArticles(category: string, search: string): UseArticlesReturn
         }
         setHasMore(page < data.pagination.total_pages);
 
-        // Auto-retry if backend returned partial data (cold cache)
-        if (data.complete === false && page === 1) {
+        // Auto-retry if backend returned partial data (cold cache only).
+        // Skip on manual refresh — user already has full cached data,
+        // and retrying mid-background-refresh causes a jarring content swap.
+        if (data.complete === false && page === 1 && !isRefresh) {
           retryTimerRef.current = setTimeout(() => {
             if (currentRequest !== requestId.current) return;
             fetchArticles({
