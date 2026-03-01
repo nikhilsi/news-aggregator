@@ -70,7 +70,13 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 9. **Backend applies two-tier sorting** — diverse top section, then chronological (see Sorting section)
 10. **Backend returns** filtered, sorted articles to the client
 
-**No background jobs** (except startup warmup). All fetching is on-demand, triggered by user requests. Cache TTL is configurable per-source (default: 15 minutes). On server restart, all sources are pre-fetched via startup warmup (~11s), so the first user request hits a warm cache. SWR caching (24h stale window) ensures users almost never wait for cold fetches. When they do (>24h gap), the progressive response returns partial data in ~3s instead of blocking for all sources (~10-12s).
+**Background tasks**: Two `asyncio` tasks run in the app lifespan alongside user requests:
+1. **Startup warmup** — pre-fetches all 41 sources on server start (~11s). One-time task.
+2. **Background refresh loop** — continuously refreshes the stalest expired source every ~25 seconds, one at a time. Full cycle through all sources ~17 minutes. Keeps cache perpetually warm so user requests always hit fresh data. Exception-safe with 30s hard timeout per fetch.
+
+Cache TTL is configurable per-source (default: 15 minutes). SWR caching (24h stale window) ensures users almost never wait for cold fetches. When they do (>24h gap), the progressive response returns partial data in ~3s instead of blocking for all sources.
+
+**Conditional HTTP requests**: RSS and FMP fetchers store `ETag` and `Last-Modified` response headers per source. On subsequent fetches, they send `If-None-Match` / `If-Modified-Since` headers. Feeds that haven't changed return `304 Not Modified` — the cache TTL is extended without re-parsing XML, saving CPU and bandwidth.
 
 **Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication, bcrypt password verification) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
 
@@ -174,9 +180,9 @@ Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove
 **Current sources:** 48 total (39 RSS + 2 Financial API enabled, 7 disabled). See `backend/sources.yaml` for the full list with URLs.
 
 **Source types and how they're fetched:**
-- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds). Includes og:image backfill for feeds without embedded images.
+- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds). Includes og:image backfill for feeds without embedded images. Supports conditional requests (ETag/Last-Modified → 304 Not Modified).
 - **News API** (`type: news_api`) — WorldNewsAPI. Not yet implemented (disabled).
-- **Financial API** (`type: financial_api`) — FMP (Financial Modeling Prep). Two endpoints: general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Dedicated fetcher (`fmp_fetcher.py`).
+- **Financial API** (`type: financial_api`) — FMP (Financial Modeling Prep). Two endpoints: general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Dedicated fetcher (`fmp_fetcher.py`). Supports conditional requests.
 
 **Disabled sources:** WorldNewsAPI (not implemented), 5 Google News feeds (disabled for performance — each article required 2 HTTP round-trips to resolve redirect URLs), Smithsonian Magazine (403 from production server IP).
 
@@ -213,7 +219,7 @@ GET    /api/v1/articles/reader     # Extract clean article content for reader vi
 | `search` | string | `null` | Keyword search in title/summary |
 | `page` | int | `1` | Pagination |
 | `per_page` | int | `20` | Items per page (max 50) |
-| `refresh` | bool | `false` | Force fresh fetch — bypasses SWR cache, fetches all sources |
+| `refresh` | bool | `false` | Non-blocking refresh — returns cached data immediately, triggers background refresh |
 
 #### Example Response
 
@@ -268,11 +274,12 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
   - **STALE** (TTL to 96x TTL, e.g., 15min-24h): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
   - **MISS** (> 96x TTL or never fetched): fetch with 3s deadline (progressive response)
 - **Progressive cold-cache response:** On MISS, uses `asyncio.wait` with a 3-second deadline instead of blocking for all sources. Returns whatever is ready (`complete: false`), remaining sources continue in a fire-and-forget background task. Clients auto-retry after 3s. Typical: ~900 articles in 3-4s vs ~1700 in 10-12s.
-- **Force refresh:** `?refresh=true` query param bypasses SWR entirely — fetches all sources (no deadline), caches fresh results
+- **Non-blocking refresh:** `?refresh=true` returns cached articles immediately with `complete: false` and triggers a background refresh of all sources. Clients auto-retry after 3s to pick up fresh data. Decouples "serve to user" from "fetch from upstream" — same pattern used by Feedly, Apple News, and other production aggregators.
+- **Background refresh loop:** `asyncio` task picks the stalest expired source every ~25 seconds and refreshes it one at a time. Full cycle ~17 minutes. Keeps cache perpetually warm so user requests always hit fresh data. Exception-safe (catches all errors, never crashes), 30s hard timeout per fetch, waits for warmup to complete before starting.
+- **Conditional HTTP requests:** RSS and FMP fetchers store `ETag` / `Last-Modified` response headers per source. On subsequent requests, send `If-None-Match` / `If-Modified-Since`. Feeds returning `304 Not Modified` skip parsing entirely — cache TTL is extended in place. Reduces bandwidth and CPU.
 - **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~11s). First user request hits warm cache.
 - **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (5min), refresh requests (no-store). Browsers and URLSession cache natively.
 - **No eviction logic needed** — stale entries are overwritten on next fetch
-- **No background jobs** — all fetching is on-demand (except startup warmup, which is a one-time task)
 
 ---
 

@@ -1,25 +1,28 @@
 # Current State
 
-**Last Updated**: February 17, 2026
+**Last Updated**: March 1, 2026
 
-## Status: Live at getclearnews.com | iOS v1.0 submitted for App Store review | 41 sources across 13 categories
+## Status: Live at getclearnews.com | iOS v1.0 on App Store | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), startup warmup (~11s), thread pool offloading, two-tier article sorting, and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with force cache bypass and auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app hardened for App Store (auth removed, privacy manifest added, accessibility labels, force-unwrap crashes fixed). Privacy policy and support pages live at getclearnews.com. Build v1.0 uploaded to App Store Connect as "GetClearNews", all metadata and screenshots pushed via API. TestFlight tested successfully on real device. App submitted for App Store review (Feb 17) — waiting for approval.
+Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), non-blocking refresh, background refresh loop (~25s per source), conditional HTTP requests (ETag/Last-Modified for 304 support), startup warmup (~11s), thread pool offloading, two-tier article sorting, content filtering (non-Latin script filter, visual stories ad filter), and 41 enabled sources across 13 categories. Web and iOS have pull-to-refresh with auto-retry on partial data. Deploy script auto-cleans Docker build cache. iOS app hardened for App Store (auth removed, privacy manifest added, accessibility labels, force-unwrap crashes fixed). Privacy policy and support pages live at getclearnews.com. App live on App Store as "GetClearNews".
 
 ## What's Built
 
-### Backend (FastAPI) — v1.6.0
+### Backend (FastAPI) — v1.9.0
 - **Project scaffolding** — directory structure, venv, config, SQLite database
 - **Source registry** — 48 sources in sources.yaml (39 RSS + 2 FMP enabled, 7 disabled), pydantic models, load/query helpers. Category list and source list both defined in sources.yaml.
-- **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 96x TTL, ~24h) serves immediately + background refresh, expired/missing fetches with 3s deadline (progressive response). Per-source TTL (default 15 min). Force refresh via `?refresh=true` query param.
+- **SWR article cache** — stale-while-revalidate: fresh (< TTL) returns instantly, stale (TTL to 96x TTL, ~24h) serves immediately + background refresh, expired/missing fetches with 3s deadline (progressive response). Per-source TTL (default 15 min). Non-blocking refresh via `?refresh=true` (returns cached data instantly, refreshes in background).
 - **Progressive cold-cache response** — on cache MISS, uses `asyncio.wait` with a 3-second deadline. Returns whatever sources completed within the deadline (`complete: false`), remaining sources continue in background. Clients auto-retry after 3s to get the full set.
+- **Non-blocking refresh** — pull-to-refresh returns cached articles immediately with `complete: false` and triggers a background refresh of all sources. Clients auto-retry after 3s to pick up fresh data. No more 10-12s blocking wait.
+- **Background refresh loop** — `asyncio` task keeps cache perpetually warm by refreshing the stalest expired source every ~25 seconds (one at a time). Full cycle ~17 minutes. Exception-safe, 30s hard timeout per fetch, respects `is_refreshing` guards. Waits for startup warmup to complete before starting.
+- **Conditional HTTP requests** — RSS and FMP fetchers store ETag/Last-Modified headers and send `If-None-Match`/`If-Modified-Since` on subsequent requests. Feeds returning `304 Not Modified` skip XML parsing entirely; cache TTL is extended in place.
 - **Startup cache warmup** — all 41 sources pre-fetched as background task on server start (~11s). First user request hits warm cache.
 - **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (5min), refresh requests (no-store)
 - **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication, bcrypt password verification. Event loop stays free for concurrent request handling.
 - **Text logging** — human-readable text format for all environments. Request timing middleware with unique request IDs. Per-source fetch timing. Cache HIT/STALE/MISS logging.
-- **RSS fetcher** — async fetch via httpx, parse with feedparser (thread pool), normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images
-- **FMP fetcher** — fetches financial news from FMP API (general-latest + fmp-articles endpoints), normalizes both response formats, HTML stripping for article content. Reads API key from pydantic settings with os.environ fallback.
-- **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → deduplicate (thread pool) → two-tier sort → filter → paginate
+- **RSS fetcher** — async fetch via httpx with conditional headers (ETag/Last-Modified → 304 support), parse with feedparser (thread pool), normalize (images, dates, summaries), concurrent multi-source fetching, og:image fallback for feeds without embedded images, visual stories ad filter
+- **FMP fetcher** — fetches financial news from FMP API (general-latest + fmp-articles endpoints) with conditional headers (304 support), normalizes both response formats, HTML stripping for article content. Reads API key from pydantic settings with os.environ fallback.
+- **Article service** — orchestration layer: SWR cache checks → concurrent fetch → merge → non-Latin filter → deduplicate (thread pool) → two-tier sort → filter → paginate
 - **Two-tier sorting** — "All" tab: 1 per source capped at 3 per category in tier 1, rest chronological. Category tabs: top 5 per source in tier 1, rest chronological. No articles discarded.
 - **Reader view** — `GET /api/v1/articles/reader?url=` extracts clean article content using readability-lxml (primary) + trafilatura (fallback) via thread pool, sanitizes HTML, caches for 60 minutes. Graceful failure for paywalled sites.
 - **Deduplication** — URL exact match (global) + title keyword overlap (0.6 threshold, bucketed by category). O(1) set-based removal tracking, prefers articles with images (~105 dupes removed per cycle with 41 sources)

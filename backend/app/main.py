@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
 from app.logging_config import setup_logging
-from app.articles.service import set_http_client, warmup_cache
+from app.articles.service import set_http_client, warmup_cache, start_refresh_loop
 from app.sources.registry import load_sources
 from app.articles.router import router as articles_router
 from app.sources.router import router as sources_router
@@ -61,6 +61,8 @@ async def lifespan(app: FastAPI):
 
         # Pre-fetch all sources in background so first user request is fast
         asyncio.create_task(warmup_cache())
+        # Keep cache warm by continuously refreshing stalest expired source
+        asyncio.create_task(start_refresh_loop())
 
         yield
 

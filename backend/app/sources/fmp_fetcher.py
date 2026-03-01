@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 
 FMP_TIMEOUT = 10.0
 
+# Conditional request headers per source — enables 304 Not Modified responses.
+# Key: source base URL (without API key), Value: {"etag": "...", "last_modified": "..."}
+_http_validators: dict[str, dict[str, str]] = {}
+
 
 def _parse_fmp_date(date_str: str | None) -> datetime | None:
     """Parse FMP date format: '2026-02-10 21:02:00' → datetime."""
@@ -88,13 +92,14 @@ def _normalize_fmp_article(item: dict, source: SourceConfig) -> dict | None:
     }
 
 
-async def fetch_fmp(source: SourceConfig, client: httpx.AsyncClient) -> list[dict]:
+async def fetch_fmp(source: SourceConfig, client: httpx.AsyncClient) -> list[dict] | None:
     """Fetch articles from an FMP API endpoint.
 
     Reads the API key from the env var specified in source.api_key_env,
     appends it to the source URL, fetches and normalizes the response.
 
-    Returns an empty list on any failure (never raises).
+    Returns an empty list on any failure, or None if the API returned
+    304 Not Modified (unchanged since last fetch). Never raises.
     """
     start = time.monotonic()
 
@@ -109,10 +114,36 @@ async def fetch_fmp(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
     separator = "&" if "?" in source.url else "?"
     url = f"{source.url}{separator}apikey={api_key}"
 
-    # Fetch
+    # Fetch (with conditional headers for 304 support)
     try:
-        response = await client.get(url, timeout=FMP_TIMEOUT)
+        headers: dict[str, str] = {}
+        validators = _http_validators.get(source.url)
+        if validators:
+            if validators.get("etag"):
+                headers["If-None-Match"] = validators["etag"]
+            if validators.get("last_modified"):
+                headers["If-Modified-Since"] = validators["last_modified"]
+
+        response = await client.get(url, timeout=FMP_TIMEOUT, headers=headers)
+
+        # 304 Not Modified — data hasn't changed
+        if response.status_code == 304:
+            logger.info("FMP unchanged (304): %s", source.name)
+            return None
+
         response.raise_for_status()
+
+        # Store ETag / Last-Modified for next request
+        new_validators: dict[str, str] = {}
+        etag = response.headers.get("etag")
+        if etag:
+            new_validators["etag"] = etag
+        last_mod = response.headers.get("last-modified")
+        if last_mod:
+            new_validators["last_modified"] = last_mod
+        if new_validators:
+            _http_validators[source.url] = new_validators
+
     except httpx.TimeoutException:
         logger.warning("Timeout fetching %s", source.name)
         return []

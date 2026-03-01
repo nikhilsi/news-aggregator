@@ -46,8 +46,11 @@ def get_http_client() -> httpx.AsyncClient:
     return _http_client
 
 
-async def _fetch_source(source: SourceConfig) -> list[dict]:
-    """Fetch articles from a single source, delegating to the appropriate fetcher."""
+async def _fetch_source(source: SourceConfig) -> list[dict] | None:
+    """Fetch articles from a single source, delegating to the appropriate fetcher.
+
+    Returns None if the source returned 304 Not Modified (unchanged since last fetch).
+    """
     client = get_http_client()
 
     if source.type == "rss":
@@ -280,6 +283,13 @@ async def _fetch_and_cache_sources(sources: list[SourceConfig]) -> list[dict]:
         if isinstance(result, Exception):
             logger.warning("Unexpected error fetching %s: %s", source.name, str(result))
             continue
+        if result is None:
+            # 304 Not Modified — extend TTL, use existing cached articles
+            cache.extend_ttl(source.id)
+            existing = cache.get_articles(source.id)
+            all_fetched.extend(existing)
+            total_fetched += len(existing)
+            continue
         cache.set(source.id, result, source.cache_ttl_minutes)
         all_fetched.extend(result)
         total_fetched += len(result)
@@ -332,8 +342,11 @@ async def _complete_pending_fetches(
             source = task_to_source[task]
             try:
                 result = task.result()
-                cache.set(source.id, result, source.cache_ttl_minutes)
-                total += len(result)
+                if result is None:
+                    cache.extend_ttl(source.id)
+                else:
+                    cache.set(source.id, result, source.cache_ttl_minutes)
+                    total += len(result)
             except Exception as e:
                 logger.warning("Background fetch error for %s: %s", source.name, str(e))
         logger.info("Background fetch completed: %d sources, %d articles", len(done), total)
@@ -379,9 +392,16 @@ async def _fetch_with_deadline(
         except Exception as e:
             logger.warning("Unexpected error fetching %s: %s", source.name, str(e))
             continue
-        cache.set(source.id, result, source.cache_ttl_minutes)
-        all_fetched.extend(result)
-        total_fetched += len(result)
+        if result is None:
+            # 304 Not Modified — extend TTL, use existing cached articles
+            cache.extend_ttl(source.id)
+            existing = cache.get_articles(source.id)
+            all_fetched.extend(existing)
+            total_fetched += len(existing)
+        else:
+            cache.set(source.id, result, source.cache_ttl_minutes)
+            all_fetched.extend(result)
+            total_fetched += len(result)
 
     all_complete = len(pending) == 0
 
@@ -410,13 +430,14 @@ async def get_articles(
     - Stale cache → return stale data, kick off background refresh
     - No cache → fetch with deadline (return partial data fast, rest in background)
 
-    Pass refresh=True to bypass cache entirely and fetch all sources fresh
-    (no deadline — user explicitly requested fresh data).
+    Pass refresh=True for non-blocking refresh: returns cached articles immediately
+    and kicks off a background refresh of all sources. Clients should re-fetch after
+    a few seconds to pick up fresh data.
 
     Args:
         category: Category filter ("all", "science", "tech", etc.)
         source_id: Optional — filter to a single source by ID
-        refresh: Force fresh fetch, bypass SWR cache
+        refresh: Return cached data and trigger background refresh
 
     Returns:
         Tuple of (sorted article list, complete flag).
@@ -440,9 +461,22 @@ async def get_articles(
     complete = True
 
     if refresh:
-        # Force refresh — user explicitly wants fresh data, wait for all sources
-        logger.info("Force refresh requested — fetching all %d sources", len(sources))
-        sources_to_fetch = list(sources)
+        # Non-blocking refresh: return cached articles immediately,
+        # kick off background refresh for all sources
+        logger.info("Force refresh requested — returning cached data, refreshing %d sources in background", len(sources))
+        for source in sources:
+            all_articles.extend(cache.get_articles(source.id))
+
+        # Queue background refresh for sources not already refreshing
+        sources_to_bg_refresh = [s for s in sources if not cache.is_refreshing(s.id)]
+        if sources_to_bg_refresh:
+            for s in sources_to_bg_refresh:
+                cache.set_refreshing(s.id)
+            refresh_names = [s.name for s in sources_to_bg_refresh]
+            logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
+            asyncio.create_task(_background_refresh(sources_to_bg_refresh))
+
+        complete = False
     else:
         # Normal SWR cache check
         hits = 0
@@ -476,16 +510,10 @@ async def get_articles(
             logger.info("Background refresh queued for: %s", ", ".join(refresh_names))
             asyncio.create_task(_background_refresh(sources_to_refresh))
 
-    # Fetch MISS sources
+    # Fetch MISS sources (cold cache — use deadline for faster partial response)
     if sources_to_fetch:
-        if refresh:
-            # Force refresh: wait for all sources (no deadline)
-            fetched = await _fetch_and_cache_sources(sources_to_fetch)
-            all_articles.extend(fetched)
-        else:
-            # Normal cold cache: use deadline for faster partial response
-            fetched, complete = await _fetch_with_deadline(sources_to_fetch)
-            all_articles.extend(fetched)
+        fetched, complete = await _fetch_with_deadline(sources_to_fetch)
+        all_articles.extend(fetched)
 
     # Filter non-Latin articles (e.g. Hindi) from all tabs except India
     if category != "india":
@@ -511,6 +539,7 @@ async def warmup_cache() -> None:
     """Pre-fetch all enabled sources to warm the cache on startup.
 
     Called as a background task during app lifespan — does not block server startup.
+    Signals _warmup_complete when done so the refresh loop can start.
     """
     sources = get_enabled_sources()
     logger.info("Cache warmup started — %d sources", len(sources))
@@ -523,3 +552,93 @@ async def warmup_cache() -> None:
 
     duration_ms = int((time.monotonic() - start) * 1000)
     logger.info("Cache warmup completed in %dms", duration_ms)
+
+    _warmup_complete.set()
+
+
+# ── Background Refresh Loop ──────────────────────────────────────────────
+# Keeps cache perpetually warm by refreshing one source at a time in a
+# round-robin pattern, picking the stalest expired source each iteration.
+# Full cycle through 41 sources ≈ 17 minutes (41 × 25s sleep).
+
+_warmup_complete = asyncio.Event()
+
+_REFRESH_LOOP_INTERVAL = 25  # seconds between refresh loop iterations
+_REFRESH_LOOP_TIMEOUT = 30.0  # hard wall per single-source fetch
+
+
+def _pick_stalest_expired_source() -> SourceConfig | None:
+    """Return the enabled source with the oldest expired cache, or None if all fresh."""
+    sources = get_enabled_sources()
+    expired = [s for s in sources if not cache.is_fresh(s.id)]
+    if not expired:
+        return None
+    stalest_id = cache.oldest_source([s.id for s in expired])
+    if stalest_id is None:
+        return None
+    return get_source_by_id(stalest_id)
+
+
+async def _fetch_and_cache_single(source: SourceConfig) -> None:
+    """Fetch a single source and cache the result.
+
+    Used by the background refresh loop. Simpler than _fetch_and_cache_sources()
+    which is designed for concurrent multi-source fetching.
+    """
+    start = time.monotonic()
+    try:
+        result = await _fetch_source(source)
+        if result is None:
+            # 304 Not Modified — data unchanged, just extend TTL
+            cache.extend_ttl(source.id)
+            logger.info("Refresh loop: %s unchanged (304), TTL extended", source.name)
+        else:
+            cache.set(source.id, result, source.cache_ttl_minutes)
+            duration_ms = int((time.monotonic() - start) * 1000)
+            logger.info(
+                "Refresh loop: fetched %d articles from %s in %dms",
+                len(result), source.name, duration_ms,
+            )
+    except Exception as e:
+        logger.warning("Refresh loop: error fetching %s: %s", source.name, str(e))
+
+
+async def _refresh_loop() -> None:
+    """Background loop: continuously refresh the stalest expired source.
+
+    Runs forever alongside the app. Picks the source with the oldest expired
+    cache entry, fetches it, and sleeps before the next iteration. One source
+    at a time to stay gentle on the 1-vCPU server.
+    """
+    await _warmup_complete.wait()
+    logger.info("Refresh loop started")
+
+    while True:
+        try:
+            source = _pick_stalest_expired_source()
+            if source and not cache.is_refreshing(source.id):
+                cache.set_refreshing(source.id)
+                try:
+                    await asyncio.wait_for(
+                        _fetch_and_cache_single(source),
+                        timeout=_REFRESH_LOOP_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "Refresh loop: timeout fetching %s (%.0fs limit)",
+                        source.name, _REFRESH_LOOP_TIMEOUT,
+                    )
+                finally:
+                    cache.clear_refreshing(source.id)
+        except asyncio.CancelledError:
+            logger.info("Refresh loop cancelled — shutting down")
+            raise
+        except Exception:
+            logger.exception("Refresh loop iteration failed")
+
+        await asyncio.sleep(_REFRESH_LOOP_INTERVAL)
+
+
+async def start_refresh_loop() -> None:
+    """Entry point for the background refresh loop. Called from main.py lifespan."""
+    await _refresh_loop()

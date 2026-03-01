@@ -1,6 +1,6 @@
 # NOW — Current Priorities
 
-**Last Updated**: February 17, 2026
+**Last Updated**: March 1, 2026
 
 ## Completed Phases
 
@@ -12,50 +12,11 @@
 - **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
 - **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
 - **Phase 8: Cold cache performance** — `done` — Extended SWR stale window to 24h, progressive response with 3s deadline, dedup bucketed by category, categories moved to sources.yaml, Cache-Control fix (v1.6.0)
-- **Phase 9: App Store submission** — `in progress` — Code hardened (v1.7.0), build uploaded, metadata/screenshots pushed via API, TestFlight tested, submitted for App Store review
+- **Phase 9: App Store submission** — `done` — Code hardened (v1.7.0), build uploaded, metadata/screenshots pushed via API, TestFlight tested, app live on App Store
+- **Phase 10: Content filtering** — `done` — India Today visual stories (ad) filter, non-Latin article filter for non-India tabs (v1.8.0)
+- **Phase 11: Refresh performance** — `done` — Non-blocking refresh, background refresh loop, conditional HTTP requests with ETag/Last-Modified (v1.9.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
-
----
-
-## Phase 9: App Store Submission — Current Progress
-
-### Done
-- [x] Code hardening: auth removed, force-unwraps fixed, deployment target → iOS 17.0
-- [x] PrivacyInfo.xcprivacy added (UserDefaults CA92.1, no tracking, no collected data)
-- [x] Accessibility labels on interactive controls
-- [x] AboutView enhanced with content attribution + links to privacy/support
-- [x] Privacy policy page live at getclearnews.com/privacy
-- [x] Support page live at getclearnews.com/support
-- [x] Support email configured: support@getclearnews.com
-- [x] App registered on App Store Connect as "GetClearNews"
-- [x] App icon finalized and added to Assets.xcassets/AppIcon.appiconset/
-- [x] CFBundleDisplayName set to "ClearNews" (home screen name)
-- [x] Build archived and uploaded to App Store Connect — v1.0 (build 1), VALID
-- [x] Build attached to App Store version 1.0
-- [x] All metadata pushed via App Store Connect API:
-  - Subtitle: "News Without the Noise"
-  - Description (1465 chars), Keywords (96/100 chars)
-  - Privacy URL, Support URL, Marketing URL (getclearnews.com)
-  - Categories: News (primary), Reference (secondary)
-  - Age rating: 12+ (mild news content: horror/fear, mature themes, realistic violence)
-  - Copyright: 2026 Nikhil Singhal
-  - Content rights declaration
-  - Review notes (976 chars) with contact info
-  - Export compliance: no non-exempt encryption
-- [x] Screenshots captured and uploaded (6 iPhone 6.9" + 5 iPad 13")
-- [x] TestFlight: "Family Testers" group created, 3 testers added
-- [x] Build submitted for beta review — state: WAITING_FOR_REVIEW
-- [x] Beta review approved (Feb 13) — build assigned to "Family Testers" group, invitations sent
-- [x] TestFlight tested on real device — all looks good
-- [x] Pricing set to Free via API
-- [x] App Privacy declaration published (no data collected) — manual step in App Store Connect
-- [x] Submitted for App Store review (Feb 17) — state: WAITING_FOR_REVIEW
-
-### Remaining
-- [ ] App Store review approval (typically 24-48h)
-
-**Reference:** docs/app-store-submission-playbook.md (learnings from GitaVani project)
 
 ---
 

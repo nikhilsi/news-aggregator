@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.9.0] - 2026-03-01 — Refresh Performance Overhaul
+
+### Changed
+- **Non-blocking refresh** — Pull-to-refresh no longer blocks on all 41 sources (was 10-12s). Now returns cached articles instantly with `complete: false`, triggers background refresh, and clients auto-retry after 3s to get fresh data. Same user flow, effectively instant perceived refresh.
+- **Background refresh loop** — New `asyncio` background task keeps the cache perpetually warm. Picks the stalest expired source every ~25 seconds, fetches it one at a time. Full cycle through all sources ~17 minutes. Waits for startup warmup to complete before starting. Exception-safe (catches everything, never crashes), respects `is_refreshing` guards, 30s hard timeout per fetch.
+- **Conditional HTTP requests** — RSS fetcher and FMP fetcher now store `ETag` and `Last-Modified` response headers per source and send `If-None-Match` / `If-Modified-Since` on subsequent requests. Feeds that haven't changed return `304 Not Modified` — skipping XML parsing entirely and just extending the cache TTL. Reduces bandwidth and CPU on the 1-vCPU server.
+
+### Added
+- `cache.get_articles()` — returns cached articles regardless of freshness (for non-blocking refresh)
+- `cache.is_fresh()` — checks if a source's cache is within TTL (for refresh loop)
+- `cache.oldest_source()` — picks stalest source from a list (for refresh loop scheduling)
+- `cache.extend_ttl()` — re-validates cache without overwriting articles (for 304 responses)
+- `_refresh_loop()` / `start_refresh_loop()` — background refresh loop in service.py, started from main.py lifespan
+- `_fetch_and_cache_single()` — single-source fetch for the refresh loop
+- `_http_validators` dict in both rss_fetcher.py and fmp_fetcher.py for storing conditional request headers
+
+---
+
+## [1.8.0] - 2026-03-01 — Content Filtering
+
+### Added
+- **Non-Latin article filter** — Articles with Hindi/Devanagari titles (>20% non-Latin characters) are now filtered from all tabs except India. Uses `unicodedata` character classification at the service layer so Hindi content is still available when browsing the India category.
+
+### Fixed
+- **India Today visual stories filtered** — India Today RSS feed injects sponsored "visual stories" (ad content) with constantly refreshed timestamps, causing them to always appear as the #1 article. URLs containing `/visualstories/` are now filtered out during RSS normalization.
+
+---
+
 ## [1.7.0] - 2026-02-17 — App Store Submission
 
 ### Removed

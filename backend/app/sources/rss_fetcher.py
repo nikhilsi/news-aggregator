@@ -38,6 +38,10 @@ logger = logging.getLogger(__name__)
 # Max time to wait for a single feed response
 FEED_TIMEOUT = 10.0
 
+# Conditional request headers per source — enables 304 Not Modified responses.
+# Key: source URL, Value: {"etag": "...", "last_modified": "..."}
+_http_validators: dict[str, dict[str, str]] = {}
+
 
 # ── HTML Stripping ───────────────────────────────────────────────────────
 
@@ -362,7 +366,7 @@ async def _resolve_google_news_urls(
 
 # ── Main Fetch Function ─────────────────────────────────────────────────
 
-async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dict]:
+async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dict] | None:
     """Fetch an RSS feed and return a list of normalized article dicts.
 
     This function never raises exceptions — it returns an empty list on failure
@@ -373,14 +377,42 @@ async def fetch_rss(source: SourceConfig, client: httpx.AsyncClient) -> list[dic
         client: Shared httpx async client (connection pooling)
 
     Returns:
-        List of normalized article dicts, or empty list on failure
+        List of normalized article dicts, empty list on failure,
+        or None if the feed returned 304 Not Modified (unchanged since last fetch).
     """
     start = time.monotonic()
 
-    # Step 1: Fetch raw XML (async, with timeout)
+    # Step 1: Fetch raw XML (async, with timeout and conditional headers)
     try:
-        response = await client.get(source.url, timeout=FEED_TIMEOUT)
+        # Send If-None-Match / If-Modified-Since if we have stored validators
+        headers: dict[str, str] = {}
+        validators = _http_validators.get(source.url)
+        if validators:
+            if validators.get("etag"):
+                headers["If-None-Match"] = validators["etag"]
+            if validators.get("last_modified"):
+                headers["If-Modified-Since"] = validators["last_modified"]
+
+        response = await client.get(source.url, timeout=FEED_TIMEOUT, headers=headers)
+
+        # 304 Not Modified — feed hasn't changed since last fetch
+        if response.status_code == 304:
+            logger.info("Feed unchanged (304): %s", source.name)
+            return None
+
         response.raise_for_status()
+
+        # Store ETag / Last-Modified for next request
+        new_validators: dict[str, str] = {}
+        etag = response.headers.get("etag")
+        if etag:
+            new_validators["etag"] = etag
+        last_mod = response.headers.get("last-modified")
+        if last_mod:
+            new_validators["last_modified"] = last_mod
+        if new_validators:
+            _http_validators[source.url] = new_validators
+
     except httpx.TimeoutException:
         logger.warning("Timeout fetching %s (%s)", source.name, source.url)
         return []

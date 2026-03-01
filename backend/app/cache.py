@@ -115,6 +115,60 @@ def get_swr(source_id: str) -> CacheResult:
     return CacheResult(status=CacheStatus.MISS, articles=[], age_seconds=entry.age_seconds)
 
 
+def get_articles(source_id: str) -> list[dict]:
+    """Return cached articles regardless of freshness.
+
+    Used by the non-blocking refresh path to return whatever we have
+    while the background refresh runs. Returns empty list if no entry exists.
+    """
+    entry = _cache.get(source_id)
+    if entry is None:
+        return []
+    return entry.articles
+
+
+def is_fresh(source_id: str) -> bool:
+    """Check if a source's cache entry exists and is within its TTL."""
+    entry = _cache.get(source_id)
+    if entry is None:
+        return False
+    return entry.is_fresh
+
+
+def oldest_source(source_ids: list[str]) -> str | None:
+    """Return the source ID with the oldest (or missing) cache entry.
+
+    Used by the refresh loop to pick the stalest source to refresh next.
+    Prioritizes sources with no cache entry (never fetched).
+    """
+    if not source_ids:
+        return None
+
+    oldest_id: str | None = None
+    oldest_time: datetime | None = None
+
+    for sid in source_ids:
+        entry = _cache.get(sid)
+        if entry is None:
+            return sid  # never fetched — highest priority
+        if oldest_time is None or entry.fetched_at < oldest_time:
+            oldest_time = entry.fetched_at
+            oldest_id = sid
+
+    return oldest_id
+
+
+def extend_ttl(source_id: str) -> None:
+    """Reset fetched_at to now without changing articles.
+
+    Used when a source returns 304 Not Modified — the data hasn't changed,
+    so we keep the existing articles but mark the cache as freshly validated.
+    """
+    entry = _cache.get(source_id)
+    if entry is not None:
+        entry.fetched_at = _now()
+
+
 def set(source_id: str, articles: list[dict], ttl_minutes: int) -> None:
     """Cache articles for a source. Overwrites any existing entry."""
     _cache[source_id] = CacheEntry(

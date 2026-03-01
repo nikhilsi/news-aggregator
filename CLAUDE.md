@@ -35,7 +35,7 @@
 5. **Being lazy** - Read ALL the docs before starting
 6. **Lying or pretending** - Say "I don't know" if unsure
 7. **Not thinking critically** - Question things that don't make sense
-8. **Background jobs** - NO cron jobs, no scheduled tasks. All fetching is on-demand with caching.
+8. **Background jobs** - NO cron jobs, no external scheduled tasks. The only background work is the in-process asyncio refresh loop (keeps cache warm) and startup warmup.
 
 ### How to Be a True Partner
 - **Thoughtful design first** - Discuss before coding
@@ -84,9 +84,10 @@ iOS SwiftUI App ───┘         │
 ```
 
 **Key architectural decisions:**
-- **On-demand fetching** - No background jobs. Fetch when user requests, cache with TTL (default 15 min)
+- **SWR caching + background refresh** - In-memory cache with 15min TTL and 24h stale window. Background asyncio loop refreshes stalest source every ~25s to keep cache warm. Conditional HTTP requests (ETag/Last-Modified) skip unchanged feeds.
+- **Non-blocking refresh** - Pull-to-refresh returns cached data instantly, refreshes in background. Clients auto-retry after 3s.
 - **Source registry** - All news sources defined in `sources.yaml`. Add/remove sources without code changes
-- **Hybrid sources** - RSS feeds (free, unlimited) + News APIs (WorldNewsAPI for sentiment) + Financial APIs (Alpha Vantage + FMP, premium subscriptions)
+- **Hybrid sources** - RSS feeds (free, unlimited) + News APIs (WorldNewsAPI for sentiment) + Financial APIs (FMP, premium subscription)
 - **Reader view** - Clean article content extraction, not just linking to source URLs
 - **Simple auth** - Username/password with JWT tokens
 
