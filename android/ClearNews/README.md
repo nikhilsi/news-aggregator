@@ -8,7 +8,7 @@ A clean, native Android news reader built with Jetpack Compose and Material 3.
 - **Reader View** — Clean article content in WebView with dark mode CSS, font scaling, CSP
 - **Auto-retry** — Automatically retries on cold cache (partial data), skips on manual refresh
 - **Settings** — Theme picker (system/light/dark), reader font size (S/M/L/XL)
-- **Share** — Share articles via Android share sheet
+- **Smart Share** — Articles shared with title, source, time, and ClearNews reader link
 - **Haptics** — Light haptic feedback on card tap and category selection
 
 ## Tech Stack
@@ -81,5 +81,5 @@ app/src/main/java/com/nikhilsi/clearnews/
 │   ├── reader/                # ReaderScreen (WebView)
 │   ├── settings/              # SettingsScreen, AboutScreen
 │   └── common/                # SkeletonCard, ErrorContent, EmptyContent
-└── util/                      # RelativeTime, HapticManager
+└── util/                      # RelativeTime, HapticManager, ShareUtils
 ```

@@ -39,5 +39,5 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - **iPad optimization** — NavigationSplitView for iPad-specific layout.
 
 ### Android App
-- **F-Droid submission** — Submit merge request to gitlab.com/fdroid/fdroiddata.
+- **F-Droid approval** — MR submitted ([#34426](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/34426)), awaiting review.
 - **Image caching tuning** — Coil disk cache size configuration if needed.

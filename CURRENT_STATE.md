@@ -4,7 +4,7 @@
 
 ## Status: Live at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 | 41 sources across 13 categories
 
-Backend, web frontend, deployment, iOS app, and Android app are complete. Site is live on DigitalOcean. Three native clients (web, iOS, Android) share one backend API. Authentication removed (no user data, no database). Android app built with Kotlin + Jetpack Compose + Material 3, full feature parity with iOS including reader view, category filtering, search, settings, and smart sharing (articles shared with title, source, and ClearNews reader link). GitHub Actions workflow builds signed APK + AAB on tag push. F-Droid metadata ready for submission.
+Backend, web frontend, deployment, iOS app, and Android app are complete. Site is live on DigitalOcean. Three native clients (web, iOS, Android) share one backend API. Authentication removed (no user data, no database). Android app built with Kotlin + Jetpack Compose + Material 3, full feature parity with iOS including reader view, category filtering, search, settings, and smart sharing (articles shared with title, source, and ClearNews reader link). GitHub Actions workflow builds signed APK + AAB on tag push. F-Droid merge request submitted (pending review). Release APK is 1.8MB.
 
 ## What's Built
 
@@ -18,7 +18,7 @@ Backend, web frontend, deployment, iOS app, and Android app are complete. Site i
 - **Conditional HTTP requests** — RSS and FMP fetchers store ETag/Last-Modified headers and send `If-None-Match`/`If-Modified-Since` on subsequent requests. Feeds returning `304 Not Modified` skip XML parsing entirely; cache TTL is extended in place.
 - **Startup cache warmup** — all 41 sources pre-fetched as background task on server start (~11s). First user request hits warm cache.
 - **Cache-Control headers** — middleware sets HTTP cache headers: articles (5min), categories/sources (5min), refresh requests (no-store)
-- **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication, bcrypt password verification. Event loop stays free for concurrent request handling.
+- **Thread pool offloading** — all CPU-bound operations offloaded to Python thread pool via `asyncio.to_thread()`: reader content extraction (readability + trafilatura), feedparser XML parsing, article deduplication. Event loop stays free for concurrent request handling.
 - **Text logging** — human-readable text format for all environments. Request timing middleware with unique request IDs. Per-source fetch timing. Cache HIT/STALE/MISS logging.
 - **SSRF protection** — reader endpoint validates URLs before fetching: blocks private/loopback/link-local/reserved IPs, DNS rebinding prevention, HTTP(S)-only schemes
 - **HTML sanitization** — allowlist-based via nh3 (Rust-powered). Only safe tags/attributes survive. Replaced regex deny-list approach.
@@ -74,9 +74,9 @@ Backend, web frontend, deployment, iOS app, and Android app are complete. Site i
 - **Haptic feedback** — VibrationEffect on article card tap and category selection (Android S+ VibratorManager support)
 - **Edge-to-edge** — transparent status/navigation bars with proper light/dark bar styling via enableEdgeToEdge
 - **Adaptive icon** — generated from iOS source icon at all densities, plus play store 512×512
-- **Release pipeline** — GitHub Actions workflow builds signed APK + AAB on tag push, creates GitHub Release. F-Droid metadata (fastlane + build recipe) ready for submission.
+- **Release pipeline** — GitHub Actions workflow builds signed APK + AAB on tag push, creates GitHub Release. F-Droid merge request submitted ([MR #34426](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/34426)).
 - **ProGuard/R8** — minification and shrinking enabled for release builds with rules for kotlinx.serialization + OkHttp
-- **15 Kotlin files**, minSdk 26 (Android 8.0+), targetSdk 35
+- **22 Kotlin files**, minSdk 26 (Android 8.0+), targetSdk 35
 
 ### Deployment Infrastructure — v2.0.0
 - **Docker** — Multi-stage Dockerfiles (backend: build + production stages, no gcc in production; frontend: Next.js standalone), docker-compose.prod.yml with container resource limits (512M/0.75 CPU backend, 256M/0.50 CPU frontend), .dockerignore preventing secrets/git from build context, pinned Alpine base images

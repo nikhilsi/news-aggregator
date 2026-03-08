@@ -38,7 +38,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 | Backend | Python 3.12 / FastAPI |
 | Cache | In-memory (SWR with 24h stale window) |
 | Web | Next.js 16 (React 19) / Tailwind CSS v4 |
-| iOS | SwiftUI (26 files, zero external packages) |
+| iOS | SwiftUI (22 files, zero external packages) |
 | Android | Kotlin 2.1 / Jetpack Compose / Material 3 |
 | Images | Coil 3 (Android) |
 | HTTP | OkHttp 4 (Android), URLSession (iOS) |

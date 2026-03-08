@@ -21,6 +21,7 @@
 
 **Optional** (if relevant to task):
 - **ios/README.md** - SwiftUI app structure
+- **android/ClearNews/README.md** - Android app architecture
 - **backend/sources.yaml** - News source configuration
 
 ---
@@ -76,9 +77,9 @@
 **This is a personal news aggregator with three clients sharing one backend.**
 
 ```
-Next.js Web App  ──┐
-                    ├──▶  FastAPI Backend  ──▶  RSS Feeds / News APIs / Financial APIs
-iOS SwiftUI App ───┘     (in-memory cache)
+Next.js Web App    ──┐
+iOS SwiftUI App    ──┼──▶  FastAPI Backend  ──▶  RSS Feeds / News APIs / Financial APIs
+Android Compose App ─┘     (in-memory cache)
 ```
 
 **Key architectural decisions:**
@@ -101,6 +102,7 @@ iOS SwiftUI App ───┘     (in-memory cache)
 | Cache | In-memory (Python dict) |
 | Web Frontend | Next.js (React) / Tailwind |
 | iOS App | Swift / SwiftUI |
+| Android App | Kotlin / Jetpack Compose / Material 3 |
 | Deployment | DigitalOcean Droplet / Docker Compose |
 
 ---

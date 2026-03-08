@@ -16,8 +16,10 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 | **Database** | None (stateless) | All data is in-memory article cache — no persistent storage needed |
 | **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
 | **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Standalone output for Docker, dark mode, infinite scroll |
-| **iOS App** | Swift / SwiftUI | Native iOS app, 26 files, zero packages, @Observable + .environment() |
+| **iOS App** | Swift / SwiftUI | Native iOS app, 22 files, zero packages, @Observable + .environment() |
+| **Android App** | Kotlin 2.1 / Jetpack Compose / Material 3 | Native Android app, 22 files, OkHttp + kotlinx.serialization + Coil 3 |
 | **Deployment** | DigitalOcean Droplet / Docker Compose | Dedicated droplet, nginx reverse proxy, Let's Encrypt SSL |
+| **CI/CD** | GitHub Actions | Tag-triggered Android APK + AAB release |
 
 ---
 
@@ -26,12 +28,12 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 ### High-Level Diagram
 
 ```
-┌──────────────┐     ┌──────────────┐
-│   Next.js    │     │   iOS App    │
-│   Web App    │     │   (SwiftUI)  │
-└──────┬───────┘     └──────┬───────┘
-       │                    │
-       └────────┬───────────┘
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   Next.js    │  │   iOS App    │  │ Android App  │
+│   Web App    │  │   (SwiftUI)  │  │  (Compose)   │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                 │
+       └────────┬────────┴─────────────────┘
                 │
                 ▼
        ┌────────────────┐
@@ -55,7 +57,7 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 
 ### Data Flow
 
-1. **User opens app** (web or iOS)
+1. **User opens app** (web, iOS, or Android)
 2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech`)
 3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
 4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, Financial APIs). Cold cache uses a 3-second deadline: returns whatever sources completed, remaining continue in background.
@@ -81,7 +83,7 @@ Cache TTL is configurable per-source (default: 15 minutes). SWR caching (24h sta
 ## Security
 
 - **SSRF protection** — reader endpoint validates URLs before fetching: blocks private IPs, loopback, link-local, reserved addresses, DNS rebinding prevention, HTTP(S)-only schemes
-- **HTML sanitization** — two-layer defense: backend uses nh3 (Rust-powered allowlist sanitizer), web frontend adds DOMPurify client-side, iOS uses Content Security Policy in WKWebView
+- **HTML sanitization** — two-layer defense: backend uses nh3 (Rust-powered allowlist sanitizer), web frontend adds DOMPurify client-side, iOS and Android use Content Security Policy in WebView
 - **No authentication** — public read-only API. No user accounts, no passwords, no tokens, no database. All data is transient article cache.
 - **Nginx security headers** — HSTS, CSP, Referrer-Policy, Permissions-Policy, X-Content-Type-Options, X-Frame-Options, server_tokens off
 - **Docker hardening** — non-root users, multi-stage builds, .dockerignore, pinned base images, container resource limits
@@ -334,7 +336,21 @@ news-aggregator/
 │       ├── Views/Settings/         # SettingsView, AboutView
 │       ├── Views/Shared/           # ErrorView, EmptyStateView, RelativeTimeText, SkeletonView
 │       └── Utilities/              # Constants
-├── iosplan.md                      # iOS architecture & build plan
+├── android/ClearNews/              # Kotlin + Jetpack Compose Android app
+│   └── app/src/main/java/com/nikhilsi/clearnews/
+│       ├── MainActivity.kt         # Single activity, edge-to-edge
+│       ├── model/                   # Article, Category, ReaderContent
+│       ├── data/                    # ApiClient (OkHttp + kotlinx.serialization)
+│       ├── viewmodel/               # ClearNewsViewModel (StateFlow)
+│       ├── theme/                   # Material 3 theme (light/dark/system)
+│       ├── ui/home/                 # HomeScreen, ArticleCard, CategoryTabs
+│       ├── ui/reader/               # ReaderScreen (WebView, CSP, dark mode CSS)
+│       ├── ui/settings/             # SettingsScreen, AboutScreen
+│       └── util/                    # RelativeTime, HapticManager, ShareUtils
+├── .github/workflows/              # CI/CD (Android release on tag push)
+├── fastlane/                       # F-Droid metadata
+├── fdroid/                         # F-Droid build recipe
+├── docs/                           # Architecture & planning docs
 ├── deployment/
 │   ├── docker/                     # Dockerfiles + docker-compose.prod.yml
 │   ├── nginx/                      # Host-level nginx config
@@ -389,7 +405,7 @@ See [deployment/README.md](deployment/README.md) for setup and deploy instructio
 - Built and tested locally via Xcode
 - Points to production API (https://getclearnews.com/api/v1) by default
 - Distributed via TestFlight for family/friends (requires Apple Developer account — $99/year)
-- See [iosplan.md](iosplan.md) for full architecture and build plan
+- See [ios/README.md](ios/README.md) for app architecture and structure
 
 ---
 
