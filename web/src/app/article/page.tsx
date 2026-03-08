@@ -30,6 +30,7 @@ function ReaderContent() {
   const [reader, setReader] = useState<ReaderResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [hasHistory] = useState(() => typeof window !== 'undefined' && document.referrer !== '');
 
   useEffect(() => {
     if (!articleUrl) {
@@ -75,7 +76,7 @@ function ReaderContent() {
       <div className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/80">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <button
-            onClick={() => router.back()}
+            onClick={() => hasHistory ? router.back() : router.push('/')}
             className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
