@@ -31,6 +31,17 @@ ios/DerivedData/
 xcuserdata/
 *.xcarchive/
 
+# Android
+android/ClearNews/.gradle/
+android/ClearNews/build/
+android/ClearNews/app/build/
+android/ClearNews/local.properties
+android/ClearNews/keystore.properties
+android/ClearNews/keystore/
+*.apk
+*.aab
+*.jks
+
 # IDE
 .vscode/
 .idea/

@@ -10,45 +10,63 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 ## What It Does
 
-- Aggregates news from 41 sources across 13 categories (39 RSS feeds + 2 financial API endpoints)
-- **Reader view** — click any article to read clean, extracted content in-app (modal overlay, no page reload)
+- Aggregates news from **41 sources** across **13 categories** (39 RSS feeds + 2 financial API endpoints)
+- **Reader view** — clean, extracted article content with dark mode CSS, font scaling, and CSP
 - Filter by category: General, Local (Seattle), Feel Good, Science, Technology, Entertainment, Finance, Health, Sports, Offbeat, Travel, India
 - Two-tier article sorting — diverse top section (mix of sources/categories), then chronological
 - Clean card-based feed with infinite scroll
 - Dark mode with OS preference detection
 - Keyword search across titles and summaries
-- SWR caching (24h stale window), background refresh loop (keeps cache warm), conditional HTTP requests (ETag/Last-Modified → 304 support), startup warmup
-- Non-blocking pull-to-refresh on both web and iOS (returns cached data instantly, refreshes in background)
+- SWR caching (24h stale window), background refresh loop, conditional HTTP requests (ETag/Last-Modified → 304)
+- Non-blocking pull-to-refresh (returns cached data instantly, refreshes in background)
 - Article deduplication — URL match + title keyword overlap across sources
-- Image extraction via og:image fallback for feeds without embedded images
-- Financial news via FMP API (general news + market analysis)
-- Security hardened — SSRF protection, allowlist HTML sanitization (nh3 + DOMPurify), CSP headers, no auth needed (public read-only API)
+- Smart sharing — articles shared with title, source, and ClearNews reader link
+- Security hardened — SSRF protection, allowlist HTML sanitization (nh3 + DOMPurify), CSP headers
+
+## Download
+
+| Platform | Status | Link |
+|----------|--------|------|
+| **Web** | Live | [getclearnews.com](https://getclearnews.com) |
+| **iOS** | v2.0 on App Store | [App Store](https://apps.apple.com/app/id6759177704) |
+| **Android** | v1.0.0 | [APK from GitHub Releases](https://github.com/nikhilsi/news-aggregator/releases) |
 
 ## Tech Stack
 
-- **Backend**: Python 3.12 / FastAPI / SQLite
-- **Web**: Next.js 16 (React 19) / Tailwind CSS v4
-- **iOS**: SwiftUI (26 files, zero external packages, Dynamic Type, haptics)
-- **Deployment**: DigitalOcean Droplet / Docker Compose / Nginx / Let's Encrypt
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.12 / FastAPI |
+| Cache | In-memory (SWR with 24h stale window) |
+| Web | Next.js 16 (React 19) / Tailwind CSS v4 |
+| iOS | SwiftUI (26 files, zero external packages) |
+| Android | Kotlin 2.1 / Jetpack Compose / Material 3 |
+| Images | Coil 3 (Android) |
+| HTTP | OkHttp 4 (Android), URLSession (iOS) |
+| Deployment | DigitalOcean / Docker Compose / Nginx / Let's Encrypt |
+| CI/CD | GitHub Actions (Android release on tag push) |
 
 ## Project Structure
 
 ```
 news-aggregator/
-├── backend/           # FastAPI REST API
-├── web/               # Next.js web frontend
-├── ios/               # SwiftUI iOS app
-├── iosplan.md         # iOS architecture & build plan
-├── deployment/        # Docker, nginx, setup/deploy scripts
-│   ├── docker/        # Dockerfiles + docker-compose.prod.yml
-│   ├── nginx/         # Host-level nginx config
-│   └── scripts/       # setup.sh, deploy.sh, etc.
-├── scripts/           # Local dev restart scripts
-├── CLAUDE.md          # Claude Code development guide
-├── PROJECT.md         # Full architecture & design documentation
-├── CURRENT_STATE.md   # Current build status
-├── NOW.md             # Current priorities
-└── CHANGELOG.md       # Version history
+├── backend/              # FastAPI REST API
+├── web/                  # Next.js web frontend
+├── ios/                  # SwiftUI iOS app
+├── android/ClearNews/    # Kotlin + Jetpack Compose Android app
+├── deployment/           # Docker, nginx, setup/deploy scripts
+│   ├── docker/           # Dockerfiles + docker-compose.prod.yml
+│   ├── nginx/            # Host-level nginx config
+│   └── scripts/          # setup.sh, deploy.sh, etc.
+├── .github/workflows/    # CI/CD (Android release)
+├── fastlane/             # F-Droid metadata
+├── fdroid/               # F-Droid build recipe
+├── scripts/              # Local dev restart scripts
+├── docs/                 # Architecture & planning docs
+├── CLAUDE.md             # Claude Code development guide
+├── PROJECT.md            # Full architecture & design documentation
+├── CURRENT_STATE.md      # Current build status
+├── NOW.md                # Current priorities
+└── CHANGELOG.md          # Version history
 ```
 
 ## Getting Started
@@ -57,6 +75,7 @@ news-aggregator/
 
 - Python 3.12+
 - Node.js 20+
+- Android Studio (for Android development)
 
 ### Backend
 
@@ -81,6 +100,16 @@ npm run dev  # Runs on port 3000
 
 Open `ios/ClearNews/ClearNews/ClearNews.xcodeproj` in Xcode and run (Cmd+R). Points to the production API by default — no backend setup needed.
 
+### Android App
+
+Open `android/ClearNews/` in Android Studio and run on emulator or device. Points to the production API by default — no backend setup needed.
+
+```bash
+# Or build from command line
+cd android/ClearNews
+./gradlew assembleDebug
+```
+
 ### Deployment
 
 See [deployment/README.md](deployment/README.md) for the full production setup guide.
@@ -95,7 +124,8 @@ See [deployment/README.md](deployment/README.md) for the full production setup g
 - **[backend/README.md](backend/README.md)** — API endpoints, services, folder structure
 - **[web/README.md](web/README.md)** — Pages, components, hooks
 - **[ios/README.md](ios/README.md)** — iOS app structure, services, key patterns
-- **[iosplan.md](iosplan.md)** — iOS architecture & build plan
+- **[android/ClearNews/README.md](android/ClearNews/README.md)** — Android app architecture, build instructions
+- **[docs/android-app.md](docs/android-app.md)** — Android implementation plan
 
 ## License
 

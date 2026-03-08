@@ -1,10 +1,10 @@
 # Current State
 
-**Last Updated**: March 1, 2026
+**Last Updated**: March 7, 2026
 
-## Status: Live at getclearnews.com | iOS v2.0 on App Store | 41 sources across 13 categories
+## Status: Live at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 | 41 sources across 13 categories
 
-Backend, web frontend, deployment, and iOS app are complete. Site is live on DigitalOcean. Authentication system removed (no user data stored, no database). Backend has text logging, SWR caching (24h stale window), progressive cold-cache response (3s deadline), non-blocking refresh, background refresh loop (~25s per source), conditional HTTP requests (ETag/Last-Modified for 304 support), startup warmup (~11s), thread pool offloading, two-tier article sorting, content filtering (non-Latin script filter, visual stories ad filter), SSRF-protected reader endpoint, allowlist-based HTML sanitization (nh3), and 41 enabled sources across 13 categories. Web has pull-to-refresh with auto-retry on partial data, client-side HTML sanitization (DOMPurify), error boundary, accessible reader modal with focus trapping. iOS has pull-to-refresh with auto-retry, @MainActor concurrency safety, WebView Content Security Policy, accessibility improvements. Deployment hardened with .dockerignore, multi-stage Docker builds, container resource limits, pinned base images, comprehensive nginx security headers. Privacy policy and support pages live at getclearnews.com. App live on App Store as "GetClearNews".
+Backend, web frontend, deployment, iOS app, and Android app are complete. Site is live on DigitalOcean. Three native clients (web, iOS, Android) share one backend API. Authentication removed (no user data, no database). Android app built with Kotlin + Jetpack Compose + Material 3, full feature parity with iOS including reader view, category filtering, search, settings, and smart sharing (articles shared with title, source, and ClearNews reader link). GitHub Actions workflow builds signed APK + AAB on tag push. F-Droid metadata ready for submission.
 
 ## What's Built
 
@@ -60,6 +60,23 @@ Backend, web frontend, deployment, and iOS app are complete. Site is live on Dig
 - **Privacy manifest** — PrivacyInfo.xcprivacy declares UserDefaults usage (CA92.1), no tracking, no collected data types
 - **Polish** — shared ErrorView/EmptyStateView, RelativeTimeText ("2h ago"), 4-state views (loading/success/error/empty), stale request tracking
 - **22 Swift files**, 0 external dependencies, deployment target iOS 17.0
+
+### Android App (Kotlin + Jetpack Compose) — v1.0.0
+- **Article feed** — article cards with Coil 3 AsyncImage, LazyColumn, infinite scroll sentinel, pull-to-refresh (PullToRefreshBox), shimmer skeleton loading
+- **Categories** — horizontal LazyRow with FilterChip pills, filter articles by category
+- **Search** — TextField with 400ms coroutine debounce, composes with category filter
+- **Reader view** — Android WebView rendering extracted HTML with Content Security Policy, dark mode CSS (computed from theme), responsive images, external links open in browser, font size control, JavaScript height bridge for proper scrolling. Loading skeleton, error retry, and "Read on {source}" fallback for paywalled sites.
+- **Smart share** — articles shared with formatted text (title, source, time) and ClearNews reader link instead of raw article URL
+- **Settings** — theme picker (system/light/dark) via SegmentedButtonRow, reader font size (S/M/L/XL), about page with version info, content attribution, privacy/support links
+- **Architecture** — AndroidViewModel with StateFlow, SharedPreferences for persistence, singleton OkHttp ApiClient with kotlinx.serialization, no Room/Firebase/Retrofit/Hilt
+- **Auto-retry on partial data** — when backend returns `complete: false` (cold cache, not manual refresh), ViewModel silently re-fetches after 3 seconds
+- **Stale request tracking** — requestId counter pattern discards out-of-order responses
+- **Haptic feedback** — VibrationEffect on article card tap and category selection (Android S+ VibratorManager support)
+- **Edge-to-edge** — transparent status/navigation bars with proper light/dark bar styling via enableEdgeToEdge
+- **Adaptive icon** — generated from iOS source icon at all densities, plus play store 512×512
+- **Release pipeline** — GitHub Actions workflow builds signed APK + AAB on tag push, creates GitHub Release. F-Droid metadata (fastlane + build recipe) ready for submission.
+- **ProGuard/R8** — minification and shrinking enabled for release builds with rules for kotlinx.serialization + OkHttp
+- **15 Kotlin files**, minSdk 26 (Android 8.0+), targetSdk 35
 
 ### Deployment Infrastructure — v2.0.0
 - **Docker** — Multi-stage Dockerfiles (backend: build + production stages, no gcc in production; frontend: Next.js standalone), docker-compose.prod.yml with container resource limits (512M/0.75 CPU backend, 256M/0.50 CPU frontend), .dockerignore preventing secrets/git from build context, pinned Alpine base images

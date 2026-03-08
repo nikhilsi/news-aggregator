@@ -1,0 +1,1 @@
+Initial Android release. Article feed with pull-to-refresh, category filtering, search, infinite scroll. Reader view with dark mode and font scaling. Settings with theme picker.

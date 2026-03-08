@@ -1,0 +1,46 @@
+Categories:
+  - Reading
+  - Internet
+License: MIT
+AuthorName: Nikhil Singhal
+SourceCode: https://github.com/nikhilsi/news-aggregator
+IssueTracker: https://github.com/nikhilsi/news-aggregator/issues
+Changelog: https://github.com/nikhilsi/news-aggregator/blob/main/CHANGELOG.md
+
+Summary: A clean news reader without clickbait, ad overload, or political noise.
+Description: |
+  ClearNews is a personal news aggregator that pulls from multiple sources and
+  presents them through a clean, filterable interface. No accounts, no tracking,
+  no ads.
+
+  Browse articles from 40+ curated sources across technology, business, science,
+  world news, and finance. Filter by category, search by keyword, and read
+  articles in a distraction-free reader view.
+
+  Features:
+  - Pull-to-refresh with background cache warming
+  - Category filtering and full-text search
+  - Reader view with clean HTML, dark mode, and adjustable font size
+  - Infinite scroll with automatic pagination
+  - Share articles via Android share sheet
+  - Light, dark, and system theme support
+  - Haptic feedback
+
+  Articles are aggregated from publicly available RSS feeds and financial news
+  APIs. All content belongs to its respective publishers.
+
+RepoType: git
+Repo: https://github.com/nikhilsi/news-aggregator.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v2.1.0
+    subdir: android/ClearNews/app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0] - 2026-03-07 — Android App + Smart Sharing
+
+### Added
+- **Native Android app** — Full-featured Kotlin + Jetpack Compose app with Material 3. Article feed with pull-to-refresh, category filtering, search with debounce, infinite scroll. Reader view with WebView (CSP, dark mode CSS, font scaling, JS height bridge). Settings with theme picker and font size. Adaptive app icon. Edge-to-edge display. Haptic feedback. 15 Kotlin files, minSdk 26.
+- **Smart sharing (Android)** — Articles shared with formatted text (title, source, time) and ClearNews reader link (`getclearnews.com/article?url=...`) instead of raw article URL. Recipients get the clean reader experience.
+- **GitHub Actions CI/CD** — Tag-triggered workflow builds signed APK + AAB and creates GitHub Release automatically.
+- **F-Droid metadata** — fastlane metadata (title, descriptions, changelog) and build recipe ready for F-Droid submission.
+
+### Fixed
+- **Web: back button on shared links** — Landing on `/article?url=...` from a shared link now navigates to the homepage instead of doing nothing (no browser history to go back to).
+
+---
+
 ## [2.0.1] - 2026-03-01 — iOS App Store Update (v2.0 build 2)
 
 ### Fixed

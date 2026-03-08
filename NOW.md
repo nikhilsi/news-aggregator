@@ -1,6 +1,6 @@
 # NOW — Current Priorities
 
-**Last Updated**: March 1, 2026
+**Last Updated**: March 7, 2026
 
 ## Completed Phases
 
@@ -16,6 +16,7 @@
 - **Phase 10: Content filtering** — `done` — India Today visual stories (ad) filter, non-Latin article filter for non-India tabs (v1.8.0)
 - **Phase 11: Refresh performance** — `done` — Non-blocking refresh, background refresh loop, conditional HTTP requests with ETag/Last-Modified (v1.9.0)
 - **Phase 12: Security hardening + auth removal** — `done` — Comprehensive code review, SSRF protection, nh3 HTML sanitization, DOMPurify client-side, iOS WebView CSP, @MainActor concurrency, .dockerignore, multi-stage Docker builds, nginx security headers, auth system removed (v2.0.0)
+- **Phase 13: Android app** — `done` — Kotlin + Jetpack Compose, full feature parity with iOS, smart sharing, GitHub Actions CI/CD, F-Droid metadata (v2.1.0)
 
 See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
 
@@ -29,10 +30,14 @@ See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inve
 - **Trending topics** — Google Trends RSS, Wikipedia most-read, Hacker News top stories as trend signals
 
 ### Web Frontend
-- **SSR** — Server-side rendering for SEO and link previews. Not needed for a personal app initially.
-- **User settings page** — Preferences, profile editing, source toggles.
-- **Landing page** — Public marketing-style page with value prop, login/signup CTA.
+- **SSR** — Server-side rendering for SEO and link previews.
+- **Smart sharing** — Match Android's formatted share text with ClearNews reader link.
 
 ### iOS App
+- **Smart sharing** — Match Android's formatted share text with ClearNews reader link.
 - **Image caching** — NSCache-based image cache if AsyncImage flicker becomes noticeable on fast scrolling.
 - **iPad optimization** — NavigationSplitView for iPad-specific layout.
+
+### Android App
+- **F-Droid submission** — Submit merge request to gitlab.com/fdroid/fdroiddata.
+- **Image caching tuning** — Coil disk cache size configuration if needed.

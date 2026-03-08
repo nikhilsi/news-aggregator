@@ -1,0 +1,29 @@
+ClearNews is a personal news aggregator that pulls from multiple sources and presents them through a clean, filterable interface. No accounts, no tracking, no ads.
+
+ARTICLE FEED
+Browse articles from 40+ curated sources across technology, business, science, world news, and finance. Pull-to-refresh with background cache warming delivers fresh content without waiting. Infinite scroll loads more articles as you read.
+
+CATEGORY FILTERING
+Filter articles by category — technology, business, science, world, finance, and more. Switch between categories with haptic-feedback pills.
+
+SEARCH
+Full-text search with 400ms debounce finds articles across all sources instantly.
+
+READER VIEW
+Read articles in a distraction-free reader view. Clean HTML with content security policy, dark mode CSS injection, and adjustable font size (S/M/L/XL). External links open in your browser.
+
+SETTINGS
+Choose between system, light, or dark themes. Adjust reader font size to your preference.
+
+FEATURES
+- 40+ curated news sources (RSS + financial APIs)
+- Pull-to-refresh with background cache warming
+- Category filtering and full-text search
+- Clean reader view with dark mode and font scaling
+- Infinite scroll with automatic pagination
+- Share articles via Android share sheet
+- Light, dark, and system theme support
+- Haptic feedback on interactions
+- No accounts, no tracking, no ads
+
+Articles are aggregated from publicly available RSS feeds and financial news APIs. All content belongs to its respective publishers. Tap "Original" in the reader to visit the source.
