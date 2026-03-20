@@ -24,6 +24,9 @@
 - **android/ClearNews/README.md** - Android app architecture
 - **backend/sources.yaml** - News source configuration
 
+
+- Before beginning implementation, check with your project lead for any cross-session context or coordination notes that may affect this work.
+
 ---
 
 ## 🚨 Critical Rules
