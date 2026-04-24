@@ -1,8 +1,12 @@
 # Current State
 
-**Last Updated**: March 8, 2026
+**Last Updated**: April 24, 2026
 
 ## Status: Live at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 | 41 sources across 13 categories
+
+### Infrastructure review: 2026-04-24
+
+Production deployment reviewed for API-key hygiene and general security posture. No changes made. The deployment carries only one legacy API credential (`FMP_API_KEY`), and that subscription is no longer active at the provider -- the RSS-only code path remains the live one. Droplet continues to host the site at getclearnews.com as-is, and the iOS/Android clients continue to point at the same backend. Noting the review here so a future reader knows this was checked on the above date and deliberately left in place, not overlooked.
 
 Backend, web frontend, deployment, iOS app, and Android app are complete. Site is live on DigitalOcean. Three native clients (web, iOS, Android) share one backend API. Authentication removed (no user data, no database). Android app built with Kotlin + Jetpack Compose + Material 3, full feature parity with iOS including reader view, category filtering, search, settings, and smart sharing (articles shared with title, source, and ClearNews reader link). GitHub Actions workflow builds signed APK + AAB on tag push. F-Droid merge request submitted (pending review). Release APK is 1.8MB.
 
