@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ClearNews Social Card</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 1200px;
+            height: 630px;
+            overflow: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, #030712 0%, #0f172a 100%);
+            color: #fafafa;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+            padding: 80px 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-size: 72px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1;
+        }
+
+        .brand .accent {
+            color: #3b82f6;
+        }
+
+        .accent-rule {
+            width: 88px;
+            height: 4px;
+            background: #3b82f6;
+            margin-top: 40px;
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 58px;
+            font-weight: 700;
+            color: #fafafa;
+            margin-top: 28px;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        p.stats {
+            font-size: 26px;
+            color: #94a3b8;
+            margin-top: 28px;
+            font-weight: 500;
+            line-height: 1.45;
+            max-width: 940px;
+        }
+
+        p.stats strong {
+            color: #fafafa;
+            font-weight: 700;
+        }
+
+        .bottom {
+            font-size: 19px;
+            color: #94a3b8;
+            border-top: 1px solid #1e293b;
+            padding-top: 26px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .by .name {
+            color: #fafafa;
+            font-weight: 600;
+        }
+
+        .hub {
+            color: #3b82f6;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="brand">
+            <span class="accent">Clear</span>News
+        </div>
+        <div class="accent-rule"></div>
+        <h1>A clean, personal news reader.</h1>
+        <p class="stats">
+            <strong>41 sources</strong> &middot; <strong>13 categories</strong> &middot; No clickbait, no tracking, no algorithm deciding what you see.
+        </p>
+    </div>
+    <div class="bottom">
+        <span class="by">Built by <span class="name">Nikhil Singhal</span></span>
+        <span class="hub">nikhilsinghal.com</span>
+    </div>
+</body>
+</html>
