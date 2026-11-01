@@ -33,7 +33,7 @@ Adding, removing or disabling a source: edit `src/sources.ts`, deploy. A categor
    swiftc -O $APP/Models/Article.swift $APP/Models/Category.swift $APP/Models/ReaderContent.swift scripts/sweep/main.swift -o .fixtures/sweep
    .fixtures/sweep https://clearnews.nikhil-58a.workers.dev
    ```
-4. Parity with the Python backend on recorded feeds (only while `backend/` exists): `node scripts/record-fixtures.mjs`, then `TZ=UTC node scripts/parity/run-ts.ts`, `node scripts/record-fixtures.mjs og .fixtures/og-wanted.json`, `TZ=UTC python -I scripts/parity/run_py.py` (Python 3.12.13, feedparser 6.0.12, httpx 0.28.1, pydantic 2.13.4, pydantic-settings 2.14.1, PyYAML 6.0.3), `node scripts/parity/compare.mjs`.
+4. Parity with the Python backend on recorded feeds: done once before the switchover (identical except three listed fixes). The harness and `backend/` were removed with the droplet on Nov 1, 2026; they are in git history before commit `bb1d237`.
 5. The iOS app in the Xcode simulator with `Constants.baseURL` pointed at the test address (local change, never committed).
 6. Finance feeds approved by Nikhil and enabled in `src/sources.ts`.
 7. `npm run verify` passes.
@@ -52,7 +52,7 @@ Adding, removing or disabling a source: edit `src/sources.ts`, deploy. A categor
 ## Rollback
 
 - **Bad code:** `npx wrangler rollback` (or pick an earlier version under Workers & Pages, clearnews, Deployments). KV needs nothing: a version that cannot read the stored `state` does a full run and rebuilds it within a minute.
-- **Back to the droplet** (only while it exists): remove the routes from `wrangler.jsonc` first (or the next deploy takes the hostnames back), then `node scripts/cutover.mjs detach getclearnews.com www.getclearnews.com`. That detaches the custom domains (removing the records Cloudflare made, including the `AAAA 100::`) and recreates the A records to 64.227.96.170, DNS only, TTL 300. The droplet's certificate is valid to Jan 7, 2027.
+- **Back to the droplet:** no longer possible; Nikhil deleted the droplet and the DigitalOcean project on Nov 1, 2026. The steps were: remove the routes from `wrangler.jsonc` first (or the next deploy takes the hostnames back), then `node scripts/cutover.mjs detach getclearnews.com www.getclearnews.com`. That detaches the custom domains (removing the records Cloudflare made, including the `AAAA 100::`) and recreates the A records to 64.227.96.170, DNS only, TTL 300. The droplet's certificate is valid to Jan 7, 2027.
 
 ## Switchover record (Nov 1, 2026)
 

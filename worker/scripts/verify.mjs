@@ -7,7 +7,7 @@ const BASE = process.argv[2] ?? 'https://getclearnews.com';
 const PROD = new URL(BASE).hostname === 'getclearnews.com';
 
 // The apps' own user agents, with no browser headers (review R1).
-const IOS_UA = 'GetClearNews/2 CFNetwork/3826.500.111 Darwin/24.4.0';
+const IOS_UA = 'ClearNews/2 CFNetwork/3896.100.1.2.1 Darwin/27.0.0'; // the App Store build, seen Nov 1, 2026
 const ANDROID_UA = 'okhttp/4.12.0';
 const SECURITY = [
   'strict-transport-security', 'content-security-policy', 'x-frame-options', 'x-content-type-options',
