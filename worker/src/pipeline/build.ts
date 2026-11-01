@@ -4,6 +4,7 @@
 import { CATEGORIES, SOURCES } from '../sources.ts';
 import { FEED_VERSION, type Article, type Feed } from '../types.ts';
 import { mergeForTab } from './merge.ts';
+import { trimSource } from './trim.ts';
 
 export const enabledSources = () => SOURCES.filter((s) => s.enabled);
 
@@ -18,8 +19,9 @@ export function buildFeed(articlesBySource: ReadonlyMap<string, Article[]>, now:
   const articles: Article[] = [];
   const lists: Record<string, number[]> = {};
   const tabs = new Set(['all', ...CATEGORIES.map((c) => c.id), ...enabledSources().map((s) => s.category)]);
+  const trimmed = new Map(enabledSources().map((s) => [s.id, trimSource(articlesBySource.get(s.id) ?? [], now)]));
   for (const tab of tabs) {
-    const perSource = sourcesForTab(tab).map((s) => articlesBySource.get(s.id) ?? []);
+    const perSource = sourcesForTab(tab).map((s) => trimmed.get(s.id) ?? []);
     lists[tab] = mergeForTab(perSource, tab).map((a) => {
       let i = index.get(a);
       if (i === undefined) {

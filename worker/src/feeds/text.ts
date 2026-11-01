@@ -1,8 +1,8 @@
 // Text helpers ported from backend/app/sources/rss_fetcher.py.
 // strip_html there uses Python's HTMLParser: every run of text between tags is
-// one piece, pieces are joined with a single space, and the result is trimmed.
-// That spacing ("Hello  world !") is kept on purpose for the move (spec
-// section 3, O17 deferred to #413).
+// one piece, and pieces are joined with a single space. Since #413 runs of
+// whitespace collapse to one space and no space is left before punctuation,
+// so "Hello <b>world</b>!" reads "Hello world!" (O17).
 
 import { decodeHTML } from 'entities';
 
@@ -59,7 +59,7 @@ export function stripHtml(html: string | null | undefined): string | null {
     }
   }
   flush();
-  return parts.join(' ').trim();
+  return parts.join(' ').replace(/\s+/g, ' ').replace(/ ([.,;:!?])/g, '$1').trim();
 }
 
 /** Port of _extract_summary's cut: at most 500 code points (497 plus "..."). */

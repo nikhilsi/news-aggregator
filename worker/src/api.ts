@@ -5,6 +5,7 @@ import { Hono, type Context } from 'hono';
 import { CATEGORIES, SOURCES } from './sources.ts';
 import { enabledSources } from './pipeline/build.ts';
 import { mergeForTab } from './pipeline/merge.ts';
+import { trimSource } from './pipeline/trim.ts';
 import { readFeed, readState, type Env } from './store.ts';
 import type { Article } from './types.ts';
 import { boolParam, intParam, missing, type FieldError } from './validate.ts';
@@ -81,7 +82,7 @@ app.get('/api/v1/articles', async (c) => {
     const s = SOURCES.find((x) => x.id === source);
     const state = s?.enabled ? await readState(c.env.CACHE) : null;
     const st = state && Object.hasOwn(state.sources, source) ? state.sources[source] : undefined;
-    articles = st ? mergeForTab([st.articles], category) : [];
+    articles = st ? mergeForTab([trimSource(st.articles, Date.now())], category) : [];
   } else {
     const feed = await readFeed(c.env.CACHE);
     if (!feed) {

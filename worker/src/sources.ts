@@ -17,10 +17,16 @@ export interface Source {
   /** Echoed by /api/v1/sources; nothing filters on it. */
   isCuratedPositive: boolean;
   enabled: boolean;
+  /** Items whose title matches are skipped (roundups and quizzes that repeat other items). */
+  skipTitle?: RegExp;
 }
 
 /** Every source is refreshed when its last check is this old (sources.yaml had 15 for all). */
 export const TTL_MINUTES = 15;
+
+/** Each source shows at most its newest 30 items, none older than 7 days (#413). */
+export const MAX_PER_SOURCE = 30;
+export const MAX_AGE_DAYS = 7;
 
 export const CATEGORIES: readonly Category[] = [
   { id: 'all', name: 'All' },
@@ -59,7 +65,8 @@ export const SOURCES: readonly Source[] = [
   { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: true },
   { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true },
   // Health
-  { id: 'npr-health', name: 'NPR Health', type: 'rss', url: 'https://feeds.npr.org/103537970/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
+  // NPR's current health feed since Nov 1, 2026; the old one (103537970) stopped in January.
+  { id: 'npr-health', name: 'NPR Health', type: 'rss', url: 'https://feeds.npr.org/1128/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
   { id: 'bbc-health', name: 'BBC Health', type: 'rss', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
   // Sports
   { id: 'cbs-sports', name: 'CBS Sports', type: 'rss', url: 'https://www.cbssports.com/rss/headlines/', category: 'sports', isCuratedPositive: false, enabled: true },
@@ -104,8 +111,9 @@ export const SOURCES: readonly Source[] = [
   // India
   { id: 'bbc-india', name: 'BBC News India', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/asia/india/rss.xml', category: 'india', isCuratedPositive: false, enabled: true },
   { id: 'ndtv', name: 'NDTV', type: 'rss', url: 'https://feeds.feedburner.com/ndtvnews-top-stories', category: 'india', isCuratedPositive: false, enabled: true },
-  { id: 'times-of-india', name: 'Times of India', type: 'rss', url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', category: 'india', isCuratedPositive: false, enabled: true },
-  { id: 'india-today', name: 'India Today', type: 'rss', url: 'https://www.indiatoday.in/rss/home', category: 'india', isCuratedPositive: false, enabled: true },
-  { id: 'scroll-in', name: 'Scroll.in', type: 'rss', url: 'http://feeds.feedburner.com/ScrollinArticles.rss', category: 'india', isCuratedPositive: false, enabled: true },
+  // India-only feed since Nov 1, 2026; the top stories feed carried US and UK news.
+  { id: 'times-of-india', name: 'Times of India', type: 'rss', url: 'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms', category: 'india', isCuratedPositive: false, enabled: true },
+  { id: 'india-today', name: 'India Today', type: 'rss', url: 'https://www.indiatoday.in/rss/home', category: 'india', isCuratedPositive: false, enabled: true, skipTitle: /weekly news quiz/i },
+  { id: 'scroll-in', name: 'Scroll.in', type: 'rss', url: 'http://feeds.feedburner.com/ScrollinArticles.rss', category: 'india', isCuratedPositive: false, enabled: true, skipTitle: /^rush hour:/i },
   { id: 'the-hindu', name: 'The Hindu', type: 'rss', url: 'https://www.thehindu.com/feeder/default.rss', category: 'india', isCuratedPositive: false, enabled: true },
 ];

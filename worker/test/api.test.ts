@@ -69,7 +69,8 @@ describe('articles', () => {
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
     const body = (await res.json()) as { articles: Article[]; pagination: Record<string, number>; complete: boolean };
     expect(Object.keys(body)).toEqual(['articles', 'pagination', 'complete']);
-    expect(body.pagination).toEqual({ page: 2, per_page: 20, total: 45, total_pages: 3 });
+    // 45 seeded from one source; a source shows at most its newest 30 (#413).
+    expect(body.pagination).toEqual({ page: 2, per_page: 20, total: 30, total_pages: 2 });
     expect(body.complete).toBe(true);
     expect(Object.keys(body.articles[0])).toEqual([
       'title', 'summary', 'url', 'image_url', 'source_id', 'source_name', 'source_type', 'category', 'sentiment', 'published_at',

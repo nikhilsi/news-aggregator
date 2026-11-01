@@ -6,6 +6,7 @@ import { parseEntries } from '../src/feeds/entry.ts';
 import { decodeBody, ogFromHtml } from '../src/feeds/fetch.ts';
 import { gate } from '../src/pipeline/gate.ts';
 import { deduplicate, isNonLatin, mergeForTab, tieredSort } from '../src/pipeline/merge.ts';
+import { trimSource } from '../src/pipeline/trim.ts';
 import type { Article } from '../src/types.ts';
 import { SOURCES } from '../src/sources.ts';
 
@@ -24,8 +25,9 @@ const art = (o: Partial<Article>): Article => ({
 });
 
 describe('stripHtml (port of strip_html)', () => {
-  it('keeps Python spacing: pieces joined with one space', () => {
-    expect(stripHtml('Hello <b>world</b>! &amp; more <p>para</p>')).toBe('Hello  world ! & more  para');
+  it('collapses spacing and leaves no space before punctuation (O17)', () => {
+    expect(stripHtml('Hello <b>world</b>! &amp; more <p>para</p>')).toBe('Hello world! & more para');
+    expect(stripHtml('<p>One</p>\n\n<p>Two .</p>')).toBe('One Two.');
   });
   it('null for empty, "" for tags only', () => {
     expect(stripHtml('')).toBeNull();
@@ -87,7 +89,7 @@ describe('feed entries and normalization', () => {
     const [e] = parseEntries(xml);
     const a = normalizeEntry(e, src)!;
     expect(a).toEqual({
-      title: 'A  title',
+      title: 'A title',
       summary: 'The summary',
       url: 'https://x.test/a',
       image_url: 'https://img.test/a.jpg',
@@ -197,5 +199,21 @@ describe('merge (port of service.py)', () => {
     const hi = art({ title: 'यूपी में हथकड़ी', category: 'india' });
     expect(mergeForTab([[hi]], 'india')).toHaveLength(1);
     expect(mergeForTab([[hi]], 'all')).toHaveLength(0);
+  });
+});
+
+describe('trimSource (#413)', () => {
+  const now = Date.parse('2026-11-01T12:00:00Z');
+  const at = (d: number, h = 0) => new Date(now - d * 864e5 - h * 36e5).toISOString().slice(0, 19) + 'Z';
+  it('drops items older than 7 days, keeps undated', () => {
+    const out = trimSource([art({ url: 'old', published_at: at(8) }), art({ url: 'new', published_at: at(1) }), art({ url: 'nodate', published_at: null })], now);
+    expect(out.map((a) => a.url)).toEqual(['new', 'nodate']);
+  });
+  it('keeps the newest 30, in feed order', () => {
+    const list = Array.from({ length: 40 }, (_, i) => art({ url: `u${i}`, published_at: at(0, i % 2 ? 40 - i : i) }));
+    const out = trimSource(list, now);
+    expect(out).toHaveLength(30);
+    const idx = out.map((a) => Number(a.url.slice(1)));
+    expect(idx).toEqual([...idx].sort((a, b) => a - b));
   });
 });
