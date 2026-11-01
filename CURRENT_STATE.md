@@ -43,7 +43,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 | GET | `/api/v1/categories` | Categories with enabled source counts (empty ones hidden) |
 | GET | `/api/v1/status` | Feed build time and per-source status (no client uses it) |
 
-### Sources (42 enabled, `worker/src/sources.ts`)
+### Sources (42 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
 | Category | Sources | Count |
 |-|-|-|
 | General | AP News, Fox News | 2 |
@@ -64,8 +64,8 @@ Good News Network, AP News, Seattle Eater and Frommer's were blocked on the drop
 **Off:** MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Smithsonian (403 to the droplet; not retested), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
 
 ## Known Issues
-- **India tab noise** (#413): the same story from several outlets, old and off-topic items, roundups. First change after the move.
-- **Frommer's** sends about 300 items; the per-source cap in #413 trims it.
+- **Same story from several outlets** (#414): merging by meaning is the AI step; the India cleanup (#413, 3.1.0) cut the tab from 343 to 129 articles.
+- **AP News** (via feedx) stopped updating in September; General shows Fox News only until a replacement is chosen.
 - **The apps' About screens** say "financial news APIs" until their next release.
 
 ## What's Next

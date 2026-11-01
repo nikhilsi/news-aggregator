@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.0] - 2026-11-01 - India cleanup (#413)
+
+### Changed
+- Every source shows at most its newest 30 items, none older than 7 days. The India tab went from 343 to 129 articles (India's share of All from 336 of 1,528 to 123 of 693); items from 2015 and roundups are gone.
+- Times of India uses its India-only feed (the top stories feed carried US and UK news).
+- Scroll's "Rush Hour" roundups and India Today's weekly quiz are skipped.
+- Summaries and titles no longer show double spaces or a space before punctuation.
+- NPR Health uses NPR's current feed (the old one stopped in January).
+
+---
+
 ## [3.0.0] - 2026-11-01 - Move to Cloudflare
 
 ### Changed

@@ -90,7 +90,7 @@ Deliberate differences (none breaks a client; each is on the test allow list):
 | Reader `extracted_at` with microseconds (`.ffffffZ`) | Milliseconds (`.mmmZ`) | no client reads it (inventory 6.2) |
 | (none) | `GET /api/v1/status`: when `feed` was built and, per source, the last success and last status. No client calls it | R3 |
 
-Deferred, not part of the move: the `strip_html` spacing fix (O17, "Hello  world !"). Changing nearly every summary would hide other summary bugs in the parity test (R10). It can land with #413.
+Deferred from the move and shipped with #413 (3.1.0): the `strip_html` spacing fix (O17), and a per-source limit of the newest 30 items within 7 days.
 
 ## 4. Feeds: the Cron Trigger
 

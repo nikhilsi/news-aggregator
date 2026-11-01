@@ -4,7 +4,7 @@
 
 ## Now
 
-1. **India tab cleanup** (#413): switch Times of India to its India-only feed, keep each source's newest ~30 items, drop items older than a few days, filter roundup and junk posts (Scroll "Rush Hour", The Hindu "Mail - ... edition"), and fix the `strip_html` spacing (O17). Show before and after numbers on the live India tab.
+1. **India tab cleanup** (#413): shipped as 3.1.0 (343 to 129 articles). Open: Hindi stories in the India tab, and a replacement for the dead AP feed.
 2. **AI step design doc** (#414): group repeated stories by meaning ("covered by N outlets") and filter fluff (shopping deals, quizzes, horoscopes) in the cron, the same for every reader, no tracking. Costs first, then build.
 
 ## Done
