@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.3.0] - 2026-11-01 - Today brief (#414 step 2)
+
+### Added
+- **Today**: the first tab is a brief of about 10 stories, picked every hour. A score (importance, number of outlets, Nikhil's interests, age) makes a shortlist of 40; one Workers AI call orders them as an editor would; near repeats and more than 2 India or 2 US politics stories are skipped. Every headline, summary and image stays the publisher's.
+- **Latest**: a new second tab with the full list the first tab used to show. A search from the first tab covers Latest.
+- **Labels** for every article (Gemma 4 26B on Workers AI): kind, topics, importance. **Embeddings** (bge-m3) for the last 48 hours, to group the same story across outlets.
+- **BBC World** in General (world news, outside US politics), capped at 10 like Fox News and NPR News (Nikhil, Nov 1, 2026).
+- Two fields on every article for the web: `topics`, and `coverage` (the other outlets' headlines and links for the same story). The iOS and Android apps ignore them.
+- `/api/v1/status` reports when the Today brief was picked and its size.
+
+### Changed
+- Deals, betting, quizzes, listicles and celebrity items are dropped from every tab (Nikhil, Nov 1, 2026); how-to, opinion and features stay in their tabs but never reach Today.
+- Each tab shows one card per story.
+- AI, Physical AI and Space also show matching stories from other sources.
+- A source whose feed URL changes is fetched in full once, instead of reusing the old URL's ETag and Last-Modified.
+
+### Safety
+- If Workers AI fails, nothing breaks: unlabeled articles count as news, and Today keeps its last brief for up to 6 hours, then shows the full list.
+
+---
+
 ## [3.2.0] - 2026-11-01 - New tabs: AI, Physical AI, Space (#414 step 1)
 
 ### Added

@@ -128,7 +128,7 @@ Sources are defined in `worker/src/sources.ts`. Each source has (the TypeScript 
 
 Sources are defined in `worker/src/sources.ts`. Adding, removing or disabling a source is a one-line change there plus a deploy.
 
-**Current sources:** 52 RSS feeds enabled across 15 categories (list in CURRENT_STATE.md).
+**Current sources:** 53 RSS feeds enabled across 15 categories (list in CURRENT_STATE.md).
 
 **How they're fetched:** one RSS and Atom path (feedsmith) with normalization for field variations (images, dates, summaries), og:image lookups for items without images, and conditional requests (ETag, Last-Modified).
 
@@ -234,7 +234,7 @@ Implementation: `app/articles/service.py` — `_deduplicate()` function. No exte
 
 Articles use a two-tier sort to ensure diversity at the top of the feed while keeping all articles accessible:
 
-**"All" tab:**
+**"All" tab** (since Nov 1, 2026 this list is the "Latest" tab; the first tab is the Today brief, #414):
 - **Tier 1:** 1 most recent article per source, capped at 3 per category (~30 articles). Sorted by time.
 - **Tier 2:** All remaining articles, sorted chronologically.
 

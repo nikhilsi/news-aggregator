@@ -44,11 +44,12 @@ describe('health, categories, sources', () => {
     expect(await res.text()).toBe('{"status":"ok"}');
     expectSecurity(res);
   });
-  it('categories: bare array, all first, Finance listed (its RSS feeds replace FMP)', async () => {
+  it('categories: bare array, Today (id all) then Latest first, Finance listed (its RSS feeds replace FMP)', async () => {
     const res = await get('/api/v1/categories');
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
     const cats = (await res.json()) as { id: string; name: string; source_count: number }[];
-    expect(cats[0]).toEqual({ id: 'all', name: 'All', source_count: expect.any(Number) });
+    expect(cats[0]).toEqual({ id: 'all', name: 'Today', source_count: expect.any(Number) });
+    expect(cats[1]).toEqual({ id: 'latest', name: 'Latest', source_count: cats[0].source_count });
     expect(cats.map((c) => c.id)).toContain('finance');
     expect(Object.keys(cats[1])).toEqual(['id', 'name', 'source_count']);
   });
@@ -72,8 +73,10 @@ describe('articles', () => {
     // 45 seeded from one source; a source shows at most its newest 30 (#413).
     expect(body.pagination).toEqual({ page: 2, per_page: 20, total: 30, total_pages: 2 });
     expect(body.complete).toBe(true);
+    // The apps' fields in their old order, then two for the web (#414); the apps ignore unknown keys.
     expect(Object.keys(body.articles[0])).toEqual([
       'title', 'summary', 'url', 'image_url', 'source_id', 'source_name', 'source_type', 'category', 'sentiment', 'published_at',
+      'topics', 'coverage',
     ]);
     expect(body.articles[0].sentiment).toBeNull();
   });
@@ -116,6 +119,26 @@ describe('articles', () => {
   it('dates leave as YYYY-MM-DDTHH:MM:SSZ', async () => {
     const b = (await (await get('/api/v1/articles?per_page=50')).json()) as { articles: Article[] };
     for (const a of b.articles) expect(a.published_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+  });
+});
+
+describe('Today and Latest (#414)', () => {
+  it('Today serves the brief; Latest the full list; search from the first tab covers Latest', async () => {
+    const now = Date.now();
+    const iso = (h: number) => new Date(now - h * 3600e3).toISOString().slice(0, 19) + 'Z';
+    const verge = Array.from({ length: 12 }, (_, i) => art(i, { published_at: iso(i + 1) }));
+    const bbc = [art(100, { url: 'https://bbc.test/h', source_id: 'bbc-health', source_name: 'BBC Health', category: 'health', title: 'Health news today', published_at: iso(2) })];
+    const brief = { at: now, urls: [verge[3].url, bbc[0].url] };
+    const feed = buildFeed(new Map([['the-verge', verge], ['bbc-health', bbc]]), now, { v: 1, items: {}, brief });
+    await env.CACHE.put(FEED_KEY, JSON.stringify(feed));
+    const today = (await (await get('/api/v1/articles')).json()) as { articles: Article[]; pagination: { total: number } };
+    expect(today.articles.map((a) => a.url)).toEqual(brief.urls);
+    const latest = (await (await get('/api/v1/articles?category=latest&per_page=50')).json()) as { pagination: { total: number } };
+    expect(latest.pagination.total).toBe(13);
+    const found = (await (await get('/api/v1/articles?search=Alpha7')).json()) as { articles: Article[] };
+    expect(found.articles.map((a) => a.url)).toEqual([verge[7].url]);
+    const inTab = (await (await get('/api/v1/articles?category=health&search=Alpha7')).json()) as { articles: Article[] };
+    expect(inTab.articles).toEqual([]);
   });
 });
 

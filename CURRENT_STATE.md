@@ -2,7 +2,7 @@
 
 **Last Updated**: November 1, 2026
 
-## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 52 sources across 15 categories
+## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 53 sources across 15 categories
 
 ### Move to Cloudflare (Nov 1, 2026, task #400)
 
@@ -15,11 +15,12 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 ### Worker (`worker/`, TypeScript on Cloudflare Workers)
 - **One Worker** serves the static site, the API on `/api/v1/*` and `/health`, and the feed refresh. `run_worker_first`, so security headers and the www redirect live in code.
 - **Feed refresh**: a Cron Trigger every minute calls a Durable Object (`Refresher`) pinned to Western North America (runs report SEA), so publishers always see requests from one US region. Each run refetches sources whose last check is 15 minutes old (conditional GETs, 10 s timeout, 5 MB cap), looks up missing og:images through a pool of six with carry-over by URL, passes every article through an output gate (dates exactly `YYYY-MM-DDTHH:MM:SSZ`, well-formed strings, required fields), and writes the merged lists to Workers KV. A failed source keeps its last good articles for up to 24 hours and is retried after 5 minutes.
-- **API**: the same paths, parameters, JSON field names, key order, 422 bodies and Cache-Control the apps rely on. Requests only read KV (a couple of milliseconds). `GET /api/v1/status` shows when the feed was built and, per source, the last success, status and data center.
+- **Today and the AI step** (#414, 3.3.0): each cron run labels new articles with Gemma 4 26B on Workers AI (kind, topics, importance), embeds recent ones with bge-m3, and once an hour picks the Today brief (about 10 stories: a score makes a shortlist of 40, one editor call orders them). Deals, betting, quizzes, listicles and celebrity items are dropped everywhere; each tab shows one card per story; AI, Physical AI and Space also take matching stories from other sources. If Workers AI fails, Today keeps its brief for up to 6 hours, then shows the full list. About 1,200 Neurons a day, inside the free 10,000. Details: `docs/cloudflare-architecture.md` section 4.
+- **API**: the same paths, parameters, JSON field names, key order, 422 bodies and Cache-Control the apps rely on. The first tab (`all`) is named Today; `latest` holds the full list; a search with no tab covers Latest. Articles carry two extra fields for the web, `topics` and `coverage`, after the apps' fields; the apps ignore unknown keys. Requests only read KV (a couple of milliseconds). `GET /api/v1/status` shows when the feed was built and, per source, the last success, status and data center.
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader**: Mozilla Readability on linkedom, sanitize-html with the old nh3 allowlist, SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
 - **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 76 in the Workers runtime (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Tests**: 93 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
@@ -43,8 +44,8 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 | GET | `/api/v1/categories` | Categories with enabled source counts (empty ones hidden) |
 | GET | `/api/v1/status` | Feed build time and per-source status (no client uses it) |
 
-### Sources (52 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
-Tabs in the order the apps show them:
+### Sources (53 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
+Tabs in the order the apps show them, after Today and Latest:
 
 | Category | Sources | Count |
 |-|-|-|
@@ -53,7 +54,7 @@ Tabs in the order the apps show them:
 | Space | NASASpaceflight, Ars Technica Space, Universe Today, NASA | 4 |
 | Technology | The Verge, Wired (deals and buying guides skipped), Ars Technica Tech | 3 |
 | Science | Ars Technica Science, New Scientist, Scientific American, Quanta Magazine | 4 |
-| General | Fox News, NPR News (kept balanced right and left) | 2 |
+| General | Fox News, NPR News (kept balanced right and left), BBC World (world news), 10 each | 3 |
 | Local (Seattle) | GeekWire, KIRO 7, Cascade PBS | 3 |
 | India | BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu | 6 |
 | Finance | CNBC, BBC Business, The Guardian Business (US edition) | 3 |
@@ -69,8 +70,12 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 **Off:** AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Crosscut (its feed became PBS national video; Cascade PBS replaces it), Engadget (mostly how-to pieces), Seattle Eater (evergreen guides), Mental Floss (lists and quizzes; Smithsonian replaces it), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
 
 ## Known Issues
-- **Same story from several outlets** (#414): merging by meaning is the AI step; the India cleanup (#413, 3.1.0) cut the tab from 343 to 129 articles.
+- **Some repeats stay two cards:** stories group at cosine 0.75, which misses some (the Alaska Senate ruling from CNBC and NPR measured 0.69). Lower thresholds merged unrelated stories.
+- **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **The apps' About screens** say "financial news APIs" until their next release.
+- **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
+- **CNBC's feed is general top news** filed under Finance (#416).
+- **A changed source URL kept the old ETag and Last-Modified** for up to a day. Fixed in code (the state now records each feed's URL); ships with #414 step 2.
 
 ## What's Next
 

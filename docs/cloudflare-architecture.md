@@ -105,9 +105,21 @@ Deferred from the move and shipped with #413 (3.1.0): the `strip_html` spacing f
 4. **Age limit:** a source whose `ok_at` is over 24 hours old loses its articles (logged), as an entry turned into a MISS after 24 hours today (R6).
 5. **Output gate** on every new or changed article (section 3).
 6. **Rebuild `feed`** if any source's articles changed: for `all` and each category, the non-Latin filter (not for `india`), dedup and two-tier sort over that category's sources in `sources` order, as a request does today. Stored as one JSON value with `v` and `built_at`: the unique articles once, keyed by `source_id` and `url` (the same URL from two sources stays two articles, R11), plus per category an ordered index array.
-7. **Write order:** `feed` first, then `state` (with `run_seq` + 1 and `written_at`). If the `feed` write fails, `state` is not written, so the next run sees the same change and rebuilds (R7).
+7. **Write order:** `ai` (when the AI step changed it, below), then `feed`, then `state` (with `run_seq` + 1 and `written_at`). If the `feed` write fails, `state` is not written, so the next run sees the same change and rebuilds (R7).
 8. **Run deadline:** 40 s. Work still pending then is dropped and the run goes to step 6 with what it has.
 9. **Log** one line per run: `run_seq`, `state` age, sources fetched with status and item counts, articles dropped by the gate, CPU used.
+
+**AI step (#414, added Nov 1, 2026).** Between steps 5 and 6, `src/ai/enrich.ts` runs on the articles the cron holds. It never fails the run.
+
+- **Labels:** `@cf/google/gemma-4-26b-a4b-it` with thinking off and a JSON schema labels each new article, newest first, in batches of 25 (up to 8 at once): kind (news, analysis, feature, how-to, deals, betting, quiz, listicle, celebrity, opinion), up to three topics (main first) and importance 1 to 5.
+- **Embeddings:** `@cf/baai/bge-m3` on title and summary, for labeled articles from the last 48 hours, stored 8-bit.
+- **Storage:** both kept by article URL in the KV key `ai` (version `v`), with the Today brief; pruned to the articles in `state`.
+- **Brief, hourly:** once the last 30 hours are labeled and embedded, stories (articles grouped at cosine 0.75) are scored, the top 40 go to one editor call that orders 14, and the first 10 that are not near repeats (0.70) and stay within 2 India and 2 US politics stories become Today. Prompts and the measurements behind each number: `src/ai/*.ts` and `docs/414-worth-opening.md` section 7.
+- **Time:** each call has a limit inside the run's 40 s deadline (labels need 20 s left, the editor 8 s); unfinished work waits for the next run.
+- **Failure:** unlabeled articles count as news; Today keeps its brief for up to 6 hours, then shows the full list.
+- **Cost:** about 1,200 Neurons a day (labels and 24 briefs) against 10,000 free.
+
+**Step 6 with the AI step:** deals, betting, quizzes, listicles and celebrity items are dropped from every list; each list keeps one card per story; AI, Physical AI and Space add matching stories from other sources (topic `ai` first, or `physical_ai` or `space` anywhere); `latest` is the merged list `all` used to be; `all` is the brief while it is under 6 hours old, else the `latest` list. Each served article carries `topics` and `coverage` (the other outlets' articles in its story).
 
 Limits per run (Workers Paid): 30 s CPU, 15 min wall, 10,000 subrequests. Measured locally: all 39 feeds in 1.3 s wall and 60 ms parse CPU; 170 og:image pages in 2.9 s; dedup 11 to 15 ms (research 1.2, 2).
 
@@ -118,9 +130,10 @@ Limits per run (Workers Paid): 30 s CPU, 15 min wall, 10,000 subrequests. Measur
 ## 5. Requests
 
 - **`/api/v1/articles`:** reads `feed` from KV (default `cacheTtl`, 60 s, one value for every read; R14), picks the category's index array, applies search, paginates. About 2 ms of CPU for a 0.7 MB value (research 1.2). Every lookup keyed by user input uses a `Map` or `Object.hasOwn`, so `?category=constructor` returns an empty page as today, not a 500 (R11). `source=<id>` (no client sends it) reads `state` and runs the same pipeline on that one source, so its output matches today's (O16). If `feed` is missing, answers an empty page with `complete: false` and `no-store`; clients retry after 3 s. On a brand new namespace that miss can be cached at the edge for up to 60 s, so the first deploy is warmed by a full cron run before anyone uses it (R5).
+- **Today and Latest (#414):** `all` keeps its id, since every app opens it first, and is named "Today": the brief. `latest` ("Latest", second) holds the full list. A search with no category (the first tab in all three apps) covers `latest`, so search still finds every article.
 - **`/api/v1/categories`, `/api/v1/sources`:** built from `sources.ts`; no KV read.
 - **`/health`:** `{"status":"ok"}`, no KV read (as today: it reports the process, not the feeds).
-- **`/api/v1/status`:** `feed.built_at`, and per source `ok_at`, `checked_at`, last status and article count, read from KV (R3).
+- **`/api/v1/status`:** `feed.built_at`, when the Today brief was picked and its size, and per source `ok_at`, `checked_at`, last status and article count, read from KV (R3).
 - **Unknown `/api/*` paths:** 404 `{"detail":"Not Found"}`. Other methods: 405 `{"detail":"Method Not Allowed"}`. Every 4xx and 5xx gets `no-store`.
 
 ## 6. Reader

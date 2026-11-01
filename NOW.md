@@ -8,8 +8,8 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 **Make ClearNews worth opening every morning** (#414). Proposal: [docs/414-worth-opening.md](docs/414-worth-opening.md). Mockup: a private artifact linked on #414.
 
-- **Step 1, sources:** shipped as 3.2.0 on Nov 1. New AI, Physical AI and Space tabs; Crosscut, Ars Tech and Guardian Business fixed; Engadget and Seattle Eater dropped; Wired deals and CBS betting filtered.
-- **Step 2, Today brief:** the first tab becomes a ranked brief of about 10 stories; repeats grouped by meaning; fluff dropped by a small model; no AI-written text. No app release needed.
+- **Step 1, sources:** shipped Nov 1 (3.2.0, see CHANGELOG).
+- **Step 2, Today brief:** shipped Nov 1 (3.3.0, see CHANGELOG). Next: watch the first days of briefs (each build is logged) for repeats, outlet balance and missing US politics.
 - **Step 3, web:** the Today screen, story cards with coverage, Fox and NPR marks, interests kept in the browser.
 - **Step 4, iOS 2.1:** an App Store release, Nikhil's call.
 
@@ -21,10 +21,12 @@ Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and 
 - Hindi and other non-Latin headlines stay hidden in every tab.
 - No analytics and no tracking. Personalization, if any, is explicit and stored on the device.
 - No AI-written text on screen in step 2: AI groups, labels and ranks; every word shown is the publisher's.
+- Today is an hourly edition. Deals, betting, quizzes, listicles and celebrity items are dropped from every tab; how-to, opinion and features stay in tabs but never reach Today.
 
 ## Later
 
 - **On-device controls** (needs an iOS release): mute a source or topic, "less like this", stored on the phone.
 - **Web smart sharing**: match Android's formatted share text with a ClearNews reader link.
 - **iOS**: image caching if AsyncImage flicker shows; iPad layout.
-- **Stale-feed alert**: open question (lean: a daily GitHub Actions check of `/api/v1/status`).
+- **Stale-feed alert** (#417): open question on the channel (lean: a daily GitHub Actions check of `/api/v1/status`).
+- **Source decisions** (#416): Fox politics feed, CNBC Business, Sunny Skyz; revisit after step 2.

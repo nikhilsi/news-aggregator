@@ -93,3 +93,37 @@ Also open, smaller: drop betting and shopping everywhere or only keep them out o
 ## 6. Order of work
 
 Step 1 first (a day, no risk to the apps), then step 2 (a few days, tested with the Swift decoder sweep, the contract diff and a day of watching merges), then step 3 on the web, then step 4 when you want an App Store release.
+
+## 7. Step 2 build design (Nov 1, after a prototype on live data)
+
+### What the prototype showed
+
+Run on the 275 articles from the last 30 hours of the live feed, through Workers AI:
+
+- **Labels work.** Gemma 4 26B (`@cf/google/gemma-4-26b-a4b-it`, thinking off, JSON schema) labeled all 275 in 39 seconds (11 batches of 25, 8 in parallel) for 380 Neurons, with no failures. It found 29 fluff items (8 celebrity, 6 listicles, 6 how-to, 6 opinion, 3 deals); every one checked by hand was right.
+- **Grouping works but is rare.** bge-m3 at 0.75 made 209 stories; 9 have two or more outlets.
+- **A score alone makes a poor brief.** Importance plus coverage plus interest minus age picked three India politics items (the six India outlets overlap each other), CNBC market commentary, and gave importance 4 to most notable items.
+- **An editor pass fixes it.** The score picks a shortlist of 40; one model call picks 10 against a short reader profile and rules (2 seconds, 26 Neurons). Result: the Binance hack linked to North Korea, OpenAI cutting its fundraising goal, the Artemis III plan, the self-driving boom, AI-found robot security bugs, Alaska Air cutting 125 Washington jobs, one India item (the opposition rally), Trump's tariff plans.
+- **Left to fix:** a second Binance item and one CNBC commentary piece. Asking for 14 picks and dropping near repeats after the pick fixes both.
+
+### How it runs
+
+- **Tabs.** `all` keeps its id (every app opens it first) and is renamed "Today": the brief, about 10 stories. A new `latest` tab ("Latest"), second in the list, holds the full merged list that All shows now.
+- **Search.** Without a tab, search covers Latest. All three apps send no category for the first tab, so search still covers everything.
+- **One card per story in every tab.** Repeats within 48 hours collapse to the best-covered outlet's article, so India's overlapping outlets collapse too.
+- **Topic tags.** AI, Physical AI and Space also show matching stories from any source.
+- **In the cron, after the fetch.** New articles are labeled (batches of 25) and embedded (batches of 100) within a time budget; the rest waits for the next run. Results are kept by URL in a KV key `ai` (labels plus 8-bit embeddings, about 1 MB) and pruned with the articles.
+- **The brief is rebuilt hourly**, and whenever it is missing. It reads as an edition instead of a list that shifts every minute.
+- **Near repeats:** after the editor's picks, a pick at cosine 0.70 or more to an earlier pick is dropped. Measured on live data: pairs from 0.70 to 0.75 were the same event or a close follow-up; pairs near 0.62 were different stories (two separate OpenAI stories), so a lower cutoff would drop real news. Two Binance stories (the hack, then withdrawals resuming) sat below 0.60, so the editor prompt is what keeps those apart.
+- **Grouping misses some repeats:** at 0.75 the Alaska Senate ruling from CNBC and NPR (0.69) stays two cards. A lower threshold merged unrelated stories, so 0.75 stays: a missed merge shows one extra card, a wrong merge hides a story.
+- **If Workers AI fails,** unlabeled articles count as news, tabs work as today and the last brief stays for up to 6 hours; after that, or with no brief at all, Today shows the full list as before.
+- **Extra JSON fields** on articles (`topics`, and `coverage`: the other outlets' headlines and links for the same story) for the web in step 3. Android ignores unknown keys (`ignoreUnknownKeys = true` in `ApiClient.kt`), iOS's `JSONDecoder` ignores them by default, and the web reads typed fields. Checked with the decoder sweep and the contract diff.
+- **No AI-written text.** Every headline, summary and image stays the publisher's.
+- **Cost.** About 600 Neurons a day for labels and 600 for hourly briefs, against 10,000 free a day: $0.
+- **Review.** Each brief build logs its shortlist, picks and the fluff it dropped, for a few days of checking.
+
+### Decisions (Nikhil, Nov 1)
+
+1. **Refresh:** Today is an hourly edition, not rebuilt on every feed refresh.
+2. **Fluff in tabs:** deals, betting, quizzes, listicles and celebrity items are dropped everywhere; how-to, opinion and features stay in their tabs but never reach Today.
+3. **World news:** BBC World joins General, capped at 10 like Fox News and NPR News. No source covered world news before; BBC World posts about 18 world stories a day, all with images, and sits outside US politics.

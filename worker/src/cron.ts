@@ -1,14 +1,17 @@
 // The Cron Trigger run (spec section 4). Every minute: read "state", fetch the
-// sources that are due, look up missing og:images, rebuild "feed" if any
-// articles changed, then write "feed" and "state" in that order.
+// sources that are due, look up missing og:images, run the AI step (#414),
+// rebuild "feed" if any articles or labels changed, then write "ai", "feed"
+// and "state" in that order.
 
-import { TTL_MINUTES, type Source } from './sources.ts';
+import { SOURCES, TTL_MINUTES, type Source } from './sources.ts';
+import { enrich, type EnrichSummary } from './ai/enrich.ts';
+import type { AiRunner } from './ai/vectors.ts';
 import { fetchFeed, lookupOg, OG_POOL } from './feeds/fetch.ts';
 import { buildFeed, enabledSources } from './pipeline/build.ts';
 import { pool } from './pool.ts';
 import { trimSource } from './pipeline/trim.ts';
 import { gate } from './pipeline/gate.ts';
-import { FEED_KEY, readState, STATE_KEY, type Env } from './store.ts';
+import { AI_KEY, FEED_KEY, readAi, readState, STATE_KEY, type Env } from './store.ts';
 import { STATE_VERSION, type Article, type SourceState, type State } from './types.ts';
 
 const MIN = 60_000;
@@ -16,6 +19,7 @@ const DUE_MS = TTL_MINUTES * MIN;
 const RETRY_MS = 5 * MIN;
 const MAX_AGE_MS = 24 * 60 * MIN;
 const RUN_DEADLINE_MS = 40_000;
+const SOURCE_ORDER: ReadonlyMap<string, number> = new Map(SOURCES.map((s, i) => [s.id, i]));
 
 export function isDue(st: SourceState | undefined, now: number): boolean {
   if (!st) return true;
@@ -57,6 +61,7 @@ export interface RunSummary {
   feed_written: boolean;
   state_written: boolean;
   articles: number | null;
+  ai: EnrichSummary;
 }
 
 export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
@@ -77,7 +82,9 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
   const colo = due.length ? await dataCenter() : null;
   const results = await pool(due, OG_POOL, deadline, (s) => {
     const st = next[s.id] ?? emptyState();
-    return fetchFeed(s, { etag: st.etag, last_modified: st.last_modified, full_at: st.full_at }, now);
+    // Validators belong to the URL they came from; after a URL change, fetch in full.
+    const v = st.url === s.url ? { etag: st.etag, last_modified: st.last_modified, full_at: st.full_at } : { etag: null, last_modified: null, full_at: null };
+    return fetchFeed(s, v, now);
   });
 
   const fetched: Record<string, string> = {};
@@ -88,7 +95,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
     if (!r) continue; // not reached before the deadline: due again next run
     const st = next[s.id] ?? emptyState();
     if (r.kind === 'not_modified') {
-      next[s.id] = { ...st, checked_at: now, ok_at: now, status: 'not_modified', failures: 0, colo };
+      next[s.id] = { ...st, checked_at: now, ok_at: now, status: 'not_modified', failures: 0, colo, url: s.url };
       fetched[s.id] = 'not_modified';
     } else if (r.kind === 'error') {
       next[s.id] = { ...st, checked_at: now, status: r.status, failures: st.failures + 1, colo };
@@ -108,6 +115,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
         // Python kept the old validators when a response sent none.
         etag: r.etag ?? st.etag,
         last_modified: r.lastModified ?? st.last_modified,
+        url: s.url,
       };
       fetched[s.id] = `ok ${r.articles.length}`;
     }
@@ -155,14 +163,22 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
   }
   if (Object.keys(prevBy).some((id) => !Object.hasOwn(next, id))) changed = true;
 
+  // Step 5: labels, embeddings and the hourly Today brief (#414). Never fails the run.
+  const held = Object.values(next).flatMap((st) => st.articles);
+  const ai = await enrich(env.AI as unknown as AiRunner | undefined, held, await readAi(env.CACHE), SOURCE_ORDER, now, deadline);
+  if (ai.changed) {
+    await env.CACHE.put(AI_KEY, JSON.stringify(ai.store));
+    changed = true;
+  }
+
   // Step 6 and 7: feed first, then state.
   let feedWritten = false;
   let articleCount: number | null = null;
   if (changed) {
-    const feed = buildFeed(new Map(Object.entries(next).map(([id, st]) => [id, st.articles])), now);
+    const feed = buildFeed(new Map(Object.entries(next).map(([id, st]) => [id, st.articles])), now, ai.store);
     await env.CACHE.put(FEED_KEY, JSON.stringify(feed));
     feedWritten = true;
-    articleCount = feed.lists.all?.length ?? 0;
+    articleCount = feed.lists.latest?.length ?? 0;
   }
   const state: State = {
     v: STATE_VERSION,
@@ -185,6 +201,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
     feed_written: feedWritten,
     state_written: stateWritten,
     articles: articleCount,
+    ai: ai.summary,
   };
   console.log(JSON.stringify({ msg: 'cron run', ...summary }));
   return summary;

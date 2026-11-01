@@ -42,7 +42,7 @@ app.get('/api/v1/categories', (c) => {
   for (const s of enabled) counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
   const out = [];
   for (const cat of CATEGORIES) {
-    if (cat.id === 'all') out.push({ id: cat.id, name: cat.name, source_count: enabled.length });
+    if (cat.id === 'all' || cat.id === 'latest') out.push({ id: cat.id, name: cat.name, source_count: enabled.length });
     else if (counts.get(cat.id)) out.push({ id: cat.id, name: cat.name, source_count: counts.get(cat.id)! });
   }
   return json(c, out, 200, LIST_CACHE);
@@ -89,7 +89,9 @@ app.get('/api/v1/articles', async (c) => {
       articles = [];
       complete = false;
     } else {
-      const idx = Object.hasOwn(feed.lists, category) ? feed.lists[category] : [];
+      // Search from the first tab (no category) covers every article, not just Today's brief.
+      const tab = search?.trim() && category === 'all' && Object.hasOwn(feed.lists, 'latest') ? 'latest' : category;
+      const idx = Object.hasOwn(feed.lists, tab) ? feed.lists[tab] : [];
       articles = idx.map((i) => feed.articles[i]);
     }
   }
@@ -132,7 +134,9 @@ app.get('/api/v1/status', async (c) => {
   const iso = (ms: number | null | undefined) => (ms ? new Date(ms).toISOString() : null);
   return c.json({
     feed_built_at: iso(feed?.built_at),
-    articles: feed?.lists.all?.length ?? 0,
+    articles: (feed?.lists.latest ?? feed?.lists.all)?.length ?? 0,
+    today_built_at: iso(feed?.brief_at),
+    today_stories: feed?.brief_at ? feed.lists.all.length : 0,
     state_written_at: iso(state?.written_at),
     run_seq: state?.run_seq ?? null,
     sources: enabledSources().map((s) => {

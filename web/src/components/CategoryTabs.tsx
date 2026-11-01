@@ -23,7 +23,7 @@ export default function CategoryTabs({ selected, onSelect }: CategoryTabsProps) 
       .catch(() => {});
   }, []);
 
-  // API already returns "All" as the first category — use the list directly
+  // The API returns Today (id "all") first, then Latest; use the list as it comes
   const tabs = categories;
 
   return (

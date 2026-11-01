@@ -2,7 +2,8 @@ import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isDue, runCron } from '../src/cron.ts';
 import { enabledSources } from '../src/pipeline/build.ts';
-import { FEED_KEY, readFeed, readState, STATE_KEY } from '../src/store.ts';
+import { AI_KEY, FEED_KEY, readAi, readFeed, readState, STATE_KEY } from '../src/store.ts';
+import { EMBED_MODEL } from '../src/ai/vectors.ts';
 import type { State } from '../src/types.ts';
 
 const MIN = 60_000;
@@ -27,6 +28,7 @@ beforeEach(async () => {
   calls = [];
   await env.CACHE.delete(STATE_KEY);
   await env.CACHE.delete(FEED_KEY);
+  await env.CACHE.delete(AI_KEY);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('/cdn-cgi/trace')) return new Response('fl=1\ncolo=SEA\n');
@@ -90,6 +92,66 @@ describe('runCron', () => {
     expect(Object.values(seen).every((v) => v === '"e1"')).toBe(true);
     expect(r.feed_written).toBe(false);
     expect((await readFeed(env.CACHE))!.lists.all.length).toBe(enabledSources().length * 2);
+  });
+
+  it('the AI step labels and embeds every article and picks a 10-story Today (#414)', async () => {
+    const urls = feedUrls();
+    handler = (u) => new Response(rss(urls.get(u) ?? 'x'));
+    const texts = new Map<string, number>();
+    const answer = (body: unknown) => ({ choices: [{ message: { content: JSON.stringify(body) } }] });
+    vi.mocked(env.AI.run).mockImplementation((async (model: string, inputs: Record<string, unknown>) => {
+      if (model === EMBED_MODEL) {
+        return {
+          data: (inputs.text as string[]).map((t) => {
+            if (!texts.has(t)) texts.set(t, texts.size);
+            return Array.from({ length: 256 }, (_, i) => (i === texts.get(t) ? 1 : 0));
+          }),
+        };
+      }
+      const [system, user] = (inputs.messages as { content: string }[]).map((m) => m.content);
+      if (system.startsWith('You label')) {
+        return answer({ items: user.split('\n').map((_, i) => ({ i, kind: 'news', topics: ['tech'], importance: 3 })) });
+      }
+      return answer({ picks: [...Array(14).keys()] });
+    }) as never);
+    const r = await runCron(env, T0);
+    const total = enabledSources().length * 2;
+    expect(r.ai).toMatchObject({ labeled: total, embedded: total, label_failures: 0, brief: 'built 10' });
+    const feed = (await readFeed(env.CACHE))!;
+    expect(feed.lists.latest).toHaveLength(total);
+    expect(feed.lists.all).toHaveLength(10);
+    expect(feed.brief_at).toBe(T0);
+    expect(Object.keys((await readAi(env.CACHE))!.items)).toHaveLength(total);
+  });
+
+  it('with Workers AI down the run still writes the feed, and Today is the full list', async () => {
+    const urls = feedUrls();
+    handler = (u) => new Response(rss(urls.get(u) ?? 'x'));
+    const r = await runCron(env, T0);
+    expect(r.feed_written).toBe(true);
+    expect(r.ai.labeled).toBe(0);
+    const feed = (await readFeed(env.CACHE))!;
+    expect(feed.lists.all).toEqual(feed.lists.latest);
+    expect(feed.brief_at).toBeNull();
+  });
+
+  it('a source whose URL changed is fetched without the old validators', async () => {
+    const urls = feedUrls();
+    handler = (u) => new Response(rss(urls.get(u) ?? 'x'), { headers: { etag: '"e1"' } });
+    await runCron(env, T0);
+    const state = (await readState(env.CACHE))!;
+    expect(state.sources['the-verge'].url).toBe(enabledSources().find((s) => s.id === 'the-verge')!.url);
+    state.sources['the-verge'].url = 'https://old.test/feed';
+    await env.CACHE.put(STATE_KEY, JSON.stringify(state));
+    const seen = new Map<string, string | null>();
+    handler = (u, init) => {
+      seen.set(urls.get(u) ?? u, new Headers(init?.headers).get('if-none-match'));
+      return new Response(rss(urls.get(u) ?? 'x'), { headers: { etag: '"e2"' } });
+    };
+    await runCron(env, T0 + 15 * MIN);
+    expect(seen.get('the-verge')).toBeNull();
+    expect(seen.get('wired')).toBe('"e1"');
+    expect((await readState(env.CACHE))!.sources['the-verge'].url).not.toBe('https://old.test/feed');
   });
 
   it('no conditional headers once the last full fetch is over 24 hours old (O3)', async () => {

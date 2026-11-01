@@ -29,6 +29,8 @@ export interface SourceState {
   failures: number;
   etag: string | null;
   last_modified: string | null;
+  /** Feed URL the validators came from; a changed URL in sources.ts drops them. */
+  url?: string;
   articles: Article[];
   /** og:image lookups by article URL: the image, or "" when the page had none. */
   og: Record<string, string>;
@@ -44,10 +46,54 @@ export interface State {
   sources: Record<string, SourceState>;
 }
 
+/** Another outlet's article about the same story (#414). */
+export interface Coverage {
+  source_name: string;
+  title: string;
+  url: string;
+}
+
+/**
+ * What the API serves: the article plus two fields added on Nov 1, 2026 for the
+ * web (#414). The iOS and Android apps ignore keys they do not know.
+ */
+export interface FeedArticle extends Article {
+  topics: Topic[];
+  coverage: Coverage[];
+}
+
 /** The merged lists the API serves: each article once, plus an index list per tab. */
 export interface Feed {
   v: number;
   built_at: number;
-  articles: Article[];
+  articles: FeedArticle[];
   lists: Record<string, number[]>;
+  /** When the Today brief in lists.all was picked; null when Today shows the full list. */
+  brief_at?: number | null;
+}
+
+export const KINDS = ['news', 'analysis', 'feature', 'howto', 'deals', 'betting', 'quiz', 'listicle', 'celebrity', 'opinion'] as const;
+export type Kind = (typeof KINDS)[number];
+export const TOPICS = ['ai', 'physical_ai', 'space', 'seattle', 'india', 'markets', 'us_politics', 'world', 'science', 'tech', 'health', 'sports', 'entertainment'] as const;
+export type Topic = (typeof TOPICS)[number];
+
+/** The model's labels for one article, and its embedding when it is recent. */
+export interface AiItem {
+  k: Kind;
+  /** Main topic first. */
+  t: Topic[];
+  /** 1 to 5: how much a well-informed reader would want to know this today. */
+  imp: number;
+  /** bge-m3 embedding, 8-bit, base64 (src/ai/vectors.ts). */
+  e?: string;
+}
+
+export const AI_VERSION = 1;
+
+export interface AiStore {
+  v: number;
+  /** By article URL; pruned to the articles the cron still holds. */
+  items: Record<string, AiItem>;
+  /** The Today brief: when it was picked and the article URLs in order. */
+  brief: { at: number; urls: string[] } | null;
 }

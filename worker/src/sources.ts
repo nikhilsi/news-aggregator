@@ -30,8 +30,11 @@ export const TTL_MINUTES = 15;
 export const MAX_PER_SOURCE = 30;
 export const MAX_AGE_DAYS = 7;
 
+// "all" keeps its id because every app opens it first; since Nov 1, 2026 it is
+// the Today brief, and "latest" holds the full list it used to show (#414).
 export const CATEGORIES: readonly Category[] = [
-  { id: 'all', name: 'All' },
+  { id: 'all', name: 'Today' },
+  { id: 'latest', name: 'Latest' },
   { id: 'ai', name: 'AI' },
   { id: 'physical_ai', name: 'Physical AI' },
   { id: 'space', name: 'Space' },
@@ -86,9 +89,11 @@ export const SOURCES: readonly Source[] = [
   { id: 'scientific-american', name: 'Scientific American', type: 'rss', url: 'https://www.scientificamerican.com/platform/syndication/rss/', category: 'science', isCuratedPositive: false, enabled: true },
   { id: 'quanta-magazine', name: 'Quanta Magazine', type: 'rss', url: 'https://www.quantamagazine.org/feed/', category: 'science', isCuratedPositive: false, enabled: true },
   // General keeps a balance of right- and left-leaning outlets (Nikhil, Nov 1, 2026).
-  // Both capped at 10 so the tab stays even all the way down (NPR's feed carries 10).
+  // All capped at 10 so the tab stays even all the way down (NPR's feed carries 10).
   { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
+  // World news, outside US politics (Nikhil, Nov 1, 2026); about 18 stories a day.
+  { id: 'bbc-world', name: 'BBC World', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   // Off since Nov 1, 2026: a third-party copy of AP (feedx) that stopped updating in September.
   { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: false },
   // Local (Seattle)

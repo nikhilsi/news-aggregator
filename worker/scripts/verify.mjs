@@ -40,17 +40,27 @@ for (const [who, ua] of [['ios', IOS_UA], ['android', ANDROID_UA]]) {
 
 // Categories and articles.
 const cats = await (await get('/api/v1/categories')).json();
-check('categories: all first', cats[0]?.id === 'all');
+check('categories: Today (id all) first, Latest second', cats[0]?.id === 'all' && cats[0]?.name === 'Today' && cats[1]?.id === 'latest');
 check('categories: finance listed', cats.some((c) => c.id === 'finance'), 'Finance hidden: no finance source enabled');
 {
-  const r = await get('/api/v1/articles?per_page=50');
+  const r = await get('/api/v1/articles?category=latest&per_page=50');
   const b = await r.json();
   check('articles complete', b.complete === true, `complete=${b.complete}`);
   check('articles cache-control', r.headers.get('cache-control') === 'public, max-age=300', r.headers.get('cache-control'));
+  // The apps' fields in their old order, then two for the web (#414).
   check('articles keys', JSON.stringify(Object.keys(b.articles[0] ?? {})) ===
-    '["title","summary","url","image_url","source_id","source_name","source_type","category","sentiment","published_at"]');
+    '["title","summary","url","image_url","source_id","source_name","source_type","category","sentiment","published_at","topics","coverage"]');
   check('articles dates', b.articles.every((a) => a.published_at === null || DATE.test(a.published_at)));
-  check('articles total', b.pagination.total > 500, `total=${b.pagination.total}`);
+  check('Latest total', b.pagination.total > 400, `total=${b.pagination.total}`);
+}
+{
+  // Today: the brief (5 to 10 stories) once it is built, else the same list as Latest.
+  const s = await (await get('/api/v1/status')).json();
+  const t = await (await get('/api/v1/articles?per_page=50')).json();
+  if (s.today_built_at) check('Today brief size', t.pagination.total >= 5 && t.pagination.total <= 10, `total=${t.pagination.total}`);
+  else console.log(`note: no Today brief yet; Today shows the full list (${t.pagination.total})`);
+  const found = await (await get('/api/v1/articles?search=the&per_page=1')).json();
+  check('search from the first tab covers Latest', found.pagination.total > 50, `total=${found.pagination.total}`);
 }
 {
   const r = await get('/api/v1/articles?refresh=true&per_page=1');

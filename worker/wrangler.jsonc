@@ -24,6 +24,8 @@
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   },
+  // Workers AI labels, groups and ranks articles in the cron (#414 step 2).
+  "ai": { "binding": "AI" },
   "kv_namespaces": [
     // "clearnews-cache", created Nov 1, 2026 with the ClearNews token.
     { "binding": "CACHE", "id": "b1f53c4848ae4fff8cdc3807f8b8666b" }
