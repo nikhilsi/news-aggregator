@@ -1,12 +1,12 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Allow images from any news source domain
+  // Images load straight from each news source; no optimizer runs.
   images: {
     unoptimized: true,
   },
-  // Produce a self-contained build for Docker (copies only needed files)
-  output: 'standalone',
+  // Static files only, served as the Cloudflare Worker's assets (docs/cloudflare-architecture.md).
+  output: 'export',
 };
 
 export default nextConfig;
