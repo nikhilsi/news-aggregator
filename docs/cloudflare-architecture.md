@@ -1,6 +1,6 @@
 # Architecture: ClearNews on Cloudflare
 
-**Status:** proposed, not built (Nov 1, 2026). Task #400, the move off DigitalOcean. Revised the same day after the independent review (`docs/reviews/2026-11-01-spec-review.md`, 16 findings, responses in that file).  
+**Status:** live on getclearnews.com since Nov 1, 2026, 17:02 UTC (task #400, the move off DigitalOcean). Spec revised the same day after the independent review (`docs/reviews/2026-11-01-spec-review.md`, 16 findings, responses in that file). Runbook: [deploy-runbook.md](deploy-runbook.md).  
 **Decided by Nikhil, Nov 1, 2026:** move to the OmSpark Cloudflare account to retire the $6 droplet; remove Google Analytics; drop the repo's no-cron rule and refresh feeds with a Cron Trigger; drop FMP and refill Finance with free RSS feeds; rewrite the API in TypeScript in one Worker; add DKIM and DMARC after the switchover. He also agreed to the design calls in section 11.  
 **Inputs:** inventory `docs/reviews/2026-11-01-inventory.md`, research `docs/reviews/2026-11-01-research-cloudflare.md`. References such as "O8" and "inventory 2.7" point into the inventory; "R5" points into the review.  
 **Fixed by the published apps:** the hostname `https://getclearnews.com`, the paths `/api/v1/articles`, `/api/v1/articles/reader`, `/api/v1/categories`, `/health`, `/privacy`, `/support`, the web route `/article?url=`, and every JSON field name and type the apps decode (inventory 6.2).
@@ -223,10 +223,9 @@ After the switchover: DKIM and DMARC (decision 4), docs, then removal of `backen
 
 ## 12. Open items
 
-- **Finance feeds:** lean CNBC Top News, BBC Business and The Guardian Business (tested from the Mac Nov 1). Confirmed through the pipeline during the build, then shown to Nikhil.
+- **Finance feeds:** CNBC Top News, BBC Business and The Guardian Business, approved by Nikhil and on since Nov 1, 2026.
 - **Good News Network:** 403 on every droplet fetch. Retested from Cloudflare during the day on `workers.dev`; keep, replace or disable goes to Nikhil then.
 - **Stale feed alert (R3):** `/api/v1/status` and `verify.mjs` show a stale feed only when someone looks. How it reaches Nikhil is his call (for example a scheduled check that opens a Command Center task).
-- **Rehearsal name:** Nikhil's OK for `cutover-test.getclearnews.com` (section 9).
-- **Switchover time:** Claude proposes a time in chat once the gate passes.
+- **Local:** MyNorthwest answers 403 to Cloudflare and is off (Nikhil: drop it). KING 5 Local replaces it; its first fetches from Cloudflare did not parse (under investigation; Local has three working sources meanwhile).
 - **India tab noise** (#413): old and off-topic items, roundups, per-source volume, and the O17 spacing fix. First change after the move, so the move's parity check stays exact (Nikhil, Nov 1).
 - **AI step** (#414): group repeated stories by meaning and filter fluff in the cron, the same for every reader, no tracking. Design doc with costs after the move. The cron and KV layout here does not block it: grouping adds fields to articles, which every client ignores.

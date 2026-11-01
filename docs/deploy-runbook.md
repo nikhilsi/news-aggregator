@@ -7,7 +7,7 @@ How to build, test, deploy, check and roll back the `clearnews` Worker. Architec
 - Cloudflare account: OmSpark (`58ada9261161c4454f308218ac672f8c`), Workers Paid.
 - Token: `~/.secrets/cloudflare/clearnews.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), chmod 600, scoped to the account and the `getclearnews.com` zone. The scripts load it themselves. Never use the Mac's default wrangler login (it is ParkPro's).
 - KV namespace `clearnews-cache`: `b1f53c4848ae4fff8cdc3807f8b8666b`.
-- Test address: https://clearnews.nikhil-58a.workers.dev (until the switchover turns it off).
+- Live on https://getclearnews.com and www (custom domains) since Nov 1, 2026, 17:02 UTC. The workers.dev address is off.
 
 ## Everyday
 
@@ -17,7 +17,7 @@ All commands run from `worker/`.
 |-|-|-|
 | Test | `npm test` | 69 tests in the Workers runtime. Needs `web/out` (the deploy builds it; or `cd ../web && NEXT_PUBLIC_API_URL=/api/v1 npx next build`). |
 | Deploy | `npm run deploy` | Builds the site, runs the tests and the typecheck, scans the site and the Worker bundle for `.env` files, key names, localhost URLs and the old GA tag, then deploys. |
-| Check | `npm run verify` | Read-only live checks on the test address; `node scripts/verify.mjs https://getclearnews.com` for production. Fails when the feed is over 30 minutes old or a source has not succeeded in 24 hours. |
+| Check | `npm run verify` | Read-only live checks on production; pass another base URL as the argument to check elsewhere. Fails when the feed is over 30 minutes old or a source has not succeeded in 24 hours. |
 | Feed status | `curl https://getclearnews.com/api/v1/status` | When the feed was built, and per source the last success, last status and article count. |
 | Logs | Cloudflare dashboard, Workers & Pages, clearnews, Logs | One `cron run` line a minute when something was due: sources fetched with status, og lookups, articles dropped by the gate, and `state_age_ms`. |
 
@@ -53,3 +53,11 @@ Adding, removing or disabling a source: edit `src/sources.ts`, deploy. A categor
 
 - **Bad code:** `npx wrangler rollback` (or pick an earlier version under Workers & Pages, clearnews, Deployments). KV needs nothing: a version that cannot read the stored `state` does a full run and rebuilds it within a minute.
 - **Back to the droplet** (only while it exists): remove the routes from `wrangler.jsonc` first (or the next deploy takes the hostnames back), then `node scripts/cutover.mjs detach getclearnews.com www.getclearnews.com`. That detaches the custom domains (removing the records Cloudflare made, including the `AAAA 100::`) and recreates the A records to 64.227.96.170, DNS only, TTL 300. The droplet's certificate is valid to Jan 7, 2027.
+
+## Switchover record (Nov 1, 2026)
+
+- Gate: contract diff 0 unexpected differences in 30 calls; Swift sweep 3,040 articles in 13 categories, 0 failures; parity with Python identical except three listed fixes; verify 69 of 70 on workers.dev (KING 5 not parsing yet).
+- Zone settings set before the attach: Security Level essentially off, Browser Integrity Check off, Always Use HTTPS on, Email Obfuscation off, minimum TLS 1.2 (were medium, on, off, on, 1.0). Bot Fight Mode was already off.
+- 17:02 UTC: zone exported, then `attach`: www 628 ms, apex 440 ms. Cloudflare created proxied `AAAA 100::` for both. The six mail records were unchanged (`check`).
+- Production verify: 71 of 72 (KING 5 again). Sweep on getclearnews.com: 3,040 articles, 0 failures. Routes added to `wrangler.jsonc`, workers.dev turned off, redeployed.
+- The droplet keeps running untouched as the rollback until Nikhil deletes it.

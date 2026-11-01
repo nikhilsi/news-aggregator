@@ -35,7 +35,7 @@ let decoder: JSONDecoder = {
     return d
 }()
 
-let base = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "https://clearnews.nikhil-58a.workers.dev"
+let base = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "https://getclearnews.com"
 let dateWire = try! NSRegularExpression(pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$")
 var failures: [String] = []
 var pages = 0

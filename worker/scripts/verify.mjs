@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Live checks against a deployed Worker (spec section 9). Read-only GETs.
 //   node scripts/verify.mjs [https://getclearnews.com]
-// Default base: the workers.dev address. Exits 1 on any failure.
+// Default base: production. Exits 1 on any failure.
 
-const BASE = process.argv[2] ?? 'https://clearnews.nikhil-58a.workers.dev';
+const BASE = process.argv[2] ?? 'https://getclearnews.com';
 const PROD = new URL(BASE).hostname === 'getclearnews.com';
 
 // The apps' own user agents, with no browser headers (review R1).

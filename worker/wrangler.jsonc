@@ -4,10 +4,15 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  // Until the switchover the Worker is reached on workers.dev only. At the
-  // switchover, getclearnews.com and www.getclearnews.com are attached as
-  // custom domains by script (docs/deploy-runbook.md), then workers_dev goes off.
-  "workers_dev": true,
+  // Live on getclearnews.com since the Nov 1, 2026 switchover (custom domains
+  // attached by scripts/cutover.mjs). The workers.dev address is off so there is
+  // one origin. ROLLBACK to the droplet: remove these routes first, or the next
+  // deploy takes the hostnames back (docs/deploy-runbook.md).
+  "routes": [
+    { "pattern": "getclearnews.com", "custom_domain": true },
+    { "pattern": "www.getclearnews.com", "custom_domain": true }
+  ],
+  "workers_dev": false,
   "preview_urls": false,
   "observability": { "enabled": true },
   // Every minute: refresh due feeds into KV (spec section 4).
