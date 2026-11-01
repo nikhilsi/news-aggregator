@@ -70,7 +70,7 @@ export async function readCapped(res: Response, max: number, truncate = false): 
 export type FeedResult =
   | { kind: 'not_modified' }
   | { kind: 'ok'; articles: Article[]; etag: string | null; lastModified: string | null; dropped: number }
-  | { kind: 'error'; status: string };
+  | { kind: 'error'; status: string; detail?: string };
 
 export interface Validators {
   etag: string | null;
@@ -123,10 +123,13 @@ export async function fetchFeed(source: Source, v: Validators, now: number): Pro
   }
   if (bytes === null) return { kind: 'error', status: 'too_large' };
   let parsed: { articles: Article[]; dropped: number };
+  const text = decodeBody(bytes, res.headers.get('content-type'));
   try {
-    parsed = articlesFromXml(decodeBody(bytes, res.headers.get('content-type')), source);
+    parsed = articlesFromXml(text, source);
   } catch {
-    return { kind: 'error', status: 'parse_error' };
+    // What came back instead of a feed (often a bot check page), for the log.
+    const head = text.slice(0, 200).replace(/\s+/g, ' ');
+    return { kind: 'error', status: 'parse_error', detail: `${res.headers.get('content-type')} | ${head}` };
   }
   return {
     kind: 'ok',

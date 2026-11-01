@@ -44,12 +44,12 @@ describe('health, categories, sources', () => {
     expect(await res.text()).toBe('{"status":"ok"}');
     expectSecurity(res);
   });
-  it('categories: bare array, all first, Finance hidden while no finance source is enabled', async () => {
+  it('categories: bare array, all first, Finance listed (its RSS feeds replace FMP)', async () => {
     const res = await get('/api/v1/categories');
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
     const cats = (await res.json()) as { id: string; name: string; source_count: number }[];
     expect(cats[0]).toEqual({ id: 'all', name: 'All', source_count: expect.any(Number) });
-    expect(cats.map((c) => c.id)).not.toContain('finance');
+    expect(cats.map((c) => c.id)).toContain('finance');
     expect(Object.keys(cats[1])).toEqual(['id', 'name', 'source_count']);
   });
   it('sources: every configured source with the old field names', async () => {

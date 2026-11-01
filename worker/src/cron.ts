@@ -80,6 +80,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
     } else if (r.kind === 'error') {
       next[s.id] = { ...st, checked_at: now, status: r.status, failures: st.failures + 1 };
       fetched[s.id] = r.status;
+      if (r.detail) console.warn(JSON.stringify({ msg: 'feed error', source: s.id, status: r.status, detail: r.detail }));
     } else {
       fresh.set(s, r.articles);
       next[s.id] = {

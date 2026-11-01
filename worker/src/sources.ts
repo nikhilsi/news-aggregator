@@ -75,8 +75,10 @@ export const SOURCES: readonly Source[] = [
   // Local (Seattle)
   { id: 'geekwire', name: 'GeekWire', type: 'rss', url: 'https://www.geekwire.com/feed/', category: 'local', isCuratedPositive: false, enabled: true },
   { id: 'seattle-eater', name: 'Seattle Eater', type: 'rss', url: 'https://seattle.eater.com/rss/index.xml', category: 'local', isCuratedPositive: false, enabled: true },
-  { id: 'mynorthwest', name: 'MyNorthwest', type: 'rss', url: 'https://mynorthwest.com/feed/', category: 'local', isCuratedPositive: false, enabled: true },
+  // Off since Nov 1, 2026: answers 403 to every fetch from Cloudflare. KING 5 replaces it.
+  { id: 'mynorthwest', name: 'MyNorthwest', type: 'rss', url: 'https://mynorthwest.com/feed/', category: 'local', isCuratedPositive: false, enabled: false },
   { id: 'crosscut', name: 'Crosscut', type: 'rss', url: 'https://crosscut.com/feed', category: 'local', isCuratedPositive: false, enabled: true },
+  { id: 'king5-local', name: 'KING 5', type: 'rss', url: 'https://www.king5.com/feeds/syndication/rss/news/local', category: 'local', isCuratedPositive: false, enabled: true },
   { id: 'smithsonian', name: 'Smithsonian Magazine', type: 'rss', url: 'https://www.smithsonianmag.com/rss/latest_articles/', category: 'science', isCuratedPositive: false, enabled: false },
   // Google News (RSS)
   { id: 'google-news-science', name: 'Google News - Science', type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'science', isCuratedPositive: false, enabled: false },
@@ -86,10 +88,10 @@ export const SOURCES: readonly Source[] = [
   { id: 'google-news-sports', name: 'Google News - Sports', type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'sports', isCuratedPositive: false, enabled: false },
   // News APIs
   { id: 'world-news-api', name: 'WorldNewsAPI', type: 'news_api', url: 'https://api.worldnewsapi.com/search-news', category: 'all', isCuratedPositive: false, enabled: false },
-  // Finance: replaces FMP. Off until Nikhil approves the list; Finance is hidden while none is enabled.
-  { id: 'cnbc-top-news', name: 'CNBC', type: 'rss', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', category: 'finance', isCuratedPositive: false, enabled: false },
-  { id: 'bbc-business', name: 'BBC Business', type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', isCuratedPositive: false, enabled: false },
-  { id: 'guardian-business', name: 'The Guardian Business', type: 'rss', url: 'https://www.theguardian.com/uk/business/rss', category: 'finance', isCuratedPositive: false, enabled: false },
+  // Finance: replaces FMP (approved by Nikhil, Nov 1, 2026).
+  { id: 'cnbc-top-news', name: 'CNBC', type: 'rss', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', category: 'finance', isCuratedPositive: false, enabled: true },
+  { id: 'bbc-business', name: 'BBC Business', type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', isCuratedPositive: false, enabled: true },
+  { id: 'guardian-business', name: 'The Guardian Business', type: 'rss', url: 'https://www.theguardian.com/uk/business/rss', category: 'finance', isCuratedPositive: false, enabled: true },
   // Travel
   { id: 'conde-nast-traveler', name: 'Condé Nast Traveler', type: 'rss', url: 'https://www.cntraveler.com/feed/rss', category: 'travel', isCuratedPositive: false, enabled: true },
   { id: 'guardian-travel', name: 'The Guardian Travel', type: 'rss', url: 'https://www.theguardian.com/uk/travel/rss', category: 'travel', isCuratedPositive: false, enabled: true },
