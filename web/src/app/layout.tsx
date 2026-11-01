@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 const SOCIAL_CARD = 'https://getclearnews.com/social-card.png';
 const SITE_DESCRIPTION =
-  'ClearNews: a clean, ad-free personal news reader. 42 sources across 13 categories. No clickbait, no tracking, no algorithm. Built by Nikhil Singhal.';
+  'ClearNews: a clean, ad-free personal news reader. 52 sources across 15 categories. No clickbait, no tracking, no algorithm. Built by Nikhil Singhal.';
 
 export const metadata: Metadata = {
   title: {

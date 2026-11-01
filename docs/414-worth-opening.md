@@ -1,6 +1,6 @@
 # #414: Make ClearNews worth opening every morning
 
-**Status:** proposal for Nikhil, Nov 1, 2026. Nothing here is built yet.  
+**Status:** approved by Nikhil, Nov 1, 2026 (section 5 leans taken). Step 1 built as 3.2.0, with one change from the table: Google DeepMind went to the AI tab, since its posts this week were a frontier model and a world model.  
 **Ask (Nikhil, Nov 1):** "I need to feel the attraction and addiction to open the app for my news." Gut feel: the presentation is not the best, and sources for things like AI and space are missing. Also: "physical AI is a topic that I love."  
 **Inputs:** `docs/reviews/2026-11-01-product-patterns-research.md` (what makes news products worth opening), `docs/reviews/2026-11-01-sources-research.md` (source audit and tested candidates), and a prototype of story grouping run on the live feed (section 3).
 

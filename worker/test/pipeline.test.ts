@@ -221,3 +221,31 @@ describe('trimSource (#413)', () => {
     expect(idx).toEqual([...idx].sort((a, b) => a - b));
   });
 });
+
+describe('source title filters (#414)', () => {
+  const skip = (id: string) => SOURCES.find((s) => s.id === id)!.skipTitle!;
+  it('Wired: deals and buying guides out, news kept', () => {
+    const wired = skip('wired');
+    for (const t of ['The 30 Best Gifts for Star Wars Fans (2026)', 'Mattress Deals: Save Over $600 Before Black Friday 2026', 'Best Wireless Earbuds', 'Is the Pixel 11 Worth Buying?', 'Go Minimal: the Ridge Wallet Is 20 Percent Off Right Now'])
+      expect(wired.test(t), t).toBe(true);
+    for (const t of ['The $6.3 Billion Binance Hack Was Pulled Off in Just 20 Minutes', 'AO3 Might Be Down for a Month'])
+      expect(wired.test(t), t).toBe(false);
+  });
+  it('CBS Sports: betting items out, news kept', () => {
+    const cbs = skip('cbs-sports');
+    for (const t of ['NFL Week 9 odds, predictions, expert picks', 'Use BetMGM bonus code CBSSPORTS', 'Fantasy football rankings'])
+      expect(cbs.test(t), t).toBe(true);
+    for (const t of ['Shooting outside stadium after Magic City Classic', 'Dodgers win the World Series'])
+      expect(cbs.test(t), t).toBe(false);
+  });
+});
+
+describe('source order (#414)', () => {
+  it('AI and Space are listed before Technology and Science, so dedup keeps them', () => {
+    const first = (c: string) => SOURCES.findIndex((s) => s.enabled && s.category === c);
+    for (const c of ['ai', 'physical_ai', 'space']) {
+      expect(first(c)).toBeLessThan(first('tech'));
+      expect(first(c)).toBeLessThan(first('science'));
+    }
+  });
+});

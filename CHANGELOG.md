@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.2.0] - 2026-11-01 - New tabs: AI, Physical AI, Space (#414 step 1)
+
+### Added
+- **AI** tab: The Decoder, Ars Technica AI, Latent Space, Simon Willison, Google DeepMind.
+- **Physical AI** tab (robotics, humanoids, autonomy): The Robot Report, IEEE Spectrum Robotics, TechCrunch Robotics.
+- **Space** tab: NASASpaceflight, Ars Technica Space, Universe Today, and NASA (moved from Science).
+- Science: Quanta Magazine. Local: Cascade PBS (the Crosscut newsroom). Offbeat: Smithsonian Magazine.
+- Tab order: All, AI, Physical AI, Space, Technology, Science, General, Local, India, Finance, then the rest. The apps build tabs from the API, so no release is needed.
+
+### Changed
+- Ars Technica Tech reads Ars's live Gadgets feed (the old one posted 2 items a week). The Guardian Business uses its US edition. NASA uses its feed's final URL.
+- Wired skips deals, sales and buying guides (20 of 50 items on Nov 1). CBS Sports skips odds, picks, promo codes and fantasy items (25 of 36).
+
+### Removed
+- Engadget (mostly how-to pieces), Seattle Eater (evergreen guides), Crosscut (its feed became PBS national video), Mental Floss (lists and quizzes).
+
+52 sources across 15 categories (was 42 across 12 plus All). Site copy and the social card updated.
+
+---
+
 ## [3.1.0] - 2026-11-01 - India cleanup (#413)
 
 ### Changed

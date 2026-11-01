@@ -2,7 +2,7 @@
 
 **Last Updated**: November 1, 2026
 
-## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 42 sources across 13 categories
+## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 52 sources across 15 categories
 
 ### Move to Cloudflare (Nov 1, 2026, task #400)
 
@@ -19,7 +19,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader**: Mozilla Readability on linkedom, sanitize-html with the old nh3 allowlist, SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
 - **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 70 in the Workers runtime (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Tests**: 76 in the Workers runtime (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
@@ -43,25 +43,30 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 | GET | `/api/v1/categories` | Categories with enabled source counts (empty ones hidden) |
 | GET | `/api/v1/status` | Feed build time and per-source status (no client uses it) |
 
-### Sources (42 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
+### Sources (52 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
+Tabs in the order the apps show them:
+
 | Category | Sources | Count |
 |-|-|-|
+| AI | The Decoder, Ars Technica AI, Latent Space, Simon Willison, Google DeepMind | 5 |
+| Physical AI | The Robot Report, IEEE Spectrum Robotics, TechCrunch Robotics | 3 |
+| Space | NASASpaceflight, Ars Technica Space, Universe Today, NASA | 4 |
+| Technology | The Verge, Wired (deals and buying guides skipped), Ars Technica Tech | 3 |
+| Science | Ars Technica Science, New Scientist, Scientific American, Quanta Magazine | 4 |
 | General | Fox News, NPR News (kept balanced right and left) | 2 |
-| Local (Seattle) | GeekWire, Seattle Eater, Crosscut, KIRO 7 | 4 |
-| Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
-| Science | Ars Technica Science, NASA, New Scientist, Scientific American | 4 |
-| Technology | The Verge, Wired, Ars Technica Tech, Engadget | 4 |
-| Entertainment | A.V. Club, Polygon, Variety, Kotaku | 4 |
-| Finance | CNBC, BBC Business, The Guardian Business | 3 |
-| Health | NPR Health, BBC Health | 2 |
-| Sports | CBS Sports | 1 |
-| Offbeat | Atlas Obscura, Mental Floss, UPI Odd News | 3 |
-| Travel | Condé Nast Traveler, The Guardian Travel, Matador Network, Frommer's | 4 |
+| Local (Seattle) | GeekWire, KIRO 7, Cascade PBS | 3 |
 | India | BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu | 6 |
+| Finance | CNBC, BBC Business, The Guardian Business (US edition) | 3 |
+| Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
+| Entertainment | A.V. Club, Polygon, Variety, Kotaku | 4 |
+| Health | NPR Health, BBC Health | 2 |
+| Sports | CBS Sports (betting items skipped) | 1 |
+| Offbeat | Atlas Obscura, UPI Odd News, Smithsonian Magazine | 3 |
+| Travel | Condé Nast Traveler, The Guardian Travel, Matador Network, Frommer's | 4 |
 
-Good News Network, Seattle Eater and Frommer's were blocked on the droplet and work from Cloudflare. Hindi headlines are hidden in every tab.
+Good News Network and Frommer's were blocked on the droplet and work from Cloudflare. Hindi headlines are hidden in every tab. The apps build their tabs from `/api/v1/categories`, so new tabs need no release.
 
-**Off:** AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Smithsonian (403 to the droplet; not retested), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
+**Off:** AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Crosscut (its feed became PBS national video; Cascade PBS replaces it), Engadget (mostly how-to pieces), Seattle Eater (evergreen guides), Mental Floss (lists and quizzes; Smithsonian replaces it), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
 
 ## Known Issues
 - **Same story from several outlets** (#414): merging by meaning is the AI step; the India cleanup (#413, 3.1.0) cut the tab from 343 to 129 articles.

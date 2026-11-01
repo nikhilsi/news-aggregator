@@ -1,6 +1,6 @@
 # ClearNews
 
-A personal news reader that pulls from 42 RSS sources across 13 categories and serves them through a clean, filterable interface with an in-app reader view. No clickbait, no ad overload, no political noise (unless you want it).
+A personal news reader that pulls from 52 RSS sources across 15 categories and serves them through a clean, filterable interface with an in-app reader view. No clickbait, no ad overload, no political noise (unless you want it).
 
 **Live at**: [getclearnews.com](https://getclearnews.com)
 
@@ -10,7 +10,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 
 ## What It Does
 
-- Aggregates **42 RSS sources** across **13 categories**: General, Local (Seattle), Feel Good, Science, Technology, Entertainment, Finance, Health, Sports, Offbeat, Travel, India
+- Aggregates **52 RSS sources** across **15 categories**: AI, Physical AI, Space, Technology, Science, General, Local (Seattle), India, Finance, Feel Good, Entertainment, Health, Sports, Offbeat, Travel
 - **Reader view**: clean extracted article text, dark mode, font scaling
 - Two-tier sorting: a varied top section (a mix of sources and categories), then newest first
 - Deduplication by URL and by headline keywords
