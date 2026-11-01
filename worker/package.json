@@ -1,0 +1,32 @@
+{
+  "name": "clearnews-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "test": "TZ=UTC vitest run",
+    "typecheck": "tsc --noEmit",
+    "deploy": "node scripts/deploy.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "0.6.0",
+    "entities": "7.0.1",
+    "feedsmith": "3.0.1",
+    "hono": "4.13.16",
+    "linkedom": "0.18.15",
+    "sanitize-html": "2.18.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.11",
+    "@cloudflare/workers-types": "5.20261031.1",
+    "@types/sanitize-html": "2.16.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5",
+    "wrangler": "4.156.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261023.1": true
+  }
+}

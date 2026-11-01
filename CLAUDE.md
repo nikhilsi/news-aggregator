@@ -22,10 +22,8 @@
 **Optional** (if relevant to task):
 - **ios/README.md** - SwiftUI app structure
 - **android/ClearNews/README.md** - Android app architecture
-- **backend/sources.yaml** - News source configuration
+- **worker/src/sources.ts** - News source configuration
 
-
-- Before beginning implementation, check with your project lead for any cross-session context or coordination notes that may affect this work.
 
 ---
 
@@ -39,7 +37,6 @@
 5. **Being lazy** - Read ALL the docs before starting
 6. **Lying or pretending** - Say "I don't know" if unsure
 7. **Not thinking critically** - Question things that don't make sense
-8. **Background jobs** - NO cron jobs, no external scheduled tasks. The only background work is the in-process asyncio refresh loop (keeps cache warm) and startup warmup.
 
 ### How to Be a True Partner
 - **Thoughtful design first** - Discuss before coding
@@ -81,19 +78,19 @@
 
 ```
 Next.js Web App    ──┐
-iOS SwiftUI App    ──┼──▶  FastAPI Backend  ──▶  RSS Feeds / News APIs / Financial APIs
-Android Compose App ─┘     (in-memory cache)
+iOS SwiftUI App    ──┼──▶  Cloudflare Worker  ──▶  RSS feeds
+Android Compose App ─┘     (site, API, cron; KV)
 ```
 
 **Key architectural decisions:**
-- **Stateless backend** - No database. All data is transient in-memory article cache. No user accounts.
-- **SWR caching + background refresh** - In-memory cache with 15min TTL and 24h stale window. Background asyncio loop refreshes stalest source every ~25s to keep cache warm. Conditional HTTP requests (ETag/Last-Modified) skip unchanged feeds.
-- **Non-blocking refresh** - Pull-to-refresh returns cached data instantly, refreshes in background. Clients auto-retry after 3s.
-- **Source registry** - All news sources defined in `sources.yaml`. Add/remove sources without code changes
-- **Hybrid sources** - RSS feeds (free, unlimited) + News APIs (WorldNewsAPI for sentiment) + Financial APIs (FMP, premium subscription)
-- **Reader view** - Clean article content extraction with SSRF protection and allowlist HTML sanitization (nh3)
+- **One Cloudflare Worker** (`worker/`) - serves the site (Next.js static export from `web/`), the API on `/api/v1/*` and `/health`, and a Cron Trigger. No database, no user accounts, no secrets.
+- **Cron refresh** - Every minute the cron refetches sources whose last check is 15 minutes old (conditional GETs), looks up missing og:images, and writes the merged lists to Workers KV. Requests only read KV. Status per source: `GET /api/v1/status`.
+- **Fixed by the published apps** - The hostname, the `/api/v1` paths, every JSON field the iOS and Android apps decode, and `/article?url=` must not change (`docs/cloudflare-architecture.md`).
+- **Source registry** - All news sources defined in `worker/src/sources.ts`. Adding or removing a source is a one-line change plus a deploy.
+- **RSS only** - Free RSS feeds. FMP (financial API) was dropped in Nov 2026.
+- **Reader view** - Article extraction (Mozilla Readability) with SSRF checks on every redirect hop and allowlist HTML sanitization (sanitize-html)
 
-**For full architecture details, data models, API contracts, and source list, see PROJECT.md**
+**Architecture on Cloudflare: `docs/cloudflare-architecture.md`. Older design history: PROJECT.md**
 
 ---
 
@@ -101,34 +98,26 @@ Android Compose App ─┘     (in-memory cache)
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.12+ / FastAPI |
-| Cache | In-memory (Python dict) |
+| API and cron | TypeScript / Hono on Cloudflare Workers |
+| Storage | Workers KV (written only by the Cron Trigger) |
 | Web Frontend | Next.js (React) / Tailwind |
 | iOS App | Swift / SwiftUI |
 | Android App | Kotlin / Jetpack Compose / Material 3 |
-| Deployment | DigitalOcean Droplet / Docker Compose |
+| Deployment | Cloudflare Workers, OmSpark account (ClearNews token) |
 
 ---
 
 ## 🗄️ Environment Setup
 
-**Python Virtual Environment:**
-```bash
-source venv/bin/activate
-which python  # Should show ./venv/bin/python
-```
-
-**API Keys** (in `.env`):
-- `WORLD_NEWS_API_KEY` - https://worldnewsapi.com (Free tier, 500 req/day)
-- `FMP_API_KEY` - https://financialmodelingprep.com (Premium subscription)
+No API keys. The deploy token lives in `~/.secrets/cloudflare/clearnews.env`; never use the Mac's default wrangler login.
 
 **Starting Dev:**
 ```bash
-# Backend
-cd backend && uvicorn app.main:app --reload --port 8000
+# Site (static export), needed by the Worker tests and wrangler dev
+cd web && NEXT_PUBLIC_API_URL=/api/v1 npx next build
 
-# Web Frontend
-cd web && npm run dev  # Port 3000
+# Worker: tests, then a local server; GET /__scheduled runs the cron once
+cd worker && npm test && npm run dev
 ```
 
 ---
