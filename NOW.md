@@ -2,20 +2,28 @@
 
 **Last Updated**: November 1, 2026
 
+Shipped work lives in CHANGELOG.md; this file looks forward only.
+
 ## Now
 
-1. **India tab cleanup** (#413): shipped as 3.1.0 (343 to 123 articles, Hindi hidden, NPR News replaces the dead AP copy).
-2. **AI step design doc** (#414): group repeated stories by meaning ("covered by N outlets") and filter fluff (shopping deals, quizzes, horoscopes) in the cron, the same for every reader, no tracking. Costs first, then build.
+**Make ClearNews worth opening every morning** (#414). Proposal: [docs/414-worth-opening.md](docs/414-worth-opening.md). Mockup: a private artifact linked on #414.
 
-## Done
+- **Step 1, sources:** new AI, Physical AI and Space tabs; fix Crosscut, Ars Tech and Guardian Business; drop Engadget and Seattle Eater; filter deals and betting.
+- **Step 2, Today brief:** the first tab becomes a ranked brief of about 10 stories; repeats grouped by meaning; fluff dropped by a small model; no AI-written text. No app release needed.
+- **Step 3, web:** the Today screen, story cards with coverage, Fox and NPR marks, interests kept in the browser.
+- **Step 4, iOS 2.1:** an App Store release, Nikhil's call.
 
-- **Phase 1 to 13** (Feb to Mar 2026): backend, web, deployment, iOS app (App Store), performance, source expansion, content filtering, security hardening, Android app. History in CHANGELOG.md.
-- **SEO and identity** (Jun 9, 2026): metadata, JSON-LD, footer, `/about`, OG card.
-- **Move to Cloudflare** (Nov 1, 2026, #400): TypeScript Worker with a cron feed refresh, static site, GA removed, FMP replaced by RSS finance feeds, droplet deleted. See CURRENT_STATE.md.
+Waiting on three decisions from Nikhil (proposal, section 5).
+
+## Ruled decisions that govern next steps
+
+- General keeps a balance of right- and left-leaning outlets (Fox News and NPR News today).
+- Hindi and other non-Latin headlines stay hidden in every tab.
+- No analytics and no tracking. Personalization, if any, is explicit and stored on the device.
 
 ## Later
 
-- **On-device controls** (needs an iOS release): mute a source or topic, "less like this", stored and applied on the phone.
+- **On-device controls** (needs an iOS release): mute a source or topic, "less like this", stored on the phone.
 - **Web smart sharing**: match Android's formatted share text with a ClearNews reader link.
-- **iOS**: smart sharing, image caching if AsyncImage flicker shows, iPad layout.
-- **Stale-feed alert**: open question with Nikhil (lean: a daily GitHub Actions check that fails when `/api/v1/status` shows a stale feed).
+- **iOS**: image caching if AsyncImage flicker shows; iPad layout.
+- **Stale-feed alert**: open question (lean: a daily GitHub Actions check of `/api/v1/status`).
