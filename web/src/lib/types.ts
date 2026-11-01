@@ -11,6 +11,25 @@ export interface Article {
   category: string;
   sentiment: number | null;
   published_at: string;
+  /** The model's topics, main topic first (#414); empty when unlabeled. */
+  topics?: string[];
+  /** The same story from other outlets, each with its own headline (#414). */
+  coverage?: Coverage[];
+}
+
+export interface Coverage {
+  source_name: string;
+  title: string;
+  url: string;
+}
+
+/** What the reader needs to open a story: a card's article or one outlet's coverage. */
+export interface ReaderTarget {
+  url: string;
+  title: string;
+  source_name: string;
+  image_url?: string | null;
+  published_at?: string;
 }
 
 export interface Pagination {
@@ -24,6 +43,8 @@ export interface ArticleListResponse {
   articles: Article[];
   pagination: Pagination;
   complete?: boolean;
+  /** First tab only: when the Today brief was built; null while Today shows the full list. */
+  brief_at?: string | null;
 }
 
 export interface Category {

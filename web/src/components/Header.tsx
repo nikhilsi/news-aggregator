@@ -2,7 +2,7 @@
 
 /**
  * App header — logo/name, search bar, refresh button, and dark mode toggle.
- * Sticky at the top of the viewport.
+ * The home page pins it to the top together with the category tabs.
  */
 
 import SearchBar from './SearchBar';
@@ -16,7 +16,7 @@ interface HeaderProps {
 
 export default function Header({ onSearch, onRefresh }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/80">
+    <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/80">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
         {/* Logo / App name */}
         <Link href="/" className="shrink-0 text-xl font-bold text-gray-900 dark:text-white">

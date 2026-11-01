@@ -10,7 +10,7 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 - **Step 1, sources:** shipped Nov 1 (3.2.0, see CHANGELOG).
 - **Step 2, Today brief:** shipped Nov 1 (3.3.0, see CHANGELOG). Next: watch the first days of briefs (each build is logged) for repeats, outlet balance and missing US politics.
-- **Step 3, web:** the Today screen, story cards with coverage, Fox and NPR marks, interests kept in the browser.
+- **Step 3, web:** shipped Nov 1 (3.4.0, see CHANGELOG). Next: Nikhil tries it on the phone and desktop.
 - **Step 4, iOS 2.1:** an App Store release, Nikhil's call.
 
 Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and no AI-written text in step 2.

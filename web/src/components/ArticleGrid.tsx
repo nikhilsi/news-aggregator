@@ -10,7 +10,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Article } from '@/lib/types';
+import { Article, ReaderTarget } from '@/lib/types';
+import { isNew } from '@/lib/visits';
 import ArticleCard from './ArticleCard';
 
 interface ArticleGridProps {
@@ -19,7 +20,9 @@ interface ArticleGridProps {
   error: string | null;
   hasMore: boolean;
   loadMore: () => void;
-  onArticleClick: (article: Article) => void;
+  /** Stories published after this (ms) get a "New" mark; null on a first visit. */
+  newSince: number | null;
+  onArticleClick: (target: ReaderTarget) => void;
   onRetry: () => void;
 }
 
@@ -29,6 +32,7 @@ export default function ArticleGrid({
   error,
   hasMore,
   loadMore,
+  newSince,
   onArticleClick,
   onRetry,
 }: ArticleGridProps) {
@@ -120,7 +124,12 @@ export default function ArticleGrid({
     <>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {articles.map((article, index) => (
-          <ArticleCard key={`${article.url}-${index}`} article={article} onClick={onArticleClick} />
+          <ArticleCard
+            key={`${article.url}-${index}`}
+            article={article}
+            isNew={isNew(article.published_at, newSince)}
+            onOpen={onArticleClick}
+          />
         ))}
       </div>
 

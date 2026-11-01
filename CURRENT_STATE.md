@@ -20,11 +20,12 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader**: Mozilla Readability on linkedom, sanitize-html with the old nh3 allowlist, SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
 - **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 95 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Tests**: 96 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
-- Same features as before: card feed with infinite scroll, category tabs, debounced search, reader modal with DOMPurify, dark mode, `/article?url=` for shared links, `/about`.
+- **Today page** (#414 step 3, 3.4.0): the hourly brief as numbered rows with a finish line, "Covered by N outlets" lists, Fox and NPR marks on US politics stories, "New" marks since your last visit, and topic sections you pick (kept in the browser). Without a brief the first tab shows the full list with a note.
+- Every other tab: card grid with infinite scroll (cards carry the same marks and outlet lists), category tabs (one scrolling row on phones), debounced search, reader modal with DOMPurify, dark mode, `/article?url=` for shared links, `/about`.
 - Google Analytics removed. The API base is `/api/v1` on the same origin.
 - `/privacy` and `/support` are static pages in `web/public/` (opened from both apps).
 
@@ -75,7 +76,7 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 - **The apps' About screens** say "financial news APIs" until their next release.
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
 - **CNBC's feed is general top news** filed under Finance (#416).
-- **A changed source URL kept the old ETag and Last-Modified** for up to a day. Fixed in code (the state now records each feed's URL); ships with #414 step 2.
+- **A new edition reaches the web up to 5 minutes late**: article lists are cached in the browser for 5 minutes (`max-age=300`, unchanged from before); the refresh button bypasses it.
 
 ## What's Next
 

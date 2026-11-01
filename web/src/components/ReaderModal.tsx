@@ -9,12 +9,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { Article, ReaderResponse } from '@/lib/types';
+import { ReaderResponse, ReaderTarget } from '@/lib/types';
 import { fetchReaderContent } from '@/lib/api';
 import { timeAgo } from '@/lib/utils';
 
 interface ReaderModalProps {
-  article: Article;
+  article: ReaderTarget;
   onClose: () => void;
 }
 

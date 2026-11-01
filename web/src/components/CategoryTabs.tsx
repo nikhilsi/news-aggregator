@@ -1,34 +1,33 @@
 'use client';
 
 /**
- * Horizontal category tabs.
- * Scrollable on mobile, wraps on desktop. Fetches the category list from the API on mount.
+ * Horizontal category tabs: one scrolling row on phones (17 tabs wrapped to four
+ * pinned rows there), wrapped rows from the sm width up.
+ * The API returns Today (id "all") first, then Latest; the tabs follow its order.
  */
 
-import { useEffect, useState } from 'react';
-import { fetchCategories } from '@/lib/api';
+import { useEffect, useRef } from 'react';
 import { Category } from '@/lib/types';
 
 interface CategoryTabsProps {
+  categories: Category[];
   selected: string;
   onSelect: (categoryId: string) => void;
 }
 
-export default function CategoryTabs({ selected, onSelect }: CategoryTabsProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    fetchCategories()
-      .then(setCategories)
-      .catch(() => {});
-  }, []);
-
-  // The API returns Today (id "all") first, then Latest; use the list as it comes
+export default function CategoryTabs({ categories, selected, onSelect }: CategoryTabsProps) {
   const tabs = categories;
+  const navRef = useRef<HTMLElement>(null);
+
+  // A tab picked from elsewhere (a topic's "See all") scrolls into view on phones.
+  useEffect(() => {
+    navRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [selected, categories]);
 
   return (
     <nav
-      className="flex flex-wrap gap-1 pb-px"
+      ref={navRef}
+      className="scrollbar-hide flex gap-1 overflow-x-auto py-1.5 sm:flex-wrap sm:overflow-visible sm:py-0 sm:pb-px"
       role="tablist"
       aria-label="Article categories"
     >

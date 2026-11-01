@@ -1,6 +1,6 @@
 # #414: Make ClearNews worth opening every morning
 
-**Status:** approved by Nikhil, Nov 1, 2026 (section 5 leans taken). Step 1 built as 3.2.0, with one change from the table: Google DeepMind went to the AI tab, since its posts this week were a frontier model and a world model.  
+**Status:** approved by Nikhil, Nov 1, 2026 (section 5 leans taken). Step 1 built as 3.2.0, step 2 as 3.3.0 and 3.3.1, step 3 (the web) as 3.4.0, with one change from the table: Google DeepMind went to the AI tab, since its posts this week were a frontier model and a world model.  
 **Ask (Nikhil, Nov 1):** "I need to feel the attraction and addiction to open the app for my news." Gut feel: the presentation is not the best, and sources for things like AI and space are missing. Also: "physical AI is a topic that I love."  
 **Inputs:** `docs/reviews/2026-11-01-product-patterns-research.md` (what makes news products worth opening), `docs/reviews/2026-11-01-sources-research.md` (source audit and tested candidates), and a prototype of story grouping run on the live feed (section 3).
 
@@ -127,3 +127,17 @@ Run on the 275 articles from the last 30 hours of the live feed, through Workers
 1. **Refresh:** Today is an hourly edition, not rebuilt on every feed refresh.
 2. **Fluff in tabs:** deals, betting, quizzes, listicles and celebrity items are dropped everywhere; how-to, opinion and features stay in their tabs but never reach Today.
 3. **World news:** BBC World joins General, capped at 10 like Fox News and NPR News. No source covered world news before; BBC World posts about 18 world stories a day, all with images, and sits outside US politics.
+
+## 8. Step 3 build design (Nov 1, the web)
+
+Built from section 4 and the approved mockup (the artifact linked on #414). Nikhil approved the design, the build and the production deploy in advance on the evening of Nov 1.
+
+- **API, one field.** The first tab's `/api/v1/articles` response adds `brief_at`: when the brief was built, or null while Today shows the full list. Other tabs and search are unchanged, and the apps ignore unknown keys.
+- **Today page** (first tab, no search, while a brief exists): the date; chips for the story count, a reading time from the headlines and summaries, when the edition was built and how many stories are new since your last visit; ten numbered rows (the publisher's headline, source and time, a small photo, the summary on wider screens); then "You're all caught up" with the time of the next edition. Without a brief, the first tab shows the full list as before, with a note.
+- **Coverage.** A story other outlets also covered shows "N more outlets"; tapping it lists each outlet's own headline, and each opens in the reader. Cards in every tab get the same.
+- **Fox and NPR marks.** On any story labeled US politics, two dots show whether Fox News and NPR News covered it (filled) or not yet (hollow), in Today and in every tab.
+- **New since your last visit.** Stories published after your previous visit carry a "New" mark in Today, the topic sections and every tab, and Today counts them. A new visit starts after 30 minutes away. Marks instead of a divider: Today is ranked and the tabs list each source's newest first, so no single line splits new from old.
+- **Your topics.** Sections under Today, by default AI, Physical AI, Space, Local, India and Finance: up to 4 stories each that Today does not already show, and a link to the full tab. "Edit topics" picks which sections show and in what order, from every tab.
+- **Kept in the browser only.** The topic list and the last-visit time live in localStorage, like the theme. Nothing about them reaches the server; the privacy page says so.
+- **Not in this step:** AI-written text, mutes, sharing changes, the apps.
+- **Checks:** a Worker test and a live check for `brief_at`; a browser walk on a local Worker serving production's feed, then on production, at desktop and phone widths, light and dark.

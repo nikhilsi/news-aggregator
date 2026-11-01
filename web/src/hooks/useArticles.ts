@@ -14,6 +14,10 @@ interface UseArticlesReturn {
   loading: boolean;
   error: string | null;
   hasMore: boolean;
+  /** When the Today brief was built (first tab only); null when the list is not a brief. */
+  briefAt: string | null;
+  /** When the first page arrived (ms), so a page can show times that agree. */
+  loadedAt: number;
   loadMore: () => void;
   refresh: () => void;
 }
@@ -32,10 +36,14 @@ export function useArticles(category: string, search: string): UseArticlesReturn
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [briefAt, setBriefAt] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState(0);
   const [refreshFlag, setRefreshFlag] = useState(0);
 
   // Track current request to avoid race conditions
   const requestId = useRef(0);
+  // Set by refresh(); only the next page-1 load skips the cache, not every later one.
+  const pendingRefresh = useRef(false);
   // Timer for auto-retry on partial data
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,7 +57,8 @@ export function useArticles(category: string, search: string): UseArticlesReturn
   // Fetch articles when page, category, search, or refreshFlag changes
   useEffect(() => {
     const currentRequest = ++requestId.current;
-    const isRefresh = refreshFlag > 0 && page === 1;
+    const isRefresh = pendingRefresh.current && page === 1;
+    pendingRefresh.current = false;
     setLoading(true);
 
     // Clear any pending retry from a previous fetch
@@ -71,6 +80,8 @@ export function useArticles(category: string, search: string): UseArticlesReturn
 
         if (page === 1) {
           setArticles(data.articles);
+          setBriefAt(data.brief_at ?? null);
+          setLoadedAt(Date.now());
         } else {
           setArticles((prev) => [...prev, ...data.articles]);
         }
@@ -91,6 +102,8 @@ export function useArticles(category: string, search: string): UseArticlesReturn
               .then((retryData) => {
                 if (currentRequest !== requestId.current) return;
                 setArticles(retryData.articles);
+                setBriefAt(retryData.brief_at ?? null);
+                setLoadedAt(Date.now());
                 setHasMore(1 < retryData.pagination.total_pages);
               })
               .catch(() => {}); // Silently fail — user already has partial data
@@ -121,10 +134,11 @@ export function useArticles(category: string, search: string): UseArticlesReturn
   }, [loading, hasMore]);
 
   const refresh = useCallback(() => {
+    pendingRefresh.current = true;
     setPage(1);
     setError(null);
     setRefreshFlag((prev) => prev + 1);
   }, []);
 
-  return { articles, loading, error, hasMore, loadMore, refresh };
+  return { articles, loading, error, hasMore, briefAt, loadedAt, loadMore, refresh };
 }

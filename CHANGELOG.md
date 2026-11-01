@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.4.0] - 2026-11-01 - Today on the web (#414 step 3)
+
+### Added
+- **Today page** on getclearnews.com: the date; chips for the story count, a reading time, when the edition was built and how many stories are new since your last visit; the brief as numbered rows (the publisher's headline, source, time, a small photo, the summary on wider screens); "You're all caught up" with the next edition's time. About 4 stories fit on a phone screen instead of 1.
+- **Covered by N outlets**: a story other outlets also covered opens to each outlet's own headline, each readable in the reader. On Today's rows, the topic sections and the cards in every tab.
+- **Fox and NPR marks** on stories whose main topic is US politics: whether Fox News and NPR News covered it.
+- **New since your last visit**: a "New" mark on stories published after your previous visit (a visit starts after 30 minutes away), and a count on Today.
+- **Your topics**: sections under Today (AI, Physical AI, Space, Local, India, Finance by default), up to 4 stories each that Today does not already show, with "See all". "Edit topics" picks the sections and their order from every tab.
+- `/api/v1/articles` on the first tab (no search) also answers `brief_at`; the apps ignore it.
+- `worker/scripts/dev.sh`: a local Worker serving a copy of production's feed (read-only on production), with a PID file, port sweep and logs.
+
+### Changed
+- On phones the tabs are one scrolling row instead of four pinned rows, and the header and tabs are pinned together (the tabs slid under the header on phones).
+- The topic list and the last-visit time are kept in the browser's local storage, like the theme, and never sent; the privacy page says so.
+
+---
+
 ## [3.3.1] - 2026-11-01 - Today: at most 2 stories per outlet; US politics labels
 
 ### Fixed
