@@ -25,7 +25,8 @@ kind, exactly one:
 - listicle: numbered lists of trivia or curiosities
 - celebrity: celebrity gossip, influencers, red carpet, reality TV
 - opinion: an opinion column or editorial
-topics, zero to three, main topic first: ai, physical_ai (robots, humanoids, self-driving cars, drones, embodied AI), space, seattle (Seattle or Washington state), india, markets (stocks, the economy, company earnings), us_politics, world, science, tech, health, sports, entertainment.
+topics, zero to three, main topic first: ai, physical_ai (robots, humanoids, self-driving cars, drones, embodied AI), space, seattle (Seattle or Washington state, also written WA), india, markets (stocks, the economy, company earnings), us_politics (only the United States: Congress, the White House, US courts, US elections at any level including Washington state), world, science, tech, health, sports, entertainment.
+Politics outside the United States is never us_politics: Indian politics is india, other countries are world.
 importance, 1 to 5: how much a well-informed general reader would want to know this today. 5 = major national or world event. 4 = significant development in its field. 3 = notable. 2 = minor. 1 = trivial.`;
 
 const SCHEMA = {
@@ -86,7 +87,10 @@ export async function labelBatch(ai: AiRunner, batch: Article[]): Promise<Map<st
   for (const x of parsed.items ?? []) {
     const a = Number.isInteger(x?.i) ? batch[x.i] : undefined;
     if (!a || !KIND_SET.has(x.kind) || !Array.isArray(x.topics)) continue;
-    const t = [...new Set(x.topics.filter((t) => TOPIC_SET.has(t)))].slice(0, 3) as Topic[];
+    let t = [...new Set(x.topics.filter((t) => TOPIC_SET.has(t)))].slice(0, 3) as Topic[];
+    // Even with the prompt rule, the model tagged 3 of 14 Indian politics stories
+    // india plus us_politics (Nov 1, 2026), which used up Today's US politics slots.
+    if (t.includes('india')) t = t.filter((x) => x !== 'us_politics');
     const imp = Math.min(5, Math.max(1, Math.round(Number(x.importance) || 1)));
     out.set(a.url, { k: x.kind as Kind, t, imp });
   }

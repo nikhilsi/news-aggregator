@@ -111,6 +111,21 @@ describe('labels', () => {
     expect(out.get(batch[0].url)).toEqual({ k: 'news', t: ['ai', 'tech'], imp: 5 });
     expect(out.get(batch[2].url)).toEqual({ k: 'deals', t: ['tech'], imp: 1 });
   });
+  it('an India story is never also US politics', async () => {
+    const batch = [art('ndtv', 'Opposition rally in Delhi'), art('npr-news', 'Senate race tightens')];
+    const ai: AiRunner = {
+      run: async () =>
+        chat({
+          items: [
+            { i: 0, kind: 'news', topics: ['india', 'us_politics'], importance: 3 },
+            { i: 1, kind: 'news', topics: ['us_politics'], importance: 3 },
+          ],
+        }),
+    };
+    const out = await labelBatch(ai, batch);
+    expect(out.get(batch[0].url)!.t).toEqual(['india']);
+    expect(out.get(batch[1].url)!.t).toEqual(['us_politics']);
+  });
   it('chat content: OpenAI shape, the older { response } shape, or an error', () => {
     expect(chatContent(chat({ a: 1 }))).toBe('{"a":1}');
     expect(chatContent({ response: { a: 1 } })).toBe('{"a":1}');
@@ -159,7 +174,8 @@ describe('brief', () => {
   });
 
   const cand = (title: string, v: number[], topics: Candidate['topics'] = ['tech']): Candidate => {
-    const rep = art('the-verge', title);
+    // Each candidate from its own outlet unless a test says otherwise.
+    const rep = art('the-verge', title, 1, { source_id: `outlet-${n}` });
     const story: Story = { id: ++n, members: [rep], centroid: normalize(v) };
     return { story, rep, outlets: ['The Verge'], topics, score: 0 };
   };
@@ -174,6 +190,12 @@ describe('brief', () => {
     ];
     const brief = pickBrief(list, [5, 0, 1, 2, 3, 4]);
     expect(brief.map((c) => c.rep.title)).toEqual(['B', 'A', 'India 1', 'India 2']);
+  });
+  it('pick: at most 2 stories from one outlet', () => {
+    const list = [0, 1, 2, 3].map((i) => cand(`CNBC ${i}`, axisVector(i)));
+    for (const c of list) Object.assign(c.rep, { source_id: 'cnbc-top-news', source_name: 'CNBC' });
+    list.push(cand('Other', axisVector(9)));
+    expect(pickBrief(list, [0, 1, 2, 3, 4]).map((c) => c.rep.title)).toEqual(['CNBC 0', 'CNBC 1', 'Other']);
   });
   it('editor: indices outside the shortlist are ignored', async () => {
     const list = [cand('A', axisVector(0)), cand('B', axisVector(1))];

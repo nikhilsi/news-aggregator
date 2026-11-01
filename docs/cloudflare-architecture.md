@@ -111,10 +111,10 @@ Deferred from the move and shipped with #413 (3.1.0): the `strip_html` spacing f
 
 **AI step (#414, added Nov 1, 2026).** Between steps 5 and 6, `src/ai/enrich.ts` runs on the articles the cron holds. It never fails the run.
 
-- **Labels:** `@cf/google/gemma-4-26b-a4b-it` with thinking off and a JSON schema labels each new article, newest first, in batches of 25 (up to 8 at once): kind (news, analysis, feature, how-to, deals, betting, quiz, listicle, celebrity, opinion), up to three topics (main first) and importance 1 to 5.
+- **Labels:** `@cf/google/gemma-4-26b-a4b-it` with thinking off and a JSON schema labels each new article, newest first, in batches of 25 (up to 8 at once): kind (news, analysis, feature, how-to, deals, betting, quiz, listicle, celebrity, opinion), up to three topics (main first) and importance 1 to 5. US politics means the United States only; a story labeled India never also counts as US politics.
 - **Embeddings:** `@cf/baai/bge-m3` on title and summary, for labeled articles from the last 48 hours, stored 8-bit.
-- **Storage:** both kept by article URL in the KV key `ai` (version `v`), with the Today brief; pruned to the articles in `state`.
-- **Brief, hourly:** once the last 30 hours are labeled and embedded, stories (articles grouped at cosine 0.75) are scored, the top 40 go to one editor call that orders 14, and the first 10 that are not near repeats (0.70) and stay within 2 India and 2 US politics stories become Today. Prompts and the measurements behind each number: `src/ai/*.ts` and `docs/414-worth-opening.md` section 7.
+- **Storage:** both kept by article URL in the KV key `ai` (version `v`; a new version redoes every label), with the Today brief; pruned to the articles in `state`.
+- **Brief, hourly:** once the last 30 hours are labeled and embedded, stories (articles grouped at cosine 0.75) are scored, the top 40 go to one editor call that orders 14, and the first 10 that are not near repeats (0.70) and stay within 2 India stories, 2 US politics stories and 2 per outlet become Today. Prompts and the measurements behind each number: `src/ai/*.ts` and `docs/414-worth-opening.md` section 7.
 - **Time:** each call has a limit inside the run's 40 s deadline (labels need 20 s left, the editor 8 s); unfinished work waits for the next run.
 - **Failure:** unlabeled articles count as news; Today keeps its brief for up to 6 hours, then shows the full list.
 - **Cost:** about 1,200 Neurons a day (labels and 24 briefs) against 10,000 free.

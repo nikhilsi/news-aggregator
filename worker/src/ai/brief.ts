@@ -25,6 +25,8 @@ const CANDIDATE_MS = 30 * 3600e3;
  */
 export const NEAR_REPEAT = 0.7;
 const CAPS: Partial<Record<Topic, number>> = { india: 2, us_politics: 2 };
+/** The first live brief (Nov 1, 2026) gave CNBC 5 of 10 slots, 4 of them market commentary. */
+const PER_OUTLET = 2;
 const BOOST: Partial<Record<Topic, number>> = { physical_ai: 1.5, ai: 1, space: 1, seattle: 1, india: 0.5, markets: 0.5 };
 
 export interface Candidate {
@@ -72,7 +74,7 @@ Rules:
 - Prefer concrete news (what happened) over commentary, previews and advice.
 - A story covered by more outlets usually matters more.
 - Mix the brief: include at least one AI or physical AI story, and at least three of the reader's interests in total.
-- At most 2 stories about India and at most 2 about US politics.
+- At most 2 stories about India, at most 2 about US politics, and at most 2 from the same outlet.
 - For US politics, keep a balance of right- and left-leaning coverage: prefer stories covered by both Fox News and NPR News, or pick one covered by each.
 - Do not pick two stories about the same event.`;
 
@@ -91,17 +93,20 @@ export async function askEditor(ai: AiRunner, list: Candidate[]): Promise<number
 
 /**
  * The brief: the editor's picks in order (or the shortlist order when there are
- * none), then the rest of the shortlist to fill; near repeats and stories over
- * the India and US politics caps are skipped.
+ * none), then the rest of the shortlist to fill; near repeats, stories over the
+ * India and US politics caps, and a third story from one outlet are skipped.
  */
 export function pickBrief(list: Candidate[], picks: number[] | null): Candidate[] {
   const order = [...new Set([...(picks ?? []), ...list.keys()])];
   const kept: Candidate[] = [];
   const perTopic = new Map<Topic, number>();
+  const perOutlet = new Map<string, number>();
   for (const i of order) {
     const c = list[i];
     if (kept.some((k) => dot(k.story.centroid, c.story.centroid) >= NEAR_REPEAT)) continue;
     if (c.topics.some((t) => CAPS[t] !== undefined && (perTopic.get(t) ?? 0) >= CAPS[t]!)) continue;
+    if ((perOutlet.get(c.rep.source_id) ?? 0) >= PER_OUTLET) continue;
+    perOutlet.set(c.rep.source_id, (perOutlet.get(c.rep.source_id) ?? 0) + 1);
     for (const t of c.topics) perTopic.set(t, (perTopic.get(t) ?? 0) + 1);
     kept.push(c);
     if (kept.length === BRIEF_SIZE) break;

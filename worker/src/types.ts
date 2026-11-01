@@ -88,7 +88,8 @@ export interface AiItem {
   e?: string;
 }
 
-export const AI_VERSION = 1;
+/** Bumped when labels must be redone; 2 (Nov 1, 2026): US politics no longer includes Indian politics. */
+export const AI_VERSION = 2;
 
 export interface AiStore {
   v: number;

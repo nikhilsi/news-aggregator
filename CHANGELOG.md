@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.1] - 2026-11-01 - Today: at most 2 stories per outlet; US politics labels
+
+### Fixed
+- The first live brief gave CNBC 5 of 10 slots, 4 of them market commentary, and left out India, Seattle and US politics. Today now takes at most 2 stories from one outlet (enforced after the editor's picks and stated in its prompt). On the same shortlist this brings in India's opposition rally, Cyclone Murasu and Alaska Air's 125 Washington job cuts.
+- 17 of the 79 stories labeled US politics were Indian or UK politics (9 about the INDIA bloc rally), so they used up Today's 2 US politics slots. The label prompt now says US politics means the United States only, including Washington state, and a story labeled India is never also US politics. Relabeling all 756 stored articles with the real model: no Indian politics story kept the US politics label, and Washington voting stories gained Seattle. Replayed on the same data, Today now carries the Michigan Senate race in all 3 runs.
+- The AI store version goes to 2, so every stored label is redone after the deploy. Today shows Latest for the few minutes that takes.
+
+---
+
 ## [3.3.0] - 2026-11-01 - Today brief (#414 step 2)
 
 ### Added

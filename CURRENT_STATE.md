@@ -20,7 +20,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader**: Mozilla Readability on linkedom, sanitize-html with the old nh3 allowlist, SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
 - **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 93 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Tests**: 95 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
