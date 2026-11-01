@@ -6,19 +6,21 @@ The web frontend for the news aggregator. A clean, responsive news reader with c
 
 ```bash
 cd web
-cp .env.example .env.local    # Points to backend API
 npm install
-npm run dev                    # Port 3000
+NEXT_PUBLIC_API_URL=/api/v1 npx next build   # static export to web/out
 ```
 
-Requires the backend running on port 8000 (`cd backend && uvicorn app.main:app --port 8000`).
+The site is a static export (`output: 'export'`) served by the Cloudflare Worker in `worker/`, which also serves the API on the same origin. To run it locally, build it, then `cd ../worker && npm run dev`. `npm run dev` here also works against the live API if `NEXT_PUBLIC_API_URL` points to `https://getclearnews.com/api/v1`.
 
 ## Pages
 
 | Route | Page | Description |
-|-------|------|-------------|
+|-|-|-|
 | `/` | Home | Article feed with category tabs, search, infinite scroll |
-| `/article` | Reader | Standalone reader view (fallback for direct URL access) |
+| `/article` | Reader | Standalone reader view (shared links: `/article?url=...`) |
+| `/about` | About | Static page |
+
+`/privacy` and `/support` are plain HTML in `public/` (opened from the apps' About screens). There is no analytics.
 
 ## Folder Structure
 
@@ -74,7 +76,7 @@ web/src/
 ## Dependencies
 
 | Package | Purpose |
-|---------|---------|
+|-|-|
 | next | React framework (App Router) |
 | react / react-dom | UI library |
 | tailwindcss | Utility-first CSS |

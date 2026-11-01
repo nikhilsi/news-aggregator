@@ -1,5 +1,41 @@
 # Changelog
 
+## [3.0.0] - 2026-11-01 - Move to Cloudflare
+
+### Changed
+- **Hosting**: the site and API moved from the DigitalOcean droplet to one Cloudflare Worker, `clearnews` (task #400). Switchover at 17:02 UTC; the droplet and its DigitalOcean project were deleted the same day. Architecture: `docs/cloudflare-architecture.md`; commands: `docs/deploy-runbook.md`.
+- **API**: rewritten in TypeScript (Hono) with the same paths, parameters, JSON fields, key order, 422 bodies and Cache-Control, so the iOS 2.0 and Android apps work unchanged. Checked with a decoder sweep built from the iOS app's own model files and a contract diff against the droplet.
+- **Feed refresh**: a Cron Trigger every minute, run from a Durable Object pinned to Western North America, writes the merged lists to Workers KV. Replaces the in-process cache, warmup and 25 s loop. Requests only read KV.
+- **Web**: Next.js 16.1.6 to 16.4.3 as a static export served by the Worker; no Next server runs. `/privacy` and `/support` moved to `web/public/`.
+- **Security headers**: the hardened v2.0.0 set (no `'unsafe-eval'`, Referrer-Policy, Permissions-Policy). The droplet's nginx had never received it.
+
+### Removed
+- **Google Analytics** (it never worked: the site's CSP blocked it; the privacy page promises no analytics).
+- **FMP** financial API (subscription lapsed; HTTP 402). Finance now comes from CNBC, BBC Business and The Guardian Business.
+- **Backend and deployment code**: `backend/`, `deployment/`, `scripts/`, Docker files (in git history).
+- **MyNorthwest, KING 5, The Seattle Times**: all three refuse Cloudflare. KIRO 7 replaces them in Local.
+
+### Fixed
+- An undated article could make a tab return 500 (now sorted last).
+- A failed feed fetch emptied that source for 15 minutes (now keeps its last good articles for up to 24 hours).
+- A feed answering "not modified" forever kept stale items (FMP served Oct 22 items for ten days); every feed now gets a full fetch at least daily.
+- Partial first-load pages and error responses were cacheable for 5 minutes.
+- Reader: SSRF checks now run on every redirect hop, with a byte cap.
+- Sunny Skyz headlines showed garbled quotes; NDTV summaries showed photo captions; some summaries ending near a bare "&" came out empty.
+
+### Added
+- `GET /api/v1/status`: feed build time and per-source status.
+- Good News Network, AP News, Seattle Eater and Frommer's now load (they were blocked on the droplet).
+
+---
+
+## [2.2.0] - 2026-06-09 - SEO and identity
+
+### Added
+- Page metadata, JSON-LD, OG and Twitter cards with a social card image, a footer, and an `/about` page (commit `8d51f0a`). The Google Analytics tag added then was blocked by the CSP and removed in 3.0.0.
+
+---
+
 ## [2.1.0] - 2026-03-07 — Android App + Smart Sharing
 
 ### Added

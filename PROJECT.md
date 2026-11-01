@@ -1,5 +1,7 @@
 # News Aggregator - Project Documentation
 
+> **Since Nov 1, 2026 ClearNews runs on one Cloudflare Worker.** Current architecture, API contract and decisions: [docs/cloudflare-architecture.md](docs/cloudflare-architecture.md). This file keeps the product idea, data model, dedup and sorting rules (unchanged by the move) and the design history.
+
 ## Overview
 
 A personal news aggregator that pulls from multiple sources (RSS feeds, News APIs, Financial APIs) and presents them through a clean, filterable interface. Built for personal use by the owner and shared with family and friends.
@@ -11,83 +13,52 @@ The core idea: a single place to consume news without clickbait, ad overload, an
 ## Tech Stack
 
 | Layer | Technology | Notes |
-|-------|-----------|-------|
-| **Backend** | Python 3.12+ / FastAPI | REST API serving both web and mobile clients |
-| **Database** | None (stateless) | All data is in-memory article cache — no persistent storage needed |
-| **Article Cache** | In-memory (Python dict) | Transient article cache with per-source TTL |
-| **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Standalone output for Docker, dark mode, infinite scroll |
-| **iOS App** | Swift / SwiftUI | Native iOS app, 22 files, zero packages, @Observable + .environment() |
-| **Android App** | Kotlin 2.1 / Jetpack Compose / Material 3 | Native Android app, 22 files, OkHttp + kotlinx.serialization + Coil 3 |
-| **Deployment** | DigitalOcean Droplet / Docker Compose | Dedicated droplet, nginx reverse proxy, Let's Encrypt SSL |
+|-|-|-|
+| **API and feed refresh** | TypeScript / Hono on a Cloudflare Worker | Cron Trigger every minute, run from a Durable Object pinned to Western North America |
+| **Storage** | Workers KV | Two values: per-source state and the merged lists; written only by the cron |
+| **Web Frontend** | Next.js 16 (React 19) / Tailwind CSS v4 | Static export served by the Worker |
+| **iOS App** | Swift / SwiftUI | Native iOS app, zero packages, @Observable + .environment() |
+| **Android App** | Kotlin 2.1 / Jetpack Compose / Material 3 | OkHttp + kotlinx.serialization + Coil 3 |
+| **Hosting** | Cloudflare Workers (OmSpark account) | Until Nov 1, 2026: a DigitalOcean droplet with Docker Compose, FastAPI and nginx |
 | **CI/CD** | GitHub Actions | Tag-triggered Android APK + AAB release |
 
 ---
 
 ## Architecture
 
-### High-Level Diagram
-
 ```
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Next.js    │  │   iOS App    │  │ Android App  │
-│   Web App    │  │   (SwiftUI)  │  │  (Compose)   │
-└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-       │                 │                 │
-       └────────┬────────┴─────────────────┘
-                │
-                ▼
-       ┌────────────────┐
-       │   FastAPI       │
-       │   Backend       │
-       │                 │
-       │  ┌───────────┐  │
-       │  │ In-Memory  │  │
-       │  │  Cache     │  │
-       │  └───────────┘  │
-       └────────┬────────┘
-                │
-        ┌───────┼───────────────┐
-        │       │               │
-        ▼       ▼               ▼
-   ┌────────┐ ┌──────────┐ ┌──────────┐
-   │  RSS   │ │  News    │ │ Financial│
-   │ Feeds  │ │  APIs    │ │   APIs   │
-   └────────┘ └──────────┘ └──────────┘
+Next.js site    iOS app    Android app
+      \            |            /
+       └──── https://getclearnews.com ────┘
+                     │
+              Worker "clearnews"
+       site (static files) + /api/v1/* + /health
+                     │ reads
+                Workers KV  <── writes ── Cron Trigger (every minute)
+                                            │
+                              Durable Object "Refresher" (Western North America)
+                                            │ fetches
+                                  RSS feeds, og:image pages
 ```
 
 ### Data Flow
 
-1. **User opens app** (web, iOS, or Android)
-2. **Client requests articles** from FastAPI backend (e.g., `GET /articles?category=tech`)
-3. **Backend checks in-memory cache** — if cached articles exist for the source and TTL has not expired, return cached data
-4. **If cache is stale or empty** — backend fetches from configured sources (RSS feeds, Financial APIs). Cold cache uses a 3-second deadline: returns whatever sources completed, remaining continue in background.
-5. **Backend normalizes** all responses into a common article structure
-6. **Backend backfills missing images** by fetching og:image from article pages
-7. **Backend caches** the fully enriched articles in memory with a timestamp
-8. **Backend applies deduplication** (URL exact match + title keyword overlap at 0.6 threshold)
-9. **Backend applies two-tier sorting** — diverse top section, then chronological (see Sorting section)
-10. **Backend returns** filtered, sorted articles to the client
+1. **Every minute** the cron hands a run to the Refresher. It refetches every source whose last check is 15 minutes old (conditional GETs), normalizes the items, looks up missing og:images, and checks every article against the output gate.
+2. **When any source changed**, it builds every tab's list (non-Latin filter except India, dedup, two-tier sort) and stores the result in KV, then the per-source state.
+3. **A client asks** for `GET /api/v1/articles?category=tech`. The Worker reads the stored list for that tab, applies search, and returns one page. Nothing is fetched on the request path.
+4. **The reader** fetches one article page on demand (SSRF checks on every redirect hop), extracts the main text with Mozilla Readability, and sanitizes it.
 
-**Background tasks**: Two `asyncio` tasks run in the app lifespan alongside user requests:
-1. **Startup warmup** — pre-fetches all 41 sources on server start (~11s). One-time task.
-2. **Background refresh loop** — continuously refreshes the stalest expired source every ~25 seconds, one at a time. Full cycle through all sources ~17 minutes. Keeps cache perpetually warm so user requests always hit fresh data. Exception-safe with 30s hard timeout per fetch.
-
-Cache TTL is configurable per-source (default: 15 minutes). SWR caching (24h stale window) ensures users almost never wait for cold fetches. When they do (>24h gap), the progressive response returns partial data in ~3s instead of blocking for all sources.
-
-**Conditional HTTP requests**: RSS and FMP fetchers store `ETag` and `Last-Modified` response headers per source. On subsequent fetches, they send `If-None-Match` / `If-Modified-Since` headers. Feeds that haven't changed return `304 Not Modified` — the cache TTL is extended without re-parsing XML, saving CPU and bandwidth.
-
-**Thread pool offloading**: CPU-bound operations (feedparser XML parsing, readability/trafilatura content extraction, article deduplication) are offloaded to Python's thread pool via `asyncio.to_thread()`. This keeps the async event loop free to handle concurrent requests on the single-vCPU production server.
+Details and the reasons behind each choice: [docs/cloudflare-architecture.md](docs/cloudflare-architecture.md). Until Nov 1, 2026 a FastAPI backend fetched sources on demand with an in-memory stale-while-revalidate cache and a 25-second refresh loop.
 
 ---
 
 ## Security
 
-- **SSRF protection** — reader endpoint validates URLs before fetching: blocks private IPs, loopback, link-local, reserved addresses, DNS rebinding prevention, HTTP(S)-only schemes
-- **HTML sanitization** — two-layer defense: backend uses nh3 (Rust-powered allowlist sanitizer), web frontend adds DOMPurify client-side, iOS and Android use Content Security Policy in WebView
-- **No authentication** — public read-only API. No user accounts, no passwords, no tokens, no database. All data is transient article cache.
-- **Nginx security headers** — HSTS, CSP, Referrer-Policy, Permissions-Policy, X-Content-Type-Options, X-Frame-Options, server_tokens off
-- **Docker hardening** — non-root users, multi-stage builds, .dockerignore, pinned base images, container resource limits
-- **Rate limiting** — nginx rate limits on all API endpoints (10 req/s per IP)
+- **SSRF protection**: the reader checks the URL and every redirect hop (scheme, no credentials, no IP literals or local names, DNS over HTTPS answers checked against private and special ranges), with a 15 s timeout and a 3 MB cap
+- **HTML sanitization**: two layers. The Worker uses sanitize-html with an allowlist; the web adds DOMPurify; iOS and Android use a Content Security Policy in their WebViews
+- **No authentication**: public read-only API. No accounts, passwords, tokens or database, and no secrets in the Worker
+- **Security headers** on every response, set by the Worker: HSTS, CSP (no `'unsafe-eval'`), Referrer-Policy, Permissions-Policy, X-Content-Type-Options, X-Frame-Options
+- **Rate limiting**: Cloudflare Rate Limiting binding, 100 requests per 10 s per IP on the API, 20 per minute on the reader
 
 ---
 
@@ -104,7 +75,7 @@ Articles are transient cached data, stored in memory only. The structure below i
     "content": str | None,      # Full article content (extracted for reader view)
     "url": str,                 # Original source URL (used as unique identifier)
     "image_url": str | None,    # Thumbnail/hero image
-    "source_id": str,           # Source ID from sources.yaml
+    "source_id": str,           # Source ID from worker/src/sources.ts
     "source_name": str,         # e.g., "Ars Technica", "Good News Network"
     "source_type": str,         # "rss" | "news_api" | "financial_api"
     "category": str,            # Category from source config
@@ -124,18 +95,18 @@ Source-type fetchers may preserve additional fields from the raw response. The a
 - `science` — Science & discovery
 - `tech` — Technology & gadgets
 - `entertainment` — Culture, movies, music, gaming
-- `finance` — Markets, stocks, business (powered by FMP)
+- `finance` — Markets, stocks, business (CNBC, BBC Business, The Guardian Business since Nov 2026)
 - `health` — Health & wellness
 - `sports` — Sports news
 - `offbeat` — Weird, wonderful, unusual stories
 - `travel` — Travel news, guides, destinations
 - `india` — India news from major English-language outlets
 
-Categories are assigned based on source configuration. A single source maps to one primary category. The category list is defined in the `categories` section of `backend/sources.yaml` — new categories must be added there.
+Categories are assigned based on source configuration. A single source maps to one primary category. The category list is `CATEGORIES` in `worker/src/sources.ts`; new categories must be added there.
 
 ### Source Configuration
 
-Sources are defined in `backend/sources.yaml`. See that file for the full list. Each source has:
+Sources are defined in `worker/src/sources.ts`. Each source has (the TypeScript names differ slightly: `isCuratedPositive`, and one 15 minute refresh interval for all):
 
 ```python
 {
@@ -155,16 +126,13 @@ Sources are defined in `backend/sources.yaml`. See that file for the full list. 
 
 ## Source Registry
 
-Sources are defined in `backend/sources.yaml`. This makes it easy to add, remove, or toggle sources without code changes.
+Sources are defined in `worker/src/sources.ts`. Adding, removing or disabling a source is a one-line change there plus a deploy.
 
-**Current sources:** 48 total (39 RSS + 2 Financial API enabled, 7 disabled). See `backend/sources.yaml` for the full list with URLs.
+**Current sources:** 42 RSS feeds enabled across 13 categories (list in CURRENT_STATE.md).
 
-**Source types and how they're fetched:**
-- **RSS** (`type: rss`) — Parsed with `feedparser`. One fetcher handles all RSS feeds with normalization for field variations (images, dates, summaries differ across feeds). Includes og:image backfill for feeds without embedded images. Supports conditional requests (ETag/Last-Modified → 304 Not Modified).
-- **News API** (`type: news_api`) — WorldNewsAPI. Not yet implemented (disabled).
-- **Financial API** (`type: financial_api`) — FMP (Financial Modeling Prep). Two endpoints: general-latest (aggregated news from WSJ, CNBC, Bloomberg) and fmp-articles (FMP's own market analysis). Dedicated fetcher (`fmp_fetcher.py`). Supports conditional requests.
+**How they're fetched:** one RSS and Atom path (feedsmith) with normalization for field variations (images, dates, summaries), og:image lookups for items without images, and conditional requests (ETag, Last-Modified).
 
-**Disabled sources:** WorldNewsAPI (not implemented), 5 Google News feeds (disabled for performance — each article required 2 HTTP round-trips to resolve redirect URLs), Smithsonian Magazine (403 from production server IP).
+**Off:** MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to YouTube), Smithsonian (403 to the old droplet), five Google News feeds (each article needed two round trips to resolve), WorldNewsAPI (never built). FMP (financial API) was removed in Nov 2026 when its subscription lapsed.
 
 ---
 
@@ -185,7 +153,7 @@ GET    /api/v1/articles/reader     # Extract clean article content for reader vi
 #### Query Parameters for `GET /api/v1/articles`
 
 | Param | Type | Default | Description |
-|-------|------|---------|-------------|
+|-|-|-|-|
 | `category` | string | `all` | Filter by category |
 | `source` | string | `null` | Filter by specific source ID |
 | `search` | string | `null` | Keyword search in title/summary |
@@ -238,20 +206,15 @@ Uses readability-lxml (primary) with trafilatura fallback to extract clean artic
 
 ## Caching Strategy
 
-- **Cache layer:** In-memory Python dict (no database — articles are transient)
-- **Cache key:** Source ID
-- **Default TTL:** 15 minutes (configurable per-source in `sources.yaml`)
-- **Stale-while-revalidate (SWR):** Three-state cache with background refresh
-  - **HIT** (fresh, < TTL): return immediately
-  - **STALE** (TTL to 96x TTL, e.g., 15min-24h): serve stale data instantly, kick off background refresh via `asyncio.create_task()`
-  - **MISS** (> 96x TTL or never fetched): fetch with 3s deadline (progressive response)
-- **Progressive cold-cache response:** On MISS, uses `asyncio.wait` with a 3-second deadline instead of blocking for all sources. Returns whatever is ready (`complete: false`), remaining sources continue in a fire-and-forget background task. Clients auto-retry after 3s. Typical: ~900 articles in 3-4s vs ~1700 in 10-12s.
-- **Non-blocking refresh:** `?refresh=true` returns cached articles immediately with `complete: false` and triggers a background refresh of all sources. Clients auto-retry after 3s to pick up fresh data. Decouples "serve to user" from "fetch from upstream" — same pattern used by Feedly, Apple News, and other production aggregators.
-- **Background refresh loop:** `asyncio` task picks the stalest expired source every ~25 seconds and refreshes it one at a time. Full cycle ~17 minutes. Keeps cache perpetually warm so user requests always hit fresh data. Exception-safe (catches all errors, never crashes), 30s hard timeout per fetch, waits for warmup to complete before starting.
-- **Conditional HTTP requests:** RSS and FMP fetchers store `ETag` / `Last-Modified` response headers per source. On subsequent requests, send `If-None-Match` / `If-Modified-Since`. Feeds returning `304 Not Modified` skip parsing entirely — cache TTL is extended in place. Reduces bandwidth and CPU.
-- **Startup warmup:** On server start, all enabled sources pre-fetched as background task (~11s). First user request hits warm cache.
-- **HTTP Cache-Control:** Backend middleware sets response headers — articles (5min), categories/sources (5min), refresh requests (no-store). Browsers and URLSession cache natively.
-- **No eviction logic needed** — stale entries are overwritten on next fetch
+Since Nov 1, 2026 (docs/cloudflare-architecture.md section 4):
+
+- **No request-time fetching.** A Cron Trigger runs every minute. It refetches every source whose last check is 15 minutes old, with conditional GETs (ETag, Last-Modified), and retries a failed source after 5 minutes.
+- **Stored in Workers KV**: `state` (per source: validators, times, status, normalized articles, og:image lookups) and `feed` (every tab's list, deduped and sorted, built when any source changes).
+- **A failed source keeps its last good articles** for up to 24 hours, then they are dropped.
+- **Every feed gets a full fetch at least daily**, so a server that keeps answering 304 cannot pin old items.
+- **HTTP Cache-Control**: `public, max-age=300` on articles, categories and sources; `no-store` on `refresh=true`, partial pages and errors.
+
+Before the move the backend kept an in-memory stale-while-revalidate cache per source (15 minute TTL, 24 hour stale window), warmed it at startup, and refreshed the stalest source every 25 seconds.
 
 ---
 
@@ -289,123 +252,39 @@ Implementation: `app/articles/service.py` — `_tiered_sort()` function.
 
 ```
 news-aggregator/
-├── README.md
-├── PROJECT.md                      # This file
-├── CLAUDE.md                       # Claude Code development guide
-├── CURRENT_STATE.md                # Build status tracker
-├── NOW.md                          # Current priorities
-├── CHANGELOG.md                    # Version history
-│
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                 # FastAPI app entry point, middleware, lifespan
-│   │   ├── config.py               # App configuration, env vars
-│   │   ├── logging_config.py       # Logging setup (text format)
-│   │   ├── cache.py                # In-memory SWR article cache
-│   │   │
-│   │   ├── articles/
-│   │   │   ├── router.py           # Article endpoints
-│   │   │   ├── service.py          # Business logic — fetch, cache, filter
-│   │   │   └── reader.py           # Content extraction for reader view (SSRF-protected, nh3 sanitization)
-│   │   │
-│   │   ├── sources/
-│   │   │   ├── router.py           # Source/category endpoints
-│   │   │   ├── registry.py         # Load and manage source configs
-│   │   │   ├── rss_fetcher.py      # RSS feed parser + og:image backfill
-│   │   │   └── fmp_fetcher.py      # FMP financial API fetcher (general news + market analysis)
-│   │   │
-│   │   └── common/
-│   │       └── schemas.py          # Pydantic schemas (API response shapes)
-│   │
-│   ├── sources.yaml                # Source registry configuration
-│   ├── requirements.txt
-│   ├── .env.example
-│   └── Dockerfile
-│
-├── web/                            # Next.js web frontend
-├── ios/                            # SwiftUI iOS app
-│   └── ClearNews/ClearNews/ClearNews/
-│       ├── ClearNewsApp.swift      # @main entry, services, .environment()
-│       ├── ContentView.swift       # TabView (Home + Settings)
-│       ├── Models/                 # Article, ReaderContent, Category
-│       ├── Services/               # APIClient, ArticleService, CategoryService
-│       ├── Settings/               # AppSettings (appearance, font scale)
-│       ├── Views/Home/             # HomeView, ArticleListView, ArticleCardView, CategoryTabsView
-│       ├── Views/Reader/           # ReaderView, ReaderWebView (WKWebView)
-│       ├── Views/Settings/         # SettingsView, AboutView
-│       ├── Views/Shared/           # ErrorView, EmptyStateView, RelativeTimeText, SkeletonView
-│       └── Utilities/              # Constants
+├── worker/                         # Cloudflare Worker (TypeScript)
+│   ├── src/index.ts                # Entry: routing, headers, www redirect, cron
+│   ├── src/api.ts                  # /health and /api/v1/* (Hono)
+│   ├── src/cron.ts                 # Feed refresh run
+│   ├── src/refresher.ts            # Durable Object pinned to Western North America
+│   ├── src/sources.ts              # Source registry (categories and sources)
+│   ├── src/feeds/                  # Fetch, parse (feedsmith), normalize, dates, text
+│   ├── src/pipeline/               # Non-Latin filter, dedup, two-tier sort, output gate
+│   ├── src/reader/                 # Reader extraction, sanitizer, SSRF checks
+│   ├── test/                       # Vitest in the Workers runtime
+│   ├── scripts/                    # deploy, verify, contract-diff, sweep, cutover
+│   └── wrangler.jsonc
+├── web/                            # Next.js site (static export)
+├── ios/ClearNews/                  # SwiftUI iOS app
 ├── android/ClearNews/              # Kotlin + Jetpack Compose Android app
-│   └── app/src/main/java/com/nikhilsi/clearnews/
-│       ├── MainActivity.kt         # Single activity, edge-to-edge
-│       ├── model/                   # Article, Category, ReaderContent
-│       ├── data/                    # ApiClient (OkHttp + kotlinx.serialization)
-│       ├── viewmodel/               # ClearNewsViewModel (StateFlow)
-│       ├── theme/                   # Material 3 theme (light/dark/system)
-│       ├── ui/home/                 # HomeScreen, ArticleCard, CategoryTabs
-│       ├── ui/reader/               # ReaderScreen (WebView, CSP, dark mode CSS)
-│       ├── ui/settings/             # SettingsScreen, AboutScreen
-│       └── util/                    # RelativeTime, HapticManager, ShareUtils
-├── .github/workflows/              # CI/CD (Android release on tag push)
-├── fastlane/                       # F-Droid metadata
-├── fdroid/                         # F-Droid build recipe
-├── docs/                           # Architecture & planning docs
-├── deployment/
-│   ├── docker/                     # Dockerfiles + docker-compose.prod.yml
-│   ├── nginx/                      # Host-level nginx config
-│   ├── scripts/                    # setup.sh, deploy.sh, etc.
-│   └── .env.production.example     # Production env template
-└── scripts/                        # Local dev restart scripts
+├── docs/                           # Architecture, runbook, reviews, plans
+├── .github/workflows/              # Android release
+└── fastlane/, fdroid/              # Android store metadata
 ```
 
 ---
 
 ## Environment Variables
 
-```bash
-# Backend
-FMP_API_KEY=<your-key>
-WORLD_NEWS_API_KEY=<your-key>              # Optional — not yet integrated
-CACHE_TTL_MINUTES=15
-CORS_ORIGINS=https://getclearnews.com      # Production only
-
-# Web Frontend
-NEXT_PUBLIC_API_URL=https://your-api-domain.com/api/v1
-```
+None. The Worker has no secrets. The site is built with `NEXT_PUBLIC_API_URL=/api/v1` (same origin). The deploy token lives in `~/.secrets/cloudflare/clearnews.env` on the Mac (docs/deploy-runbook.md).
 
 ---
 
 ## Deployment
 
-### Production (DigitalOcean Droplet)
+Cloudflare Workers on the OmSpark account, Worker `clearnews`, custom domains `getclearnews.com` and `www.getclearnews.com`. Deploy with `npm run deploy` in `worker/`; it builds the site, runs the tests, scans the upload and deploys. Checks, rollback and the switchover record: [docs/deploy-runbook.md](docs/deploy-runbook.md).
 
-- **Domain**: getclearnews.com
-- **Host**: DigitalOcean Droplet (Ubuntu 24.04, $6/mo, sfo3)
-- **Reverse proxy**: Nginx (host-level) handles SSL termination, rate limiting, routing
-- **Containers**: Docker Compose with two services
-  - Backend: FastAPI on Uvicorn (port 8000, localhost only)
-  - Frontend: Next.js standalone (port 3000, localhost only)
-- **SSL**: Let's Encrypt with certbot auto-renewal
-- **Stateless**: No database — all data is in-memory article cache. Logs bind-mounted to `/opt/app/logs/`
-- **Security**: UFW firewall, fail2ban, rate limiting, non-root container users, comprehensive security headers, container resource limits, multi-stage builds, .dockerignore
-- **Deploy script**: Auto-cleans Docker build cache and old images after every deploy to prevent disk bloat
-
-```
-Internet → Nginx (SSL + rate limiting)
-              ├── /api/* → Backend container (port 8000)
-              └── /*     → Frontend container (port 3000)
-```
-
-See [deployment/README.md](deployment/README.md) for setup and deploy instructions.
-
-### iOS App (built)
-
-- Native SwiftUI app, 26 Swift files, zero external dependencies
-- Built and tested locally via Xcode
-- Points to production API (https://getclearnews.com/api/v1) by default
-- Distributed via TestFlight for family/friends (requires Apple Developer account — $99/year)
-- See [ios/README.md](ios/README.md) for app architecture and structure
+Until Nov 1, 2026 ClearNews ran on a $6 DigitalOcean droplet (Ubuntu, Docker Compose with FastAPI and Next.js, host nginx, Let's Encrypt). That code is in git history before commit `638b95a`.
 
 ---
 

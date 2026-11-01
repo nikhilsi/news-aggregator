@@ -14,7 +14,7 @@
 3. **PROJECT.md** - Full architecture, tech stack, data model, API design, source registry
 4. **CURRENT_STATE.md** - What's built & current status
 5. **CHANGELOG.md** - Version history & recent changes
-6. **backend/README.md** - API endpoints, services, folder structure
+6. **docs/cloudflare-architecture.md** - How the Worker, cron, storage and reader work; the API contract the apps rely on
 7. **web/README.md** - Pages, components, hooks
 8. **NOW.md** - What to work on next
 9. **`git log --oneline -10`** - Recent commits
@@ -74,7 +74,7 @@
 
 ## 🏗️ Architecture Summary
 
-**This is a personal news aggregator with three clients sharing one backend.**
+**This is a personal news aggregator with three clients sharing one Cloudflare Worker.**
 
 ```
 Next.js Web App    ──┐
@@ -97,7 +97,7 @@ Android Compose App ─┘     (site, API, cron; KV)
 ## 🗄️ Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|-|-|
 | API and cron | TypeScript / Hono on Cloudflare Workers |
 | Storage | Workers KV (written only by the Cron Trigger) |
 | Web Frontend | Next.js (React) / Tailwind |
@@ -133,7 +133,8 @@ cd worker && npm test && npm run dev
 - **CHANGELOG.md** - Version history
 
 **Folder READMEs:**
-- **backend/README.md** - API endpoints, services, folder structure
+- **docs/cloudflare-architecture.md** - Architecture on Cloudflare
+- **docs/deploy-runbook.md** - Deploy, checks, rollback
 - **web/README.md** - Pages, components, hooks, styling
 - **ios/README.md** - SwiftUI app structure
 

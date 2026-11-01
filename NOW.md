@@ -1,43 +1,21 @@
-# NOW — Current Priorities
+# NOW: Current Priorities
 
-**Last Updated**: March 7, 2026
+**Last Updated**: November 1, 2026
 
-## Completed Phases
+## Now
 
-- **Phase 1: Backend** — `done` — FastAPI, sources, reader view, dedup, caching
-- **Phase 2: Web Frontend** — `done` — Next.js, article feed, reader modal overlay, dark mode, search (v0.7.0)
-- **Phase 3: Deployment** — `done` — Live at getclearnews.com, Docker Compose, nginx, SSL, firewall
-- **Phase 4: iOS App** — `done` — SwiftUI, full feature parity with web (v1.0.0)
-- **Phase 5: Performance** — `done` — SWR cache, startup warmup, force refresh, Cache-Control headers, web timeout/retry/refresh button (v1.1.0 + v1.2.0)
-- **Phase 6: Async optimization** — `done` — Thread pool offloading for CPU-bound ops, dedup algorithm optimization, Docker cleanup (v1.3.0)
-- **Phase 7: Source expansion + sorting** — `done` — Disabled Google News (performance), added 20 new RSS sources, 5 new categories (general, local, travel, india, offbeat expanded), simplified logging, two-tier article sorting (v1.4.0)
-- **Phase 8: Cold cache performance** — `done` — Extended SWR stale window to 24h, progressive response with 3s deadline, dedup bucketed by category, categories moved to sources.yaml, Cache-Control fix (v1.6.0)
-- **Phase 9: App Store submission** — `done` — Code hardened (v1.7.0), build uploaded, metadata/screenshots pushed via API, TestFlight tested, app live on App Store
-- **Phase 10: Content filtering** — `done` — India Today visual stories (ad) filter, non-Latin article filter for non-India tabs (v1.8.0)
-- **Phase 11: Refresh performance** — `done` — Non-blocking refresh, background refresh loop, conditional HTTP requests with ETag/Last-Modified (v1.9.0)
-- **Phase 12: Security hardening + auth removal** — `done` — Comprehensive code review, SSRF protection, nh3 HTML sanitization, DOMPurify client-side, iOS WebView CSP, @MainActor concurrency, .dockerignore, multi-stage Docker builds, nginx security headers, auth system removed (v2.0.0)
-- **Phase 13: Android app** — `done` — Kotlin + Jetpack Compose, full feature parity with iOS, smart sharing, GitHub Actions CI/CD, F-Droid metadata (v2.1.0)
+1. **India tab cleanup** (#413): switch Times of India to its India-only feed, keep each source's newest ~30 items, drop items older than a few days, filter roundup and junk posts (Scroll "Rush Hour", The Hindu "Mail - ... edition"), and fix the `strip_html` spacing (O17). Show before and after numbers on the live India tab.
+2. **AI step design doc** (#414): group repeated stories by meaning ("covered by N outlets") and filter fluff (shopping deals, quizzes, horoscopes) in the cron, the same for every reader, no tracking. Costs first, then build.
 
-See CHANGELOG.md for version history. See CURRENT_STATE.md for full feature inventory.
+## Done
 
----
+- **Phase 1 to 13** (Feb to Mar 2026): backend, web, deployment, iOS app (App Store), performance, source expansion, content filtering, security hardening, Android app. History in CHANGELOG.md.
+- **SEO and identity** (Jun 9, 2026): metadata, JSON-LD, footer, `/about`, OG card.
+- **Move to Cloudflare** (Nov 1, 2026, #400): TypeScript Worker with a cron feed refresh, static site, GA removed, FMP replaced by RSS finance feeds, droplet deleted. See CURRENT_STATE.md.
 
-## Future Enhancements
+## Later
 
-### Backend
-- **Sentiment filter** — Add sentiment scores to articles. Options: HuggingFace model (FinBERT or general sentiment), or WorldNewsAPI.
-- **Additional source types** — NewsAPI fetcher (WorldNewsAPI)
-- **Trending topics** — Google Trends RSS, Wikipedia most-read, Hacker News top stories as trend signals
-
-### Web Frontend
-- **SSR** — Server-side rendering for SEO and link previews.
-- **Smart sharing** — Match Android's formatted share text with ClearNews reader link.
-
-### iOS App
-- **Smart sharing** — Match Android's formatted share text with ClearNews reader link.
-- **Image caching** — NSCache-based image cache if AsyncImage flicker becomes noticeable on fast scrolling.
-- **iPad optimization** — NavigationSplitView for iPad-specific layout.
-
-### Android App
-- **F-Droid approval** — MR submitted ([#34426](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/34426)), awaiting review.
-- **Image caching tuning** — Coil disk cache size configuration if needed.
+- **On-device controls** (needs an iOS release): mute a source or topic, "less like this", stored and applied on the phone.
+- **Web smart sharing**: match Android's formatted share text with a ClearNews reader link.
+- **iOS**: smart sharing, image caching if AsyncImage flicker shows, iPad layout.
+- **Stale-feed alert**: open question with Nikhil (lean: a daily GitHub Actions check that fails when `/api/v1/status` shows a stale feed).
