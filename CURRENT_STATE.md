@@ -46,7 +46,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 ### Sources (42 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
 | Category | Sources | Count |
 |-|-|-|
-| General | AP News, Fox News | 2 |
+| General | Fox News, NPR News (kept balanced right and left) | 2 |
 | Local (Seattle) | GeekWire, Seattle Eater, Crosscut, KIRO 7 | 4 |
 | Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
 | Science | Ars Technica Science, NASA, New Scientist, Scientific American | 4 |
@@ -59,13 +59,12 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 | Travel | Condé Nast Traveler, The Guardian Travel, Matador Network, Frommer's | 4 |
 | India | BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu | 6 |
 
-Good News Network, AP News, Seattle Eater and Frommer's were blocked on the droplet and work from Cloudflare.
+Good News Network, Seattle Eater and Frommer's were blocked on the droplet and work from Cloudflare. Hindi headlines are hidden in every tab.
 
-**Off:** MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Smithsonian (403 to the droplet; not retested), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
+**Off:** AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Smithsonian (403 to the droplet; not retested), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
 
 ## Known Issues
 - **Same story from several outlets** (#414): merging by meaning is the AI step; the India cleanup (#413, 3.1.0) cut the tab from 343 to 129 articles.
-- **AP News** (via feedx) stopped updating in September; General shows Fox News only until a replacement is chosen.
 - **The apps' About screens** say "financial news APIs" until their next release.
 
 ## What's Next

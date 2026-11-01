@@ -150,11 +150,11 @@ export function tieredSort(articles: Article[], category: string): Article[] {
 
 /**
  * The list for one tab, as get_articles built it per request: the given
- * sources' articles in sources order, the non-Latin filter (not for india),
- * dedup, then the two-tier sort for `category`.
+ * sources' articles in sources order, the non-Latin filter, dedup, then the
+ * two-tier sort for `category`. Until Nov 1, 2026 the India tab kept
+ * non-Latin (Hindi) titles; Nikhil chose to hide them there too (#413).
  */
 export function mergeForTab(perSource: Article[][], category: string): Article[] {
-  let all = perSource.flat();
-  if (category !== 'india') all = all.filter((a) => !isNonLatin(a.title));
+  const all = perSource.flat().filter((a) => !isNonLatin(a.title));
   return tieredSort(deduplicate(all), category);
 }

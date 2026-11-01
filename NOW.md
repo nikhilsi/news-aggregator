@@ -4,7 +4,7 @@
 
 ## Now
 
-1. **India tab cleanup** (#413): shipped as 3.1.0 (343 to 129 articles). Open: Hindi stories in the India tab, and a replacement for the dead AP feed.
+1. **India tab cleanup** (#413): shipped as 3.1.0 (343 to 123 articles, Hindi hidden, NPR News replaces the dead AP copy).
 2. **AI step design doc** (#414): group repeated stories by meaning ("covered by N outlets") and filter fluff (shopping deals, quizzes, horoscopes) in the cron, the same for every reader, no tracking. Costs first, then build.
 
 ## Done

@@ -8,6 +8,8 @@
 - Scroll's "Rush Hour" roundups and India Today's weekly quiz are skipped.
 - Summaries and titles no longer show double spaces or a space before punctuation.
 - NPR Health uses NPR's current feed (the old one stopped in January).
+- Hindi headlines are hidden in the India tab too (they already were everywhere else).
+- General: NPR News replaces the AP copy from feedx, which stopped in September. General keeps a balance of right- and left-leaning outlets (Fox News and NPR News).
 
 ---
 

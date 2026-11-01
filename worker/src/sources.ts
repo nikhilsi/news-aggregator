@@ -62,8 +62,11 @@ export const SOURCES: readonly Source[] = [
   { id: 'ars-technica-tech', name: 'Ars Technica - Tech', type: 'rss', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab', category: 'tech', isCuratedPositive: false, enabled: true },
   { id: 'engadget', name: 'Engadget', type: 'rss', url: 'https://www.engadget.com/rss.xml', category: 'tech', isCuratedPositive: false, enabled: true },
   // General News
-  { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: true },
+  // General keeps a balance of right- and left-leaning outlets (Nikhil, Nov 1, 2026).
+  // Off since Nov 1, 2026: a third-party copy of AP (feedx) that stopped updating in September.
+  { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: false },
   { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true },
+  { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true },
   // Health
   // NPR's current health feed since Nov 1, 2026; the old one (103537970) stopped in January.
   { id: 'npr-health', name: 'NPR Health', type: 'rss', url: 'https://feeds.npr.org/1128/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },

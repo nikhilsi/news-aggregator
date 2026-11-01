@@ -195,9 +195,9 @@ describe('merge (port of service.py)', () => {
     const out = tieredSort(list, 'all').map((x) => x.url);
     expect(out.slice(0, 3)).toEqual(['4-1', '3-1', '2-1']);
   });
-  it('india keeps non-Latin titles, other tabs drop them', () => {
+  it('non-Latin titles are hidden in every tab, India included (#413)', () => {
     const hi = art({ title: 'यूपी में हथकड़ी', category: 'india' });
-    expect(mergeForTab([[hi]], 'india')).toHaveLength(1);
+    expect(mergeForTab([[hi]], 'india')).toHaveLength(0);
     expect(mergeForTab([[hi]], 'all')).toHaveLength(0);
   });
 });
