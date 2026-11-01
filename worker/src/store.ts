@@ -5,12 +5,14 @@
 // version, count as missing, which makes the next cron run a full run (R5).
 
 import { FEED_VERSION, STATE_VERSION, type Feed, type State } from './types.ts';
+import type { Refresher } from './refresher.ts';
 
 export interface Env {
   CACHE: KVNamespace;
   ASSETS: Fetcher;
   API_LIMITER: RateLimit;
   READER_LIMITER: RateLimit;
+  REFRESHER: DurableObjectNamespace<Refresher>;
 }
 
 export const STATE_KEY = 'state';

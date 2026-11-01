@@ -3,7 +3,7 @@
 // security headers nginx used to add. The cron refreshes feeds every minute.
 
 import api from './api.ts';
-import { runCron } from './cron.ts';
+import { refresher } from './refresher.ts';
 import type { Env } from './store.ts';
 
 const APEX = 'getclearnews.com';
@@ -36,6 +36,8 @@ function assetCacheControl(path: string, res: Response): Record<string, string> 
   return {};
 }
 
+export { Refresher } from './refresher.ts';
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -59,7 +61,8 @@ export default {
     }
   },
 
-  async scheduled(_event: ScheduledController, env: Env): Promise<void> {
-    await runCron(env);
+  async scheduled(_event: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+    // The refresh runs in the Refresher, pinned to Western North America.
+    await refresher(env).refresh();
   },
 } satisfies ExportedHandler<Env>;

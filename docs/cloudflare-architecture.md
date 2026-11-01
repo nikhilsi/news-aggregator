@@ -94,7 +94,7 @@ Deferred, not part of the move: the `strip_html` spacing fix (O17, "Hello  world
 
 ## 4. Feeds: the Cron Trigger
 
-**Schedule:** `* * * * *` (every minute, UTC). Each run:
+**Schedule:** `* * * * *` (every minute, UTC). The cron hands each run to a Durable Object, `Refresher`, created with location hint `wnam`, so every feed and og:image fetch leaves from Western North America (SEA on Nov 1, 2026). Added after the switchover: cron runs otherwise execute anywhere (DFW, IAD, HKG, MAD, MEL, NRT, OTP were seen in the first hour), and The Seattle Times refused every non-US run. Each run:
 
 1. **Read `state`** from KV: one JSON value, about 1 MB, with a schema version `v`, `run_seq`, `written_at`, and per source the validators, `checked_at`, `ok_at`, `full_at`, last status, failure count and normalized articles. The run logs how old the `state` it read is (`now - written_at`). If `state` is missing, unreadable or has another `v` (first deploy, a wrong binding, a rollback to older code), this run is a **full run**: every enabled source is fetched, and if a `feed` exists the run logs an error (R5).
 2. **Pick due sources:** every enabled source with `now - checked_at >= 15 min`, or whose last attempt failed and `now - checked_at >= 5 min`. No cap per run: a normal run has 1 to 4 due sources, and a full run measured 39 feeds in 1.3 s (research 2).
