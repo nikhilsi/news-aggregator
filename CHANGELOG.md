@@ -7,6 +7,9 @@
 - 17 of the 79 stories labeled US politics were Indian or UK politics (9 about the INDIA bloc rally), so they used up Today's 2 US politics slots. The label prompt now says US politics means the United States only, including Washington state, and a story labeled India is never also US politics. Relabeling all 756 stored articles with the real model: no Indian politics story kept the US politics label, and Washington voting stories gained Seattle. Replayed on the same data, Today now carries the Michigan Senate race in all 3 runs.
 - The AI store version goes to 2, so every stored label is redone after the deploy. Today shows Latest for the few minutes that takes.
 
+### Added
+- `scripts/replay-brief.mjs`: rebuilds Today from production's stored data with the real models and the code on disk, writing nothing; `relabel` also relabels every stored article first. The ClearNews token gained Workers AI Read for it. Both fixes above were measured this way before the deploy.
+
 ---
 
 ## [3.3.0] - 2026-11-01 - Today brief (#414 step 2)

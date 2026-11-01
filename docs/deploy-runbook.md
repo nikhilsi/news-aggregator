@@ -5,7 +5,7 @@ How to build, test, deploy, check and roll back the `clearnews` Worker. Architec
 ## Access
 
 - Cloudflare account: OmSpark (`58ada9261161c4454f308218ac672f8c`), Workers Paid.
-- Token: `~/.secrets/cloudflare/clearnews.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), chmod 600, scoped to the account and the `getclearnews.com` zone. The scripts load it themselves. Never use the Mac's default wrangler login (it is ParkPro's).
+- Token: `~/.secrets/cloudflare/clearnews.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), chmod 600, scoped to the account and the `getclearnews.com` zone, plus Workers AI Read (Nov 1, 2026) for the brief replay. The scripts load it themselves. Never use the Mac's default wrangler login (it is ParkPro's).
 - KV namespace `clearnews-cache`: `b1f53c4848ae4fff8cdc3807f8b8666b`.
 - Live on https://getclearnews.com and www (custom domains) since Nov 1, 2026, 17:02 UTC. The workers.dev address is off.
 
@@ -15,9 +15,10 @@ All commands run from `worker/`.
 
 | Step | Command | What it does |
 |-|-|-|
-| Test | `npm test` | 69 tests in the Workers runtime. Needs `web/out` (the deploy builds it; or `cd ../web && NEXT_PUBLIC_API_URL=/api/v1 npx next build`). |
+| Test | `npm test` | 95 tests in the Workers runtime (Workers AI is mocked). Needs `web/out` (the deploy builds it; or `cd ../web && NEXT_PUBLIC_API_URL=/api/v1 npx next build`). |
 | Deploy | `npm run deploy` | Builds the site, runs the tests and the typecheck, scans the site and the Worker bundle for `.env` files, key names, localhost URLs and the old GA tag, then deploys. |
 | Check | `npm run verify` | Read-only live checks on production; pass another base URL as the argument to check elsewhere. Fails when the feed is over 30 minutes old or a source has not succeeded in 24 hours. |
+| Brief replay | `node scripts/replay-brief.mjs [runs] [relabel]` | Before changing a label or editor prompt: rebuilds Today from production's stored data with the real models and the code on disk, writing nothing. `relabel` first relabels every stored article and lists what changed. |
 | Feed status | `curl https://getclearnews.com/api/v1/status` | When the feed was built, and per source the last success, last status and article count. |
 | Logs | Cloudflare dashboard, Workers & Pages, clearnews, Logs | One `cron run` line a minute when something was due: sources fetched with status, og lookups, articles dropped by the gate, and `state_age_ms`. |
 
