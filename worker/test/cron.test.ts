@@ -29,6 +29,7 @@ beforeEach(async () => {
   await env.CACHE.delete(FEED_KEY);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
+    if (url.includes('/cdn-cgi/trace')) return new Response('fl=1\ncolo=SEA\n');
     calls.push(url);
     return handler(url, init);
   });
@@ -60,6 +61,8 @@ describe('runCron', () => {
     expect(feed.lists.all.length).toBe(enabledSources().length * 2);
     const state = (await readState(env.CACHE))!;
     expect(state.run_seq).toBe(1);
+    expect(r.colo).toBe('SEA');
+    expect(state.sources['the-verge'].colo).toBe('SEA');
     expect(state.sources['the-verge'].etag).toBe('"e1"');
   });
 

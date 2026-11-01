@@ -24,6 +24,8 @@ export interface SourceState {
   full_at: number | null;
   /** "ok", "not_modified", "http_403", "timeout", "too_large", "parse_error", "error". */
   status: string;
+  /** Cloudflare data center of the last attempt; some US sites block European visitors. */
+  colo?: string | null;
   failures: number;
   etag: string | null;
   last_modified: string | null;

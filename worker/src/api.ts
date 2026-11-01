@@ -139,6 +139,7 @@ app.get('/api/v1/status', async (c) => {
       return {
         id: s.id,
         status: st?.status ?? null,
+        colo: st?.colo ?? null,
         ok_at: iso(st?.ok_at),
         checked_at: iso(st?.checked_at),
         failures: st?.failures ?? null,

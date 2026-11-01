@@ -34,8 +34,19 @@ const emptyState = (): SourceState => ({
   og: {},
 });
 
+/** The Cloudflare data center this run executes in (cron runs land anywhere). */
+async function dataCenter(): Promise<string | null> {
+  try {
+    const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { signal: AbortSignal.timeout(2000) });
+    return /^colo=(\w+)$/m.exec(await res.text())?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export interface RunSummary {
   run_seq: number;
+  colo: string | null;
   full: boolean;
   state_age_ms: number | null;
   fetched: Record<string, string>;
@@ -62,6 +73,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
 
   // Step 2 and 3: fetch every due feed, six at a time.
   const due = sources.filter((s) => full || isDue(next[s.id], now));
+  const colo = due.length ? await dataCenter() : null;
   const results = await pool(due, OG_POOL, deadline, (s) => {
     const st = next[s.id] ?? emptyState();
     return fetchFeed(s, { etag: st.etag, last_modified: st.last_modified, full_at: st.full_at }, now);
@@ -75,10 +87,10 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
     if (!r) continue; // not reached before the deadline: due again next run
     const st = next[s.id] ?? emptyState();
     if (r.kind === 'not_modified') {
-      next[s.id] = { ...st, checked_at: now, ok_at: now, status: 'not_modified', failures: 0 };
+      next[s.id] = { ...st, checked_at: now, ok_at: now, status: 'not_modified', failures: 0, colo };
       fetched[s.id] = 'not_modified';
     } else if (r.kind === 'error') {
-      next[s.id] = { ...st, checked_at: now, status: r.status, failures: st.failures + 1 };
+      next[s.id] = { ...st, checked_at: now, status: r.status, failures: st.failures + 1, colo };
       fetched[s.id] = r.status;
       if (r.detail) console.warn(JSON.stringify({ msg: 'feed error', source: s.id, status: r.status, detail: r.detail }));
     } else {
@@ -90,6 +102,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
         full_at: now,
         status: 'ok',
         failures: 0,
+        colo,
         // Python kept the old validators when a response sent none.
         etag: r.etag ?? st.etag,
         last_modified: r.lastModified ?? st.last_modified,
@@ -160,6 +173,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
 
   const summary: RunSummary = {
     run_seq: state.run_seq,
+    colo,
     full,
     state_age_ms: prev ? now - prev.written_at : null,
     fetched,
