@@ -75,10 +75,12 @@ export const SOURCES: readonly Source[] = [
   // Local (Seattle)
   { id: 'geekwire', name: 'GeekWire', type: 'rss', url: 'https://www.geekwire.com/feed/', category: 'local', isCuratedPositive: false, enabled: true },
   { id: 'seattle-eater', name: 'Seattle Eater', type: 'rss', url: 'https://seattle.eater.com/rss/index.xml', category: 'local', isCuratedPositive: false, enabled: true },
-  // Off since Nov 1, 2026: answers 403 to every fetch from Cloudflare. KING 5 replaces it.
+  // Off since Nov 1, 2026: answers 403 to every fetch from Cloudflare. The Seattle Times replaces it.
   { id: 'mynorthwest', name: 'MyNorthwest', type: 'rss', url: 'https://mynorthwest.com/feed/', category: 'local', isCuratedPositive: false, enabled: false },
   { id: 'crosscut', name: 'Crosscut', type: 'rss', url: 'https://crosscut.com/feed', category: 'local', isCuratedPositive: false, enabled: true },
-  { id: 'king5-local', name: 'KING 5', type: 'rss', url: 'https://www.king5.com/feeds/syndication/rss/news/local', category: 'local', isCuratedPositive: false, enabled: true },
+  // Off since Nov 1, 2026: redirects every fetch from Cloudflare to its YouTube channel.
+  { id: 'king5-local', name: 'KING 5', type: 'rss', url: 'https://www.king5.com/feeds/syndication/rss/news/local', category: 'local', isCuratedPositive: false, enabled: false },
+  { id: 'seattle-times-local', name: 'The Seattle Times', type: 'rss', url: 'https://www.seattletimes.com/seattle-news/feed/', category: 'local', isCuratedPositive: false, enabled: true },
   { id: 'smithsonian', name: 'Smithsonian Magazine', type: 'rss', url: 'https://www.smithsonianmag.com/rss/latest_articles/', category: 'science', isCuratedPositive: false, enabled: false },
   // Google News (RSS)
   { id: 'google-news-science', name: 'Google News - Science', type: 'rss', url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en', category: 'science', isCuratedPositive: false, enabled: false },

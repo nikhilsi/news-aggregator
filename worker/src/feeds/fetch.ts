@@ -129,7 +129,7 @@ export async function fetchFeed(source: Source, v: Validators, now: number): Pro
   } catch {
     // What came back instead of a feed (often a bot check page), for the log.
     const head = text.slice(0, 200).replace(/\s+/g, ' ');
-    return { kind: 'error', status: 'parse_error', detail: `${res.headers.get('content-type')} | ${head}` };
+    return { kind: 'error', status: 'parse_error', detail: `${res.url} | ${res.headers.get('content-type')} | ${head}` };
   }
   return {
     kind: 'ok',
