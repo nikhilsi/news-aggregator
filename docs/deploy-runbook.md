@@ -19,6 +19,7 @@ All commands run from `worker/`.
 | Deploy | `npm run deploy` | Builds the site, runs the tests and the typecheck, scans the site and the Worker bundle for `.env` files, key names, localhost URLs and the old GA tag, then deploys. |
 | Check | `npm run verify` | Read-only live checks on production; pass another base URL as the argument to check elsewhere. Fails when the feed is over 30 minutes old or a source has not succeeded in 24 hours. |
 | Brief replay | `node scripts/replay-brief.mjs [runs] [relabel]` | Before changing a label or editor prompt: rebuilds Today from production's stored data with the real models and the code on disk, writing nothing. `relabel` first relabels every stored article and lists what changed. |
+| Local site | `scripts/dev.sh start` / `stop` | A local Worker on :8787 serving a copy of production's `feed` (read-only on production; written to local KV only). Build the site first. Logs and PID in `.wrangler/dev/`. |
 | Feed status | `curl https://getclearnews.com/api/v1/status` | When the feed was built, and per source the last success, last status and article count. |
 | Logs | Cloudflare dashboard, Workers & Pages, clearnews, Logs | One `cron run` line a minute when something was due: sources fetched with status, og lookups, articles dropped by the gate, and `state_age_ms`. |
 
