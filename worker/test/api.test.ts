@@ -131,14 +131,26 @@ describe('Today and Latest (#414)', () => {
     const brief = { at: now, urls: [verge[3].url, bbc[0].url] };
     const feed = buildFeed(new Map([['the-verge', verge], ['bbc-health', bbc]]), now, { v: 1, items: {}, brief });
     await env.CACHE.put(FEED_KEY, JSON.stringify(feed));
-    const today = (await (await get('/api/v1/articles')).json()) as { articles: Article[]; pagination: { total: number } };
+    const today = (await (await get('/api/v1/articles')).json()) as { articles: Article[]; brief_at?: string | null };
     expect(today.articles.map((a) => a.url)).toEqual(brief.urls);
+    // For the web's Today page (step 3): only the first tab without a search says when its brief was built.
+    expect(Object.keys(today)).toEqual(['articles', 'pagination', 'complete', 'brief_at']);
+    expect(today.brief_at).toBe(new Date(now).toISOString());
     const latest = (await (await get('/api/v1/articles?category=latest&per_page=50')).json()) as { pagination: { total: number } };
     expect(latest.pagination.total).toBe(13);
     const found = (await (await get('/api/v1/articles?search=Alpha7')).json()) as { articles: Article[] };
     expect(found.articles.map((a) => a.url)).toEqual([verge[7].url]);
+    expect(Object.keys(found)).toEqual(['articles', 'pagination', 'complete']);
     const inTab = (await (await get('/api/v1/articles?category=health&search=Alpha7')).json()) as { articles: Article[] };
     expect(inTab.articles).toEqual([]);
+  });
+  it('without a brief, Today shows the full list and brief_at is null', async () => {
+    const now = Date.now();
+    const verge = Array.from({ length: 3 }, (_, i) => art(i, { published_at: new Date(now - (i + 1) * 3600e3).toISOString().slice(0, 19) + 'Z' }));
+    await env.CACHE.put(FEED_KEY, JSON.stringify(buildFeed(new Map([['the-verge', verge]]), now)));
+    const today = (await (await get('/api/v1/articles')).json()) as { articles: Article[]; brief_at: string | null };
+    expect(today.articles).toHaveLength(3);
+    expect(today.brief_at).toBeNull();
   });
 });
 
@@ -147,7 +159,7 @@ describe('articles before the first cron run', () => {
     await env.CACHE.delete(FEED_KEY);
     const res = await get('/api/v1/articles');
     expect(res.headers.get('cache-control')).toBe('no-store');
-    expect(await res.json()).toEqual({ articles: [], pagination: { page: 1, per_page: 20, total: 0, total_pages: 1 }, complete: false });
+    expect(await res.json()).toEqual({ articles: [], pagination: { page: 1, per_page: 20, total: 0, total_pages: 1 }, complete: false, brief_at: null });
   });
 });
 

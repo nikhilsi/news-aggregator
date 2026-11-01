@@ -59,6 +59,9 @@ check('categories: finance listed', cats.some((c) => c.id === 'finance'), 'Finan
   const t = await (await get('/api/v1/articles?per_page=50')).json();
   if (s.today_built_at) check('Today brief size', t.pagination.total >= 5 && t.pagination.total <= 10, `total=${t.pagination.total}`);
   else console.log(`note: no Today brief yet; Today shows the full list (${t.pagination.total})`);
+  // The web's Today page reads brief_at (step 3); the apps ignore it. Compared by presence,
+  // not value, since the hourly brief can be rebuilt between the two requests.
+  check('Today brief_at present', Object.hasOwn(t, 'brief_at') && (typeof t.brief_at === 'string') === !!s.today_built_at, `${t.brief_at} vs ${s.today_built_at}`);
   const found = await (await get('/api/v1/articles?search=the&per_page=1')).json();
   check('search from the first tab covers Latest', found.pagination.total > 50, `total=${found.pagination.total}`);
 }

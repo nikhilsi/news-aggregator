@@ -16,6 +16,7 @@ type App = { Bindings: Env };
 const app = new Hono<App>();
 
 const LIST_CACHE = 'public, max-age=300';
+const iso = (ms: number | null | undefined) => (ms ? new Date(ms).toISOString() : null);
 const json = (c: Context<App>, body: unknown, status = 200, cache?: string) => {
   const res = c.json(body as object, status as 200);
   if (cache) res.headers.set('Cache-Control', cache);
@@ -77,6 +78,9 @@ app.get('/api/v1/articles', async (c) => {
 
   let articles: Article[];
   let complete = true;
+  // The first tab without a search also says when its brief was built (#414 step 3, for the web).
+  const isToday = category === 'all' && !source && !search?.trim();
+  let briefAt: number | null = null;
   if (source) {
     // No client sends source; it is computed from state exactly as before (O16).
     const s = SOURCES.find((x) => x.id === source);
@@ -93,6 +97,7 @@ app.get('/api/v1/articles', async (c) => {
       const tab = search?.trim() && category === 'all' && Object.hasOwn(feed.lists, 'latest') ? 'latest' : category;
       const idx = Object.hasOwn(feed.lists, tab) ? feed.lists[tab] : [];
       articles = idx.map((i) => feed.articles[i]);
+      briefAt = feed.brief_at ?? null;
     }
   }
 
@@ -111,6 +116,7 @@ app.get('/api/v1/articles', async (c) => {
     articles: articles.slice(start, start + perPage),
     pagination: { page, per_page: perPage, total, total_pages: totalPages },
     complete,
+    ...(isToday ? { brief_at: iso(briefAt) } : {}),
   };
   const cache = refreshRaw === 'true' || !complete ? 'no-store' : LIST_CACHE;
   return json(c, body, 200, cache);
@@ -131,7 +137,6 @@ app.get('/api/v1/articles/reader', async (c) => {
 
 app.get('/api/v1/status', async (c) => {
   const [feed, state] = await Promise.all([readFeed(c.env.CACHE), readState(c.env.CACHE)]);
-  const iso = (ms: number | null | undefined) => (ms ? new Date(ms).toISOString() : null);
   return c.json({
     feed_built_at: iso(feed?.built_at),
     articles: (feed?.lists.latest ?? feed?.lists.all)?.length ?? 0,
