@@ -82,7 +82,7 @@ app.get('/api/v1/articles', async (c) => {
     const s = SOURCES.find((x) => x.id === source);
     const state = s?.enabled ? await readState(c.env.CACHE) : null;
     const st = state && Object.hasOwn(state.sources, source) ? state.sources[source] : undefined;
-    articles = st ? mergeForTab([trimSource(st.articles, Date.now())], category) : [];
+    articles = st ? mergeForTab([trimSource(st.articles, Date.now(), s?.maxItems)], category) : [];
   } else {
     const feed = await readFeed(c.env.CACHE);
     if (!feed) {

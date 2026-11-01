@@ -96,7 +96,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
       if (r.detail) console.warn(JSON.stringify({ msg: 'feed error', source: s.id, status: r.status, detail: r.detail }));
     } else {
       // Roundups skipped, then the newest 30 within 7 days, before any og lookups.
-      fresh.set(s, trimSource(r.articles.filter((a) => !s.skipTitle?.test(a.title)), now));
+      fresh.set(s, trimSource(r.articles.filter((a) => !s.skipTitle?.test(a.title)), now, s.maxItems));
       next[s.id] = {
         ...st,
         checked_at: now,

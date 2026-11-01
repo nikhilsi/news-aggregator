@@ -209,6 +209,10 @@ describe('trimSource (#413)', () => {
     const out = trimSource([art({ url: 'old', published_at: at(8) }), art({ url: 'new', published_at: at(1) }), art({ url: 'nodate', published_at: null })], now);
     expect(out.map((a) => a.url)).toEqual(['new', 'nodate']);
   });
+  it('a lower per-source cap applies when given (General: 10)', () => {
+    const list = Array.from({ length: 25 }, (_, i) => art({ url: `g${i}`, published_at: at(0, i) }));
+    expect(trimSource(list, now, 10).map((a) => a.url)).toEqual(list.slice(0, 10).map((a) => a.url));
+  });
   it('keeps the newest 30, in feed order', () => {
     const list = Array.from({ length: 40 }, (_, i) => art({ url: `u${i}`, published_at: at(0, i % 2 ? 40 - i : i) }));
     const out = trimSource(list, now);

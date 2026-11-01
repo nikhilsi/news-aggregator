@@ -6,10 +6,10 @@ import { MAX_AGE_DAYS, MAX_PER_SOURCE } from '../sources.ts';
 import { formatDate } from '../feeds/dates.ts';
 import type { Article } from '../types.ts';
 
-export function trimSource(articles: Article[], now: number): Article[] {
+export function trimSource(articles: Article[], now: number, max = MAX_PER_SOURCE): Article[] {
   const cutoff = formatDate(now - MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
   const fresh = articles.filter((a) => a.published_at === null || a.published_at >= cutoff);
-  if (fresh.length <= MAX_PER_SOURCE) return fresh;
+  if (fresh.length <= max) return fresh;
   const keep = new Set(
     fresh
       .map((a, i) => [a, i] as const)
@@ -18,7 +18,7 @@ export function trimSource(articles: Article[], now: number): Article[] {
         const kb = b.published_at ?? '';
         return ka !== kb ? (ka < kb ? 1 : -1) : i - j;
       })
-      .slice(0, MAX_PER_SOURCE)
+      .slice(0, max)
       .map(([a]) => a),
   );
   return fresh.filter((a) => keep.has(a));

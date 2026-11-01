@@ -19,6 +19,8 @@ export interface Source {
   enabled: boolean;
   /** Items whose title matches are skipped (roundups and quizzes that repeat other items). */
   skipTitle?: RegExp;
+  /** A lower cap than MAX_PER_SOURCE, to keep paired sources even (General). */
+  maxItems?: number;
 }
 
 /** Every source is refreshed when its last check is this old (sources.yaml had 15 for all). */
@@ -65,8 +67,9 @@ export const SOURCES: readonly Source[] = [
   // General keeps a balance of right- and left-leaning outlets (Nikhil, Nov 1, 2026).
   // Off since Nov 1, 2026: a third-party copy of AP (feedx) that stopped updating in September.
   { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: false },
-  { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true },
-  { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true },
+  // Both capped at 10 so the tab stays even all the way down (NPR's feed carries 10).
+  { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
+  { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   // Health
   // NPR's current health feed since Nov 1, 2026; the old one (103537970) stopped in January.
   { id: 'npr-health', name: 'NPR Health', type: 'rss', url: 'https://feeds.npr.org/1128/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
