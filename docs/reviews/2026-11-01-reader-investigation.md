@@ -1,0 +1,131 @@
+# #423: The reader view, measured
+
+**Date:** Nov 1, 2026  
+**Ask (Nikhil):** "we never paid much attention to the actual article conversion and display. I think that's a very weak link." Filed as P1, investigation first.  
+**Status:** Nikhil approved the server and web items on Nov 1 ("Yes go ahead"). Built and deployed as 3.5.0 (section 7). Photos through getclearnews.com wait for his yes; the feed's full text is held; the app fixes go with iOS 2.1.
+
+## 1. Summary
+
+- **Opening works.** 238 of 250 sampled articles from all 53 sources opened in production, in 0.36 s at the median. Two sites block the reader outright: NDTV and UPI's odd-news feed (5 of 5 each).
+- **About 1 in 9 articles is cut short.** 24 of 220 checkable articles lose 30% or more of their text. The worst are Ars Technica (all four of its feeds: AI, Tech, Space, Science), where readers get a third to a half of each article and sometimes start mid-story, and BBC (World, Business, India, Uplifting, Health).
+- **Page junk stays in.** "Skip to content", newsletter sign-up forms, "149 Comments", rows of empty bullets, "CLICK HERE TO DOWNLOAD THE FOX NEWS APP", subscribe pitches. The same photo shows two or three times (the first photo in the text repeats the photo above the title in 48 of 238 articles), and captions repeat.
+- **The apps don't style captions, figures or tables**, so photo credits read like body text. On the web, a long link can push the page sideways on a phone. Every client shows the same failure screen whatever went wrong.
+- **A fix is within reach, with no new service and $0.** A newer extractor, Defuddle (MIT, works with the HTML parser the Worker already uses), with Readability as a fallback, cut short articles from 24 to 10 on the same pages and removed about a third of the junk. Add a phrase filter, the full text that 13 feeds already send, resized images served from getclearnews.com, and CSS fixes in each client.
+
+## 2. How the reader works today
+
+- **Server** (`worker/src/reader/reader.ts`): the Worker fetches the article page (Chrome's user agent, 15 s limit, SSRF checks on every redirect), runs Mozilla Readability on linkedom, and keeps an allowlist of tags (no classes, no `srcset`, no iframes or video). No cache: every open fetches the publisher again. The full text some feeds include is never used.
+- **Web** (`web/src/components/ReaderModal.tsx`): photo above the title (`image_url` from the feed), title, source, author, time and reading time, then the HTML in Tailwind's `prose` style.
+- **iOS** (`ReaderView.swift`, `ReaderWebView.swift`): a sheet with the photo (capped at 250 pt), title and meta row, then a WKWebView with the app's own CSS (system font, 17 px, line height 1.7, dark mode).
+- **Android** (`ReaderScreen.kt`): the same layout, a WebView with the same CSS plus theme colors.
+
+## 3. What was measured
+
+- **250 articles**: the 5 newest from each of the 53 enabled sources (Nov 1, 23:50 UTC), read through production's `/api/v1/articles/reader`, so Cloudflare's network and the publishers' bot rules apply.
+- **The same pages, saved, through four extractors** with the production tag allowlist: Readability on linkedom (production), Readability on jsdom (a full browser-like page model), Defuddle on linkedom, Defuddle on jsdom.
+- **Completeness reference**: the article text publishers embed for search engines (schema.org `articleBody`, 78 articles from 17 sources), and for every page the words in paragraphs of 12+ words outside navigation, headers, footers and sidebars (220 pages; video pages excluded).
+- **Display**: real results rendered in copies of each client's reader. iOS through the app's own views in the simulator (27 screenshots), the web with its compiled CSS, Android with its HTML template.
+
+Scripts and raw results were kept in the session scratchpad; the 250-article run is easy to repeat after a change.
+
+## 4. Findings
+
+### 4.1 Opening
+
+| Result | Articles |
+|-|-|
+| Opened | 238 of 250 (95%) |
+| Blocked by the publisher (403): NDTV, UPI Odd News | 10 (all 10 of their articles) |
+| No text found: BBC Uplifting | 2 |
+| Time to open | median 0.36 s, 90th percentile 0.69 s, slowest 1.5 s |
+
+NDTV and UPI also refused requests from a home connection, so the block is not specific to Cloudflare. Neither feed carries full text, so for those two the best the reader can do is the feed summary and a link.
+
+### 4.2 Cut-short articles
+
+| Source | Readability (production) | Defuddle | The page's paragraphs |
+|-|-|-|-|
+| Ars Technica (8 checked across its 4 feeds) | 253 to 489 words | 575 to 1,355 | 512 to 1,337 |
+| BBC World (3) | 340, 433, 624 | 606, 957, 959 | 543, 948, 846 |
+| BBC Uplifting, India, Business | 0 to 305 | 156 to 704 | 144 to 676 |
+| Google DeepMind (Genie 4) | 1,827 | 3,796 | about 3,400 |
+| A.V. Club | 139 | 245 | 256 |
+
+- **Why:** Ars splits each article into three blocks with ad slots between them (`post-content` three times on the page), and Readability keeps the one it scores highest. That is why some Ars articles open mid-story ("Reddit's average number of DAUqs increased 12 percent…" is the first line of a Reddit story) and show "1 min read" for a 570-word piece.
+- **Not the parser:** Readability on jsdom scored exactly the same on every measure (24 cut short).
+- **Where the page carries its own text** (17 sources), both extractors capture the whole article; values above 100% are extra text: Fox News about 135%, The Verge 126%.
+
+### 4.3 Junk left in
+
+- The Verge, every article: "Skip to main content", the subtitle twice, the byline and bio, then "Follow topics and authors…", six empty bullets and "The Verge Daily… Email (required)".
+- Ars: "Skip to content" and the section label at the top; the author bio, "149 Comments", a stray photo and empty numbered items at the end (10 articles end with "N Comments").
+- Fox News: "NEW You can now listen to Fox News articles!", "CLICK HERE TO DOWNLOAD THE FOX NEWS APP". Guardian: "skip past newsletter promotion". Scientific American: "Subscribe to Support Independent Journalism". India Today (with Defuddle): "Advertisement".
+- 9 empty figures and 31 articles with empty paragraphs. IEEE's Video Friday keeps "Enjoy today's videos!" with the videos removed.
+- The author field: undecoded "Terrence O&#x27;Brien", a Facebook URL as the author (IEEE, 11 articles), "Sponsored Content".
+
+### 4.4 Photos
+
+- The photo above the title repeats as the first photo in the text in 48 of 238 articles; The Verge shows it three times. Ars repeats its caption.
+- Weight: median 0.3 MB of images per article, 2.1 MB at the 90th percentile, 15 MB at worst; Quanta's median is 4.9 MB. Ars embeds a 7,936 × 5,034 original. `srcset` is dropped, so the original file is what loads.
+- Every photo loads straight from the publisher, which sees the reader's IP address.
+
+### 4.5 Display, per client
+
+| Problem | Web | iOS | Android |
+|-|-|-|-|
+| Captions and credits styled as body text; figures with default 40 px margins | styled by `prose` | yes | yes |
+| Tables, lists without CSS | styled | yes | yes |
+| A long link widens the page on a phone (no `overflow-wrap`) | yes | no | no |
+| Links in the text | leave the app (same tab) | Safari | external browser, no crash guard |
+| Photo above the title | no height limit (a square photo fills a desktop screen) | pops in late and pushes the text down | blank 250 dp box if it fails |
+| Meta row with a long author | wraps | squeezes into narrow columns | squeezes |
+| Zoom | yes | blocked (`maximum-scale=1`) | blocked |
+| Failure screen | same message for every reason | same | same |
+
+Dark mode works in all three.
+
+### 4.6 Pages that are not articles
+
+- BBC video pages give about 225 words of page text and no video.
+- Atlas Obscura place pages lose half their text with Readability; Defuddle fails on them.
+
+## 5. Extractors side by side (same 220 pages)
+
+| Pipeline | Missing 30%+ of the article | Junk lines | Empty bullets | Repeated text | Median time |
+|-|-|-|-|-|-|
+| Readability on linkedom (production) | 24 | 57 | 79 | 35 | 7 ms |
+| Readability on jsdom | 24 | 57 | 79 | 35 | 32 ms |
+| Defuddle on linkedom | 13 | 38 | 30 | 25 | 40 ms |
+| **Defuddle, Readability as fallback** (when Readability finds 50% more paragraph text) | **10** | **40** | **30** | **26** | about 50 ms |
+
+Defuddle alone loses text on Scientific American (it drops the opening paragraphs) and Atlas Obscura; the fallback covers both. Of the 10 still short, Cascade PBS and Latent Space already send their full text in their feeds.
+
+## 6. Proposal
+
+**Server (reaches all three clients with no app release):**
+1. Defuddle first, Readability as fallback. First a short spike: bundle Defuddle into the Worker (about 340 KB), rerun the 250 articles in the Workers runtime, compare.
+2. A cleanup pass after extraction: a phrase list ("Skip to content", "download the … app", newsletter and subscribe lines, "N Comments"), empty bullets, empty figures and paragraphs, a first photo that repeats the photo above the title, repeated captions.
+3. The feed's full text when the feed carries it (13 sources, including Latent Space, NASASpaceflight, The Robot Report, GeekWire, Cascade PBS, Fox News, IEEE Spectrum, Simon Willison), used when the page fails or gives less.
+4. A clean author field: decode entities, drop URLs and "Sponsored".
+5. Photos through Cloudflare image resizing from getclearnews.com (width about 1,200, modern format): lighter pages, and publishers no longer see readers' addresses. Free for the first 5,000 unique images a month, which reader photos stay well under.
+6. A cache of each extracted article (24 hours) and the Today stories read ahead each hour: instant opens, fewer requests to publishers.
+7. Video pages answer with a reason (`video`) so clients can say "This is a video" with a link, instead of page text.
+
+**Web (any time):** `overflow-wrap` on the content, links open in a new tab, a height limit on the photo above the title, one rounding rule for reading time, and a failure message per reason.
+
+**Apps (with iOS 2.1, step 4 of #414, and the next Android build):** CSS for figure, figcaption, tables and lists; a placeholder while the photo loads; a meta row that wraps; failure messages per reason; zoom allowed.
+
+**How we know it worked:** rerun the 250-article script. Targets: at most 4% of articles missing 30% or more, junk lines halved, no repeated photo, no failures except the two sites that block the reader.
+
+**Cost:** $0. Workers Paid already covers the CPU (about 50 ms per open), and image resizing stays inside the free tier.
+
+## 7. Built (3.5.0, Nov 1)
+
+- **Extraction:** Defuddle first, Readability as the fallback, both sanitized and cleaned before the comparison; Readability wins only with 25% more words in paragraphs of 12+ words. (The first rule, 50% on uncleaned output, let an author bio and a subscribe pitch tip the choice on The Verge, and then lost Scientific American's opening paragraphs; comparing after cleanup fixed both.)
+- **Cleanup:** whole-line furniture, support pitches, word-for-word repeats, tracking pixels, comma-joined `srcset` addresses, the repeated photo above the title with its caption (only caption text goes with it: a figcaption, the photo's own description, a credit or a short line), the byline and bio at the top, orphaned credits, empty wrappers.
+- **Also:** clean author field; reason `video` for video pages; results cached in KV for 6 hours and Today's stories read ahead after each brief; web failure messages per reason, links in a new tab, wrapping for long links, a height cap on the photo, single quote marks in quotes.
+- **Offline, same 236 pages:** cut 30%+ by the yardstick 24 to 12 (the rest is mostly the yardstick counting subtitles and pitches; real misses are a lead paragraph on three Atlas Obscura places, Latent Space's Arca piece and one Scientific American story), junk lines 46 to 8, empty bullets 79 to 30 (galleries), empty blocks 195 to 0, repeated text 13 to 0, the photo twice 40 to 2.
+- **Production, 55 articles re-read after the deploy** (Ars, BBC, The Verge, Fox, Scientific American, DeepMind, A.V. Club, IEEE, NASA, Guardian Travel, Atlas Obscura, NDTV): words 39,504 to 44,763; junk markers 81 to 1. Ars stories 286 to 642, 489 to 1,341, 361 to 1,071, 312 to 921 words; BBC 340 to 606, 175 to 704, 0 to 156; DeepMind 1,828 to 3,801. BBC video pages now answer `video`. NDTV still blocks the reader.
+- **Cost:** a first open takes longer, 0.82 s at the median against 0.36 s before, since both extractors and the cleanup run; a second open and Today's stories come from the cache. Bundle 2.2 MB (0.49 MB compressed), startup 26 ms.
+- **Checks:** 104 tests (the extraction runs in the Workers runtime), verify 75/75, the iOS decoder sweep (which also opens one article per tab through the reader) 1,413 articles with 0 failures.
+
