@@ -90,7 +90,9 @@ export const SOURCES: readonly Source[] = [
   { id: 'quanta-magazine', name: 'Quanta Magazine', type: 'rss', url: 'https://www.quantamagazine.org/feed/', category: 'science', isCuratedPositive: false, enabled: true },
   // General keeps a balance of right- and left-leaning outlets (Nikhil, Nov 1, 2026).
   // All capped at 10 so the tab stays even all the way down (NPR's feed carries 10).
-  { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://feeds.foxnews.com/foxnews/latest', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
+  // Fox's politics feed since Nov 1, 2026 (#416): of 7 shown from its latest feed,
+  // 4 were entertainment and 2 sports, against NPR's 6 politics stories of 10.
+  { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://moxie.foxnews.com/google-publisher/politics.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   // World news, outside US politics (Nikhil, Nov 1, 2026); about 18 stories a day.
   { id: 'bbc-world', name: 'BBC World', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
@@ -118,8 +120,9 @@ export const SOURCES: readonly Source[] = [
   { id: 'india-today', name: 'India Today', type: 'rss', url: 'https://www.indiatoday.in/rss/home', category: 'india', isCuratedPositive: false, enabled: true, skipTitle: /weekly news quiz/i },
   { id: 'scroll-in', name: 'Scroll.in', type: 'rss', url: 'http://feeds.feedburner.com/ScrollinArticles.rss', category: 'india', isCuratedPositive: false, enabled: true, skipTitle: /^rush hour:/i },
   { id: 'the-hindu', name: 'The Hindu', type: 'rss', url: 'https://www.thehindu.com/feeder/default.rss', category: 'india', isCuratedPositive: false, enabled: true },
-  // Finance: replaces FMP (approved by Nikhil, Nov 1, 2026).
-  { id: 'cnbc-top-news', name: 'CNBC', type: 'rss', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', category: 'finance', isCuratedPositive: false, enabled: true },
+  // Finance: replaces FMP (approved by Nikhil, Nov 1, 2026). CNBC's Business feed since
+  // Nov 1 (#416): its Top News feed was half US politics. No feed images; og:image fills in.
+  { id: 'cnbc-business', name: 'CNBC', type: 'rss', url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html', category: 'finance', isCuratedPositive: false, enabled: true },
   { id: 'bbc-business', name: 'BBC Business', type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', isCuratedPositive: false, enabled: true },
   // US edition since Nov 1, 2026; the UK edition was half UK domestic news.
   { id: 'guardian-business', name: 'The Guardian Business', type: 'rss', url: 'https://www.theguardian.com/us/business/rss', category: 'finance', isCuratedPositive: false, enabled: true },

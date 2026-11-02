@@ -11,11 +11,11 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 - **Step 1, sources:** shipped Nov 1 (3.2.0, see CHANGELOG).
 - **Step 2, Today brief:** shipped Nov 1 (3.3.0, see CHANGELOG). Next: watch the first days of briefs (each build is logged) for repeats, outlet balance and missing US politics.
 - **Step 3, web:** shipped Nov 1 (3.4.0, see CHANGELOG). Next: Nikhil tries it on the phone and desktop.
-- **Step 4, iOS 2.1:** an App Store release, Nikhil's call.
+- **Step 4, the apps:** iOS 2.1 (#425) and the next Android APK (#426), with notifications (#435, design first), all P1 (Nikhil, Nov 1): not started; soon.
 
 Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and no AI-written text in step 2.
 
-**Reader view** (#423, P1, filed Nov 1): investigation in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md); server and web fixes shipped as 3.5.0, photos resized from getclearnews.com as 3.5.1. Open: the app display fixes (with iOS 2.1). The feed's full text waits for its trigger (#424).
+**Reader view** (#423, P1, filed Nov 1): investigation in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md); server and web fixes shipped as 3.5.0, photos resized from getclearnews.com as 3.5.1. Open: the app display fixes (in #425 and #426). The feed's full text waits for its trigger (#424).
 
 ## Ruled decisions that govern next steps
 

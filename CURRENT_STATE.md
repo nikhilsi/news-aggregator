@@ -55,10 +55,10 @@ Tabs in the order the apps show them, after Today and Latest:
 | Space | NASASpaceflight, Ars Technica Space, Universe Today, NASA | 4 |
 | Technology | The Verge, Wired (deals and buying guides skipped), Ars Technica Tech | 3 |
 | Science | Ars Technica Science, New Scientist, Scientific American, Quanta Magazine | 4 |
-| General | Fox News, NPR News (kept balanced right and left), BBC World (world news), 10 each | 3 |
+| General | Fox News (politics feed), NPR News (kept balanced right and left), BBC World (world news), 10 each | 3 |
 | Local (Seattle) | GeekWire, KIRO 7, Cascade PBS | 3 |
 | India | BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu | 6 |
-| Finance | CNBC, BBC Business, The Guardian Business (US edition) | 3 |
+| Finance | CNBC (Business feed), BBC Business, The Guardian Business (US edition) | 3 |
 | Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
 | Entertainment | A.V. Club, Polygon, Variety, Kotaku | 4 |
 | Health | NPR Health, BBC Health | 2 |
@@ -75,7 +75,6 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **The apps' About screens** say "financial news APIs" until their next release.
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
-- **CNBC's feed is general top news** filed under Finance (#416).
 - **A new edition reaches the web up to 5 minutes late**: article lists are cached in the browser for 5 minutes (`max-age=300`, unchanged from before); the refresh button bypasses it.
 
 ## What's Next

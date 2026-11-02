@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.5.2] - 2026-11-01 - Fox politics feed in General, CNBC Business in Finance (#416)
+
+### Changed
+- **Fox News** in General now comes from Fox's politics feed. From its latest feed, 3 of 10 items were celebrity (dropped by the labels) and of the 7 shown, 4 were entertainment and 2 sports, against NPR News's 6 politics stories of 10, so the tab's right and left balance was lopsided. Same name and cap (10).
+- **CNBC** in Finance now comes from CNBC's Business feed (`cnbc-business`): the Top News feed was half US politics. Its articles read fully in the reader; the feed has no images, so og:image fills them in.
+- Sunny Skyz stays (Nikhil, Nov 1).
+
+---
+
 ## [3.5.1] - 2026-11-01 - Reader photos, resized, from getclearnews.com (#423)
 
 ### Changed
