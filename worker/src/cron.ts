@@ -204,7 +204,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
   if (ai.summary.brief.startsWith('built') && ai.store.brief && leftMs >= MIN_LEFT_AHEAD_MS) {
     const byUrl = new Map(held.map((a) => [a.url, a]));
     const today = ai.store.brief.urls.flatMap((u) => (byUrl.has(u) ? [byUrl.get(u)!] : []));
-    readAheadSummary = await readAhead(env.CACHE, today, OWN_HOSTS, leftMs - 2_000);
+    readAheadSummary = await readAhead(env.CACHE, today, OWN_HOSTS, leftMs - 2_000, env.PHOTO_KEY);
   }
 
   const summary: RunSummary = {

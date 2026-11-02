@@ -6,6 +6,7 @@ How to build, test, deploy, check and roll back the `clearnews` Worker. Architec
 
 - Cloudflare account: OmSpark (`58ada9261161c4454f308218ac672f8c`), Workers Paid.
 - Token: `~/.secrets/cloudflare/clearnews.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), chmod 600, scoped to the account and the `getclearnews.com` zone, plus Workers AI Read (Nov 1, 2026) for the brief replay. The scripts load it themselves. Never use the Mac's default wrangler login (it is ParkPro's).
+- Worker secret `PHOTO_KEY` signs reader photo addresses (#423). To rotate: `openssl rand -base64 32 | tr -d '\n' | npx wrangler secret put PHOTO_KEY` (with the token loaded), then bump `VERSION` in `src/reader/cache.ts` and deploy, so stored articles get addresses signed with the new key.
 - KV namespace `clearnews-cache`: `b1f53c4848ae4fff8cdc3807f8b8666b`.
 - Live on https://getclearnews.com and www (custom domains) since Nov 1, 2026, 17:02 UTC. The workers.dev address is off.
 

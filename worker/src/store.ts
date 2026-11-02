@@ -15,6 +15,8 @@ export interface Env {
   API_LIMITER: RateLimit;
   READER_LIMITER: RateLimit;
   REFRESHER: DurableObjectNamespace<Refresher>;
+  /** Signs reader photo addresses for /img (#423). A Worker secret; absent in tests. */
+  PHOTO_KEY?: string;
 }
 
 export const STATE_KEY = 'state';

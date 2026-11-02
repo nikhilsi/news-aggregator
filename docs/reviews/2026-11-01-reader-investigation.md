@@ -128,4 +128,6 @@ Defuddle alone loses text on Scientific American (it drops the opening paragraph
 - **Production, 55 articles re-read after the deploy** (Ars, BBC, The Verge, Fox, Scientific American, DeepMind, A.V. Club, IEEE, NASA, Guardian Travel, Atlas Obscura, NDTV): words 39,504 to 44,763; junk markers 81 to 1. Ars stories 286 to 642, 489 to 1,341, 361 to 1,071, 312 to 921 words; BBC 340 to 606, 175 to 704, 0 to 156; DeepMind 1,828 to 3,801. BBC video pages now answer `video`. NDTV still blocks the reader.
 - **Cost:** a first open takes longer, 0.82 s at the median against 0.36 s before, since both extractors and the cleanup run; a second open and Today's stories come from the cache. Bundle 2.2 MB (0.49 MB compressed), startup 26 ms.
 - **Checks:** 104 tests (the extraction runs in the Workers runtime), verify 75/75, the iOS decoder sweep (which also opens one article per tab through the reader) 1,413 articles with 0 failures.
+- **Photos (3.5.1, Nikhil's yes on Nov 1):** every reader photo now loads from `getclearnews.com/img`, resized to 1,200 pixels in AVIF or WebP, with a signed address so only reader photos are resized. A Quanta article's 7 photos: 5.9 MB to 1.3 MB. No zone setting was needed (Cloudflare resizes from a Worker on any zone it serves).
+- **Feed full text:** held with a trigger as #424.
 

@@ -132,7 +132,7 @@ app.get('/api/v1/articles/reader', async (c) => {
   if (!check.ok) return detail(c, 400, check.detail);
   const feed = await readFeed(c.env.CACHE);
   const meta = feed?.articles.find((a) => a.url === url);
-  return c.json(await readCached(c.env.CACHE, url, meta, own, (p) => c.executionCtx.waitUntil(p)));
+  return c.json(await readCached(c.env.CACHE, url, meta, own, (p) => c.executionCtx.waitUntil(p), c.env.PHOTO_KEY));
 });
 
 app.get('/api/v1/status', async (c) => {

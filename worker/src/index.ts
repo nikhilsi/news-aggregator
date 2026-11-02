@@ -3,6 +3,7 @@
 // security headers nginx used to add. The cron refreshes feeds every minute.
 
 import api from './api.ts';
+import { servePhoto } from './reader/photos.ts';
 import { refresher } from './refresher.ts';
 import type { Env } from './store.ts';
 
@@ -49,6 +50,9 @@ export default {
     if (url.pathname === '/health' || url.pathname === '/health/' || url.pathname.startsWith('/api/')) {
       return withHeaders(await api.fetch(request, env, ctx));
     }
+
+    // Reader photos, resized and served from this site (#423).
+    if (url.pathname === '/img') return withHeaders(await servePhoto(request, env.PHOTO_KEY));
 
     // The site. If header code ever throws, the plain asset still goes out, so
     // /privacy and /support (opened from both apps) stay up (R13).

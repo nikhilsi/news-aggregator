@@ -19,6 +19,7 @@ import { parseHTML } from 'linkedom';
 import sanitizeHtml from 'sanitize-html';
 import { decodeBody, readCapped, USER_AGENT } from '../feeds/fetch.ts';
 import type { Article } from '../types.ts';
+import { photoUrl, rewritePhotos } from './photos.ts';
 import { checkUrl } from './ssrf.ts';
 
 const TIMEOUT_MS = 15_000;
@@ -318,8 +319,22 @@ export function clean(html: string, heroUrl: string | null, author: string | nul
 /** A video page, not an article: nothing to read. */
 const VIDEO_PATH = /\/videos?\//i;
 
-/** The reader response for a URL that already passed checkUrl. */
-export async function readArticle(url: string, meta: Article | undefined, ownHosts: string[]): Promise<ReaderResult> {
+/**
+ * The reader response for a URL that already passed checkUrl. With `photoKey`,
+ * every photo (in the text and above the title) is served resized from
+ * getclearnews.com.
+ */
+export async function readArticle(url: string, meta: Article | undefined, ownHosts: string[], photoKey?: string): Promise<ReaderResult> {
+  const r = await read(url, meta, ownHosts);
+  if (!photoKey) return r;
+  return {
+    ...r,
+    image_url: r.image_url ? await photoUrl(photoKey, r.image_url) : null,
+    content_html: r.content_html ? await rewritePhotos(r.content_html, photoKey) : null,
+  };
+}
+
+async function read(url: string, meta: Article | undefined, ownHosts: string[]): Promise<ReaderResult> {
   if (VIDEO_PATH.test(new URL(url).pathname)) return result(url, meta, { reason: 'video' });
   const page = await fetchPage(url, ownHosts);
   if (!page.ok) return result(url, meta, { reason: page.reason });

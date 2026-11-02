@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.1] - 2026-11-01 - Reader photos, resized, from getclearnews.com (#423)
+
+### Changed
+- Every photo in the reader (in the text and above the title) now loads from `getclearnews.com/img`, resized by Cloudflare to 1,200 pixels wide in AVIF or WebP. A Quanta article's 7 photos went from 5.9 MB to 1.3 MB; an Ars photo from 137 KB to 64 KB. Each address carries a signature only the Worker can make (Worker secret `PHOTO_KEY`), so the route resizes only photos the reader produced; if resizing fails it redirects to the original. Free up to 5,000 different photos a month, then new ones fall back to the original.
+- Reader cache version 3, so stored articles pick up the new photo addresses.
+
+---
+
 ## [3.5.0] - 2026-11-01 - Reader view: whole articles, without the page junk (#423)
 
 ### Fixed

@@ -7,8 +7,8 @@ import type { Article } from '../types.ts';
 import { readArticle, type ReaderResult } from './reader.ts';
 import { checkUrl } from './ssrf.ts';
 
-/** Bump when extraction or cleanup changes. */
-const VERSION = 2;
+/** Bump when extraction, cleanup or photo addresses change. 3: photos served from getclearnews.com. */
+const VERSION = 3;
 const KEEP_S = 6 * 3600;
 /** A block or a timeout can pass: try again sooner. */
 const KEEP_FAILED_S = 30 * 60;
@@ -34,11 +34,12 @@ export async function readCached(
   meta: Article | undefined,
   ownHosts: string[],
   wait: (p: Promise<unknown>) => void,
+  photoKey?: string,
 ): Promise<ReaderResult> {
   const key = await readerKey(url);
   const hit = await kv.get<ReaderResult>(key, 'json');
   if (hit) return hit;
-  const r = await readArticle(url, meta, ownHosts);
+  const r = await readArticle(url, meta, ownHosts, photoKey);
   wait(kv.put(key, JSON.stringify(r), { expirationTtl: keepFor(r) }));
   return r;
 }
@@ -50,7 +51,7 @@ export interface AheadSummary {
 }
 
 /** Reads and stores the articles not stored yet, five at a time, giving up after `ms`. */
-export async function readAhead(kv: KVNamespace, articles: Article[], ownHosts: string[], ms: number): Promise<AheadSummary> {
+export async function readAhead(kv: KVNamespace, articles: Article[], ownHosts: string[], ms: number, photoKey?: string): Promise<AheadSummary> {
   const summary: AheadSummary = { read: 0, already: 0, failed: 0 };
   const queue = [...articles];
   const work = async () => {
@@ -61,7 +62,7 @@ export async function readAhead(kv: KVNamespace, articles: Article[], ownHosts: 
         continue;
       }
       if (!(await checkUrl(a.url, ownHosts)).ok) continue;
-      const r = await readArticle(a.url, a, ownHosts);
+      const r = await readArticle(a.url, a, ownHosts, photoKey);
       await kv.put(key, JSON.stringify(r), { expirationTtl: keepFor(r) });
       if (r.status === 'ok') summary.read++;
       else summary.failed++;

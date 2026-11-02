@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addressBlocked, checkUrl, checkUrlShape } from '../src/reader/ssrf.ts';
 import { readAhead, readCached, readerKey } from '../src/reader/cache.ts';
+import { photoUrl, rewritePhotos, servePhoto } from '../src/reader/photos.ts';
 import { cleanAuthor, clean, extract, readArticle, sanitize } from '../src/reader/reader.ts';
 
 describe('checkUrlShape (spec section 6, review R12)', () => {
@@ -177,5 +178,40 @@ describe('reader cache and read-ahead (#423)', () => {
     const two = await readAhead(env.CACHE, [art(2), art(3), art(4)], ['getclearnews.com'], 5000);
     expect(two).toEqual({ read: 1, already: 2, failed: 0 });
     expect(await env.CACHE.get(await readerKey(art(4).url))).not.toBeNull();
+  });
+});
+
+describe('reader photos served from getclearnews.com (#423)', () => {
+  const KEY = 'test-photo-key';
+  afterEach(() => vi.restoreAllMocks());
+  it('rewrites photos only with a key, and leaves data: URLs and our own alone', async () => {
+    expect(await photoUrl(undefined, 'https://cdn.test/a.jpg')).toBe('https://cdn.test/a.jpg');
+    expect(await photoUrl(KEY, 'data:image/png;base64,AAAA')).toBe('data:image/png;base64,AAAA');
+    expect(await photoUrl(KEY, 'https://getclearnews.com/x.png')).toBe('https://getclearnews.com/x.png');
+    const u = await photoUrl(KEY, 'https://cdn.test/a.jpg?x=1&y=2');
+    expect(u).toMatch(/^https:\/\/getclearnews\.com\/img\?w=1200&u=https%3A%2F%2Fcdn\.test%2Fa\.jpg%3Fx%3D1%26y%3D2&s=[\w-]{22}$/);
+    const html = await rewritePhotos('<p>x</p><img src="https://cdn.test/a.jpg?x=1&amp;y=2" alt="A" />', KEY);
+    expect(html).toBe(`<p>x</p><img src="${u.replace(/&/g, '&amp;')}" alt="A" />`);
+  });
+  it('serves a signed photo resized, rejects a bad signature, and falls back to the original', async () => {
+    const good = new URL(await photoUrl(KEY, 'https://cdn.test/a.jpg'));
+    const asked: RequestInit[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+      asked.push(init ?? {});
+      return new Response('img', { headers: { 'content-type': 'image/webp' } });
+    });
+    const ok = await servePhoto(new Request(good, { headers: { accept: 'image/webp,*/*' } }), KEY);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get('cache-control')).toBe('public, max-age=604800');
+    expect((asked[0] as { cf?: unknown }).cf).toEqual({ image: { width: 1200, fit: 'scale-down', format: 'webp' } });
+    const forged = new URL(good);
+    forged.searchParams.set('u', 'https://evil.test/b.jpg');
+    expect((await servePhoto(new Request(forged), KEY)).status).toBe(404);
+    expect((await servePhoto(new Request(good), undefined)).status).toBe(404);
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('error 9422', { status: 403 }));
+    const fallback = await servePhoto(new Request(good), KEY);
+    expect(fallback.status).toBe(302);
+    expect(fallback.headers.get('location')).toBe('https://cdn.test/a.jpg');
   });
 });
