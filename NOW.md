@@ -6,23 +6,22 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 ## Now
 
-**Make ClearNews worth opening every morning** (#414). Proposal: [docs/414-worth-opening.md](docs/414-worth-opening.md). Mockup: a private artifact linked on #414.
+**The apps** (all P1, Nikhil, Nov 1; not started, soon):
+- **iOS 2.1** (#425): Today screen, story coverage, Fox and NPR marks, the reader display fixes, About text.
+- **Android** (#426): the same, plus Android-only reader fixes.
+- **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 
-- **Step 1, sources:** shipped Nov 1 (3.2.0, see CHANGELOG).
-- **Step 2, Today brief:** shipped Nov 1 (3.3.0, see CHANGELOG). Next: watch the first days of briefs (each build is logged) for repeats, outlet balance and missing US politics.
-- **Step 3, web:** shipped Nov 1 (3.4.0, see CHANGELOG). Next: Nikhil tries it on the phone and desktop.
-- **Step 4, the apps:** iOS 2.1 (#425) and the next Android APK (#426), with notifications (#435, design first), all P1 (Nikhil, Nov 1): not started; soon.
+**Watch for a few days** (no task needed; each brief build is logged and `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
-Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and no AI-written text in step 2.
-
-**Reader view** (#423, P1, filed Nov 1): investigation in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md); server and web fixes shipped as 3.5.0, photos resized from getclearnews.com as 3.5.1. Open: the app display fixes (in #425 and #426). The feed's full text waits for its trigger (#424).
+Shipped on Nov 1 (see CHANGELOG): the move (#400), India cleanup (#413), #414 steps 1 to 3 (sources, the Today brief, the web Today page), the reader (#423, 3.5.0 and 3.5.1; findings in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md)), Fox politics and CNBC Business feeds (#416, 3.5.2).
 
 ## Ruled decisions that govern next steps
 
 - General keeps a balance of right- and left-leaning outlets (Fox News and NPR News today).
 - Hindi and other non-Latin headlines stay hidden in every tab.
-- No analytics and no tracking. Personalization, if any, is explicit and stored on the device.
-- No AI-written text on screen in step 2: AI groups, labels and ranks; every word shown is the publisher's.
+- Privacy is not a design driver (Nikhil, Nov 1): don't lead with privacy or tracking arguments; when a feature changes what the privacy page or terms say, update them. No analytics today.
+- Personalization is explicit (topics the reader picks), not learned from clicks (#414).
+- No AI-written text on screen: AI groups, labels and ranks; every word shown is the publisher's.
 - Today is an hourly edition. Deals, betting, quizzes, listicles and celebrity items are dropped from every tab; how-to, opinion and features stay in tabs but never reach Today.
 
 ## Later
@@ -30,5 +29,6 @@ Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and 
 - **On-device controls** (needs an iOS release): mute a source or topic, "less like this", stored on the phone.
 - **Web smart sharing**: match Android's formatted share text with a ClearNews reader link.
 - **iOS**: image caching if AsyncImage flicker shows; iPad layout.
-- **Stale-feed alert** (#417): open question on the channel (lean: a daily GitHub Actions check of `/api/v1/status`).
-- **Source decisions** (#416): Fox politics feed, CNBC Business, Sunny Skyz; revisit after step 2.
+- **Stale-feed alert** (#417): sources, the Today brief and reader failures; open question on the channel (lean: a daily GitHub Actions check of `/api/v1/status`).
+- **Reader**: the feed's full text as a fallback, only when triggered (#424); the measurement script into the repo (#436).
+- **Grok digest from X** (#415): an idea; needs an exception to no AI-written text.

@@ -75,6 +75,9 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **The apps' About screens** say "financial news APIs" until their next release.
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
+- **Reader gaps** (#423): NDTV and UPI Odd News block the reader (403; the app shows "doesn't allow reader view" and a link). A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
+- **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.
+- **Web topic picker:** unticking a topic moves it to the other list, so keyboard focus drops to the page.
 - **A new edition reaches the web up to 5 minutes late**: article lists are cached in the browser for 5 minutes (`max-age=300`, unchanged from before); the refresh button bypasses it.
 
 ## What's Next
