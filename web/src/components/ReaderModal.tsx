@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import DOMPurify from 'dompurify';
+import { failureMessage, readMinutes, readerHtml } from '@/lib/reader';
 import { ReaderResponse, ReaderTarget } from '@/lib/types';
 import { fetchReaderContent } from '@/lib/api';
 import { timeAgo } from '@/lib/utils';
@@ -160,7 +160,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
             <img
               src={imageUrl}
               alt=""
-              className="w-full object-cover"
+              className="max-h-[28rem] w-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
@@ -185,7 +185,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
           {isOk && reader?.word_count && (
             <>
               <span>&middot;</span>
-              <span>{Math.ceil(reader.word_count / 200)} min read</span>
+              <span>{readMinutes(reader.word_count)} min read</span>
             </>
           )}
         </div>
@@ -215,7 +215,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
         {isFailed && (
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-800 dark:bg-gray-900">
             <p className="mb-4 text-gray-600 dark:text-gray-400">
-              This article couldn&apos;t be loaded in reader view.
+              {failureMessage(reader?.reason, sourceName)}
             </p>
             <a
               href={article.url}
@@ -223,7 +223,7 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Read on {sourceName || 'original site'}
+              {reader?.reason === 'video' ? 'Watch' : 'Read'} on {sourceName || 'original site'}
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5-6h6m0 0v6m0-6L9.75 14.25" />
               </svg>
@@ -233,14 +233,15 @@ export default function ReaderModal({ article, onClose }: ReaderModalProps) {
 
         {isOk && reader?.content_html && (
           <div
-            className="prose prose-gray max-w-none dark:prose-invert
+            className="prose prose-gray max-w-none break-words [overflow-wrap:anywhere] dark:prose-invert
               prose-headings:font-semibold
               prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
               dark:prose-a:text-blue-400
               prose-img:rounded-lg prose-img:mx-auto
               prose-p:leading-relaxed
-              prose-li:leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reader.content_html) }}
+              prose-li:leading-relaxed
+              [&_blockquote_p]:before:content-none [&_blockquote_p]:after:content-none"
+            dangerouslySetInnerHTML={{ __html: readerHtml(reader.content_html) }}
           />
         )}
       </article>

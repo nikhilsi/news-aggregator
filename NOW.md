@@ -15,6 +15,8 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 Nikhil approved the proposal on Nov 1: the step 1 table, Today plus Latest, and no AI-written text in step 2.
 
+**Reader view** (#423, P1, filed Nov 1): investigation in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md); server and web fixes shipped as 3.5.0. Open: photos through getclearnews.com resizing (waits for Nikhil's yes), the feed's full text as a fallback (held: it fixed 1 article in 236), and the app display fixes (with iOS 2.1).
+
 ## Ruled decisions that govern next steps
 
 - General keeps a balance of right- and left-leaning outlets (Fox News and NPR News today).

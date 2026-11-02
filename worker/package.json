@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mozilla/readability": "0.6.0",
+    "defuddle": "0.19.6",
     "entities": "7.0.1",
     "feedsmith": "3.0.1",
     "hono": "4.13.16",

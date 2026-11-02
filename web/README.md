@@ -56,6 +56,7 @@ web/src/
 └── lib/
     ├── api.ts               # API client (fetch wrapper with 15s timeout)
     ├── types.ts             # TypeScript interfaces (Article, Coverage, Category, ReaderTarget, etc.)
+    ├── reader.ts            # Reader HTML (links open in a new tab), reading time, failure messages by reason
     ├── topics.ts            # The topic sections the reader picked (localStorage)
     ├── visits.ts            # "New since your last visit" (localStorage)
     └── utils.ts             # Utility functions (relative time formatting)

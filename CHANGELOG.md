@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.5.0] - 2026-11-01 - Reader view: whole articles, without the page junk (#423)
+
+### Fixed
+- **Articles cut short.** The reader kept one block of each Ars Technica story (Ars splits stories into three around ad slots), so all four Ars tabs showed a third to half of each article, sometimes starting mid-story; BBC, Google DeepMind and A.V. Club were cut too. Measured on 250 articles from all 53 sources, 24 of 220 lost 30% or more of their text. The reader now runs Defuddle first and Readability as the fallback (when it finds 25% more article text), comparing both after cleanup; on the same pages the cut-short count fell to about 12 by the same yardstick, most of which is the yardstick counting subtitles and subscription pitches.
+- **Page junk.** A cleanup pass removes "Skip to content", sign-up and "download the app" lines, "N Comments", "Follow topics and authors", support pitches, captions and subtitles repeated word for word, the photo already shown above the title (with its caption), the byline and bio at the top, orphaned photo credits, tracking pixels and empty bullets, figures and paragraphs. Junk lines 46 to 8, the photo shown twice 40 to 2, empty blocks 195 to 0.
+- **Author field:** entities decoded ("O'Brien", not "O&#x27;Brien"); URLs and "Sponsored Content" dropped.
+- **Broken images** whose address held two comma-joined URLs (Fox News) now use the first.
+
+### Added
+- Reader results are kept in KV for 6 hours (30 minutes for a block or timeout), so opening an article again is instant and does not hit the publisher; after each new Today brief the cron reads its stories ahead.
+- Video pages answer `failed` with reason `video` instead of page text.
+- Web: a message per failure reason ("NDTV doesn't allow reader view.", "This is a video, not an article."), with "Watch on" for videos; links in articles open in a new tab; long links wrap instead of widening the page on phones; the photo above the title is capped in height; quotes no longer get doubled quote marks; reading time rounds down like the apps.
+- `docs/reviews/2026-11-01-reader-investigation.md`: the measurements behind this release.
+
+### Not in this release
+- Photos through getclearnews.com image resizing (lighter pages, publishers no longer see readers' addresses): waits for Nikhil's yes.
+- The full text 13 feeds carry, as a fallback: held, since it would have fixed 1 of 236 articles.
+- The apps' display fixes (captions, figures, tables, zoom, failure messages): with iOS 2.1.
+
+---
+
 ## [3.4.0] - 2026-11-01 - Today on the web (#414 step 3)
 
 ### Added

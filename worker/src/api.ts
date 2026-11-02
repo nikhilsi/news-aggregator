@@ -10,7 +10,7 @@ import { readFeed, readState, type Env } from './store.ts';
 import type { Article } from './types.ts';
 import { boolParam, intParam, missing, type FieldError } from './validate.ts';
 import { checkUrl } from './reader/ssrf.ts';
-import { readArticle } from './reader/reader.ts';
+import { readCached } from './reader/cache.ts';
 
 type App = { Bindings: Env };
 const app = new Hono<App>();
@@ -132,7 +132,7 @@ app.get('/api/v1/articles/reader', async (c) => {
   if (!check.ok) return detail(c, 400, check.detail);
   const feed = await readFeed(c.env.CACHE);
   const meta = feed?.articles.find((a) => a.url === url);
-  return c.json(await readArticle(url, meta, own));
+  return c.json(await readCached(c.env.CACHE, url, meta, own, (p) => c.executionCtx.waitUntil(p)));
 });
 
 app.get('/api/v1/status', async (c) => {

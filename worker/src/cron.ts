@@ -1,7 +1,8 @@
 // The Cron Trigger run (spec section 4). Every minute: read "state", fetch the
 // sources that are due, look up missing og:images, run the AI step (#414),
 // rebuild "feed" if any articles or labels changed, then write "ai", "feed"
-// and "state" in that order.
+// and "state" in that order; after a new Today brief, read its stories ahead
+// into the reader cache (#423).
 
 import { SOURCES, TTL_MINUTES, type Source } from './sources.ts';
 import { enrich, type EnrichSummary } from './ai/enrich.ts';
@@ -9,6 +10,7 @@ import type { AiRunner } from './ai/vectors.ts';
 import { fetchFeed, lookupOg, OG_POOL } from './feeds/fetch.ts';
 import { buildFeed, enabledSources } from './pipeline/build.ts';
 import { pool } from './pool.ts';
+import { readAhead, type AheadSummary } from './reader/cache.ts';
 import { trimSource } from './pipeline/trim.ts';
 import { gate } from './pipeline/gate.ts';
 import { AI_KEY, FEED_KEY, readAi, readState, STATE_KEY, type Env } from './store.ts';
@@ -20,6 +22,10 @@ const RETRY_MS = 5 * MIN;
 const MAX_AGE_MS = 24 * 60 * MIN;
 const RUN_DEADLINE_MS = 40_000;
 const SOURCE_ORDER: ReadonlyMap<string, number> = new Map(SOURCES.map((s, i) => [s.id, i]));
+/** The site's own names, never fetched by the reader (SSRF checks). */
+const OWN_HOSTS = ['getclearnews.com', 'www.getclearnews.com'];
+/** Reading Today ahead starts only with this much of the run left. */
+const MIN_LEFT_AHEAD_MS = 10_000;
 
 export function isDue(st: SourceState | undefined, now: number): boolean {
   if (!st) return true;
@@ -62,6 +68,8 @@ export interface RunSummary {
   state_written: boolean;
   articles: number | null;
   ai: EnrichSummary;
+  /** Today's stories read ahead into the reader cache, after a new brief (#423). */
+  read_ahead: AheadSummary | null;
 }
 
 export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
@@ -189,6 +197,16 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
   const stateWritten = due.length > 0 || changed;
   if (stateWritten) await env.CACHE.put(STATE_KEY, JSON.stringify(state));
 
+  // Step 8, after everything is saved: a new Today brief has its stories read ahead,
+  // so they open instantly (#423). Whatever is not done in time is read on first open.
+  let readAheadSummary: AheadSummary | null = null;
+  const leftMs = deadline - Date.now();
+  if (ai.summary.brief.startsWith('built') && ai.store.brief && leftMs >= MIN_LEFT_AHEAD_MS) {
+    const byUrl = new Map(held.map((a) => [a.url, a]));
+    const today = ai.store.brief.urls.flatMap((u) => (byUrl.has(u) ? [byUrl.get(u)!] : []));
+    readAheadSummary = await readAhead(env.CACHE, today, OWN_HOSTS, leftMs - 2_000);
+  }
+
   const summary: RunSummary = {
     run_seq: state.run_seq,
     colo,
@@ -202,6 +220,7 @@ export async function runCron(env: Env, now = Date.now()): Promise<RunSummary> {
     state_written: stateWritten,
     articles: articleCount,
     ai: ai.summary,
+    read_ahead: readAheadSummary,
   };
   console.log(JSON.stringify({ msg: 'cron run', ...summary }));
   return summary;

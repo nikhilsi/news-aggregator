@@ -1,9 +1,20 @@
-// Reader view: fetch one article page, extract the main text, sanitize it.
-// Port of backend/app/articles/reader.py with the changes in spec section 6:
-// Readability on linkedom only (no trafilatura), sanitize-html with the nh3
-// allowlist, SSRF checks on every redirect hop, a 3 MB read cap, no cache.
+// Reader view: fetch one article page, extract the main text, sanitize it,
+// clean it. Port of backend/app/articles/reader.py with the changes in spec
+// section 6 (sanitize-html with the nh3 allowlist, SSRF checks on every
+// redirect hop, a 3 MB read cap), and #423 (Nov 1, 2026), measured on 250
+// articles from all 53 sources:
+//   - Defuddle first, Readability when it finds at least 25% more article
+//     text (Defuddle sometimes drops opening paragraphs, as on Scientific
+//     American). Readability alone cut 24 of 220 articles by 30% or more
+//     (Ars Technica splits each story into three blocks and it kept one; BBC
+//     too); the pair with the cleanup below cut 9, with junk lines 46 to 9.
+//   - A cleanup pass for what both leave behind: "Skip to content", sign-up
+//     and app lines, "N Comments", repeated captions, empty bullets, the photo
+//     the clients already show above the title, broken image addresses.
 
 import { Readability } from '@mozilla/readability';
+import Defuddle from 'defuddle';
+import { decodeHTML } from 'entities';
 import { parseHTML } from 'linkedom';
 import sanitizeHtml from 'sanitize-html';
 import { decodeBody, readCapped, USER_AGENT } from '../feeds/fetch.ts';
@@ -27,6 +38,7 @@ export interface ReaderResult {
   source_name: string | null;
   published_at: string | null;
   extracted_at: string | null;
+  /** forbidden, timeout, extraction_empty, error, or video (a video page, not an article). */
   reason: string | null;
 }
 
@@ -56,7 +68,25 @@ const SANITIZE: sanitizeHtml.IOptions = {
 const htmlToText = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 const countWords = (text: string) => (text ? text.split(/\s+/).filter(Boolean).length : 0);
 
-function extractAuthor(html: string): string | null {
+/** Words in paragraphs of 12 words or more: the article's own text, not captions or page junk. */
+function articleWords(html: string): number {
+  let n = 0;
+  for (const m of html.matchAll(/<p[\s>][\s\S]*?<\/p>/g)) {
+    const w = countWords(htmlToText(m[0]));
+    if (w >= 12) n += w;
+  }
+  return n;
+}
+
+/** A clean byline, or null: entities decoded, no URLs, no "Sponsored". */
+export function cleanAuthor(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const author = decodeHTML(raw).replace(/\s+/g, ' ').trim();
+  if (!author || author.length > 100 || /https?:|www\.|\.com\b|sponsored/i.test(author)) return null;
+  return author;
+}
+
+function metaAuthor(html: string): string | null {
   const m =
     /<meta\s+name="author"\s+content="([^"]+)"/i.exec(html) ??
     /<meta\s+property="article:author"\s+content="([^"]+)"/i.exec(html);
@@ -115,42 +145,193 @@ async function fetchPage(url: string, ownHosts: string[]): Promise<Fetched> {
   }
 }
 
-/** Readability on linkedom; null unless the result has at least 50 words. */
-export function extract(html: string, finalUrl: string): { content: string; title: string | null } | null {
+/** A linkedom document with a <base>, so relative links and images become absolute. */
+function pageDocument(html: string, finalUrl: string) {
+  const { document } = parseHTML(html);
+  const head = document.head ?? document.documentElement;
+  if (head) {
+    // linkedom documents have no URL; a <base> lets the extractors make links absolute.
+    const base = document.createElement('base');
+    base.setAttribute('href', finalUrl);
+    head.insertBefore(base, head.firstChild);
+  }
+  return document;
+}
+
+interface Extracted {
+  content: string;
+  title: string | null;
+  author: string | null;
+}
+
+function byDefuddle(html: string, finalUrl: string): Extracted | null {
   try {
-    const { document } = parseHTML(html);
-    const head = document.head ?? document.documentElement;
-    if (head) {
-      // linkedom documents have no URL; a <base> lets Readability make links absolute.
-      const base = document.createElement('base');
-      base.setAttribute('href', finalUrl);
-      head.insertBefore(base, head.firstChild);
-    }
-    const parsed = new Readability(document as unknown as ConstructorParameters<typeof Readability>[0]).parse();
-    if (!parsed?.content || countWords(htmlToText(parsed.content)) < MIN_WORDS) return null;
-    return { content: parsed.content, title: parsed.title || null };
+    const document = pageDocument(html, finalUrl);
+    // parse() is synchronous and makes no network calls (parseAsync can).
+    const r = new Defuddle(document as unknown as ConstructorParameters<typeof Defuddle>[0], { url: finalUrl }).parse();
+    return r?.content ? { content: r.content, title: r.title || null, author: r.author || null } : null;
   } catch {
     return null;
   }
+}
+
+function byReadability(html: string, finalUrl: string): Extracted | null {
+  try {
+    const document = pageDocument(html, finalUrl);
+    const parsed = new Readability(document as unknown as ConstructorParameters<typeof Readability>[0]).parse();
+    return parsed?.content ? { content: parsed.content, title: parsed.title || null, author: null } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The article, sanitized and cleaned: Defuddle's, unless Readability's has at
+ * least 25% more article text or Defuddle's has under 50 words. Both are
+ * cleaned before the comparison, so leftover junk (an author bio, a subscribe
+ * pitch) cannot tip it. `hero` is the photo shown above the title; `author`
+ * the byline to drop from the text. Null under 50 words.
+ */
+export function extract(html: string, finalUrl: string, hero: string | null = null, author: string | null = null): Extracted | null {
+  const d0 = byDefuddle(html, finalUrl);
+  const byline = author ?? cleanAuthor(d0?.author);
+  const tidy = (e: Extracted | null) => (e ? { ...e, content: clean(sanitize(e.content), hero, byline) } : null);
+  const d = tidy(d0);
+  const r = tidy(byReadability(html, finalUrl));
+  const words = (e: Extracted | null) => (e ? countWords(htmlToText(e.content)) : 0);
+  const useReadability = !!r && (words(d) < MIN_WORDS || articleWords(r.content) > 1.25 * articleWords(d!.content));
+  const pick = useReadability ? r : d;
+  if (!pick || words(pick) < MIN_WORDS) return null;
+  return { ...pick, author: d0?.author ?? null };
 }
 
 export function sanitize(html: string): string {
   return sanitizeHtml(html, SANITIZE);
 }
 
+/** Whole lines of page furniture, matched against a block's entire text. */
+const BOILERPLATE =
+  /^(skip to (main )?content|skip past newsletter promotion|after newsletter promotion|advertisement|close|sponsored( content)?( by .{1,40})?|subscribe( now)?|subscribe to .{1,60}|sign up( now)?|sign up for .{1,60}|newsletter|click here to download .{1,60}|download the .{1,40} app.{0,80}|new you can now listen to .{1,60}|listen to this article.{0,40}|\d+ comments?|read more|related( stories| articles| coverage)?:?|share this( article| story)?|follow (us|topics and authors)\b.{0,140}|most (read|popular)|email \(required\)|\d+ min read)$/i;
+/** Support pitches written as whole paragraphs. */
+const PITCH = /^(great science journalism requires|when you subscribe, you are supporting|subscriptions keep this engine running|support (our|independent) journalism|if you('re| are) enjoying (this|our) )/i;
+/** A photo credit on its own line. */
+const CREDIT = /^((photo|image|picture|illustration)s?( credit)?|credit|photograph)( by)?\s*:|getty images|shutterstock|picture alliance|ap photo/i;
+/** Whole blocks only: a link reading "close" inside a sentence stays. */
+const BLOCKS = 'p, li, h1, h2, h3, h4, h5, h6, figcaption, blockquote, div';
+const CONTAINERS = 'p, li, ul, ol, figure, figcaption, div, span, a, blockquote, h1, h2, h3, h4, h5, h6, b, strong, em, i';
+
+/** The last path segment of an image URL, without size suffixes or extension, to spot one photo at two sizes. */
+function photoKey(src: string | null | undefined): string {
+  if (!src) return '';
+  try {
+    const name = new URL(src, 'https://x.invalid/').pathname.split('/').pop() ?? '';
+    return name.replace(/\.(jpe?g|png|webp|avif|gif)$/i, '').replace(/[-_]\d{2,4}x\d{2,4}$/, '').toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Removes what extraction leaves behind. `heroUrl` is the photo every client
+ * already shows above the title; the same photo at the top of the text goes.
+ * `author` is the byline every client shows; the same name at the top of the
+ * text goes, with the bio line after it.
+ */
+export function clean(html: string, heroUrl: string | null, author: string | null = null): string {
+  const { document } = parseHTML(`<!doctype html><html><body>${html}</body></html>`);
+  const body = document.body;
+  const text = (n: { textContent: string | null }) => (n.textContent ?? '').replace(/\s+/g, ' ').trim();
+  // Leaf-most blocks: those with no block inside them.
+  const leaves = () => [...body.querySelectorAll(BLOCKS)].filter((n) => !n.querySelector('p, li, div, blockquote, figure'));
+
+  // 1. Page furniture, by whole-line match, and support pitches.
+  for (const n of leaves()) if (BOILERPLATE.test(text(n)) || PITCH.test(text(n))) n.remove();
+
+  // 2. A block repeated word for word (a caption shown twice, a subtitle repeated).
+  const seen = new Set<string>();
+  for (const n of leaves()) {
+    const t = text(n).toLowerCase();
+    if (t.split(' ').length < 6) continue;
+    if (seen.has(t)) n.remove();
+    else seen.add(t);
+  }
+
+  // 3. Images: the first address of a comma-joined srcset, no tracking pixels.
+  for (const img of [...body.querySelectorAll('img')]) {
+    const src = img.getAttribute('src') ?? '';
+    if (/,\s*https?:/.test(src)) img.setAttribute('src', src.split(/,\s*(?=https?:)/)[0].trim().split(/\s+/)[0]);
+    const w = Number(img.getAttribute('width')), h = Number(img.getAttribute('height'));
+    if (!src || (w > 0 && w < 50) || (h > 0 && h < 50)) img.remove();
+  }
+
+  // 4. The photo above the title, again at the top of the text: remove it with its caption
+  //    (the largest wrapper holding no other image and only caption text: a figcaption,
+  //    the photo's own description, a credit or a short line).
+  const first = body.querySelector('img');
+  const hero = photoKey(heroUrl);
+  if (first && hero && photoKey(first.getAttribute('src')) === hero) {
+    const words = (n: { textContent: string | null }) => countWords(text(n));
+    const total = words(body);
+    const alt = (first.getAttribute('alt') ?? '').trim().slice(0, 30).toLowerCase();
+    const captionLike = (t: string) => countWords(t) <= 12 || CREDIT.test(t) || (alt.length >= 10 && t.toLowerCase().startsWith(alt));
+    let target = first;
+    for (let p = first.parentElement; p && p !== body; p = p.parentElement) {
+      const n = words(p);
+      if (p.querySelectorAll('img').length > 1 || n > 60 || n > total / 2) break;
+      const blocks = [...p.querySelectorAll(BLOCKS)].filter((b) => b.tagName !== 'FIGCAPTION' && !b.querySelector('p, li, div, blockquote, figure'));
+      if (blocks.some((b) => text(b) && !captionLike(text(b)))) break;
+      target = p;
+    }
+    target.remove();
+  }
+
+  // 5. Above the first paragraph: the byline and the bio line after it (shown in the
+  //    meta row already), and photo credits whose photo is gone.
+  const besidePhoto = (n: ReturnType<typeof leaves>[number]) =>
+    !!n.closest('figure')?.querySelector('img') ||
+    [n.previousElementSibling, n.parentElement?.previousElementSibling].some((s) => s && (s.tagName === 'IMG' || s.querySelector('img')));
+  let afterByline = false;
+  for (const n of leaves()) {
+    const t = text(n);
+    if (author && t.toLowerCase() === author.toLowerCase()) {
+      n.remove();
+      afterByline = true;
+    } else if (afterByline && /^(is|was|has|covers|writes|reports)\b/.test(t)) {
+      n.remove();
+      afterByline = false;
+    } else if (countWords(t) <= 12 && CREDIT.test(t) && !besidePhoto(n)) {
+      n.remove();
+    } else if (countWords(t) >= 12) {
+      break;
+    }
+  }
+
+  // 6. Empty wrappers left behind (empty bullets, figures, paragraphs), innermost first.
+  for (let pass = 0; pass < 4; pass++) {
+    const empty = [...body.querySelectorAll(CONTAINERS)].filter((n) => !text(n) && !n.querySelector('img, br, hr, table'));
+    if (!empty.length) break;
+    for (const n of empty) n.remove();
+  }
+  return body.innerHTML.trim();
+}
+
+/** A video page, not an article: nothing to read. */
+const VIDEO_PATH = /\/videos?\//i;
+
 /** The reader response for a URL that already passed checkUrl. */
 export async function readArticle(url: string, meta: Article | undefined, ownHosts: string[]): Promise<ReaderResult> {
+  if (VIDEO_PATH.test(new URL(url).pathname)) return result(url, meta, { reason: 'video' });
   const page = await fetchPage(url, ownHosts);
   if (!page.ok) return result(url, meta, { reason: page.reason });
-  const extracted = extract(page.html, page.finalUrl);
+  const byline = cleanAuthor(metaAuthor(page.html));
+  const extracted = extract(page.html, page.finalUrl, meta?.image_url ?? null, byline);
   if (!extracted) return result(url, meta, { reason: 'extraction_empty' });
-  const content = sanitize(extracted.content);
   return result(url, meta, {
     status: 'ok',
     title: meta?.title ?? extracted.title,
-    author: extractAuthor(page.html),
-    content_html: content,
-    word_count: countWords(htmlToText(content)),
+    author: byline ?? cleanAuthor(extracted.author),
+    content_html: extracted.content,
+    word_count: countWords(htmlToText(extracted.content)),
     extracted_at: new Date().toISOString(),
   });
 }
