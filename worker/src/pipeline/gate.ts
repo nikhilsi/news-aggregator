@@ -5,6 +5,7 @@
 
 import type { Article } from '../types.ts';
 import { DATE_RE } from '../feeds/dates.ts';
+import { webImage } from '../feeds/normalize.ts';
 
 const wellFormed = (s: string) => s.toWellFormed();
 
@@ -23,7 +24,8 @@ export function gate(a: Article): { article: Article } | { reason: string } {
       title: wellFormed(a.title),
       summary: a.summary === null ? null : wellFormed(a.summary),
       url: wellFormed(a.url),
-      image_url: a.image_url === null ? null : wellFormed(a.image_url),
+      // A photo that is not a web address (an og:image path, a placeholder) is no photo (#453).
+      image_url: a.image_url === null ? null : webImage(wellFormed(a.image_url)),
       source_id: a.source_id,
       source_name: a.source_name,
       source_type: a.source_type,

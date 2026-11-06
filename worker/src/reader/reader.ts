@@ -61,7 +61,8 @@ const SANITIZE: sanitizeHtml.IOptions = {
   allowProtocolRelative: true,
   // Disallowed tags are unwrapped (text kept); these lose their content too.
   disallowedTagsMode: 'discard',
-  nonTextTags: ['script', 'style', 'iframe', 'textarea', 'option', 'noscript', 'template'],
+  // video and audio lose their fallback text too ("Your browser does not support the video tag", #453).
+  nonTextTags: ['script', 'style', 'iframe', 'textarea', 'option', 'noscript', 'template', 'video', 'audio'],
   // nh3's link_rel: every link gets exactly this rel.
   transformTags: { a: (tagName, attribs) => ({ tagName, attribs: { ...attribs, rel: 'noopener noreferrer' } }) },
 };
@@ -212,7 +213,7 @@ export function sanitize(html: string): string {
 
 /** Whole lines of page furniture, matched against a block's entire text. */
 const BOILERPLATE =
-  /^(skip to (main )?content|skip past newsletter promotion|after newsletter promotion|advertisement|close|sponsored( content)?( by .{1,40})?|subscribe( now)?|subscribe to .{1,60}|sign up( now)?|sign up for .{1,60}|newsletter|click here to download .{1,60}|download the .{1,40} app.{0,80}|new you can now listen to .{1,60}|listen to this article.{0,40}|\d+ comments?|read more|related( stories| articles| coverage)?:?|share this( article| story)?|follow (us|topics and authors)\b.{0,140}|most (read|popular)|email \(required\)|\d+ min read)$/i;
+  /^(skip to (main )?content|skip past newsletter promotion|after newsletter promotion|advertisement|close|sponsored( content)?( by .{1,40})?|subscribe( now)?|subscribe to .{1,60}|sign up( now)?|sign up for .{1,60}|newsletter|click here to download .{1,60}|download the .{1,40} app.{0,80}|new you can now listen to .{1,60}|listen to this article.{0,40}|\d+ comments?|read more|related( stories| articles| coverage)?:?|share this( article| story)?|follow (us|topics and authors)\b.{0,140}|most (read|popular)|email \(required\)|\d+ min read|your browser does(n't| not) support (the )?(html5 )?(video|audio)( tag| element)?\.?)$/i;
 /** Support pitches written as whole paragraphs. */
 const PITCH = /^(great science journalism requires|when you subscribe, you are supporting|subscriptions keep this engine running|support (our|independent) journalism|if you('re| are) enjoying (this|our) )/i;
 /** A photo credit on its own line. */
@@ -221,11 +222,27 @@ const CREDIT = /^((photo|image|picture|illustration)s?( credit)?|credit|photogra
 const BLOCKS = 'p, li, h1, h2, h3, h4, h5, h6, figcaption, blockquote, div';
 const CONTAINERS = 'p, li, ul, ol, figure, figcaption, div, span, a, blockquote, h1, h2, h3, h4, h5, h6, b, strong, em, i';
 
-/** The last path segment of an image URL, without size suffixes or extension, to spot one photo at two sizes. */
-function photoKey(src: string | null | undefined): string {
+/** Query parameters image services use for the original photo (NPR's Brightspot: ?url=). */
+const ORIGINAL_PARAMS = ['url', 'u', 'src', 'image'];
+
+/**
+ * The last path segment of an image URL, without size suffixes or extension, to spot one
+ * photo at two sizes. An image service address that names the original photo in a query
+ * parameter is keyed by that original (#453: NPR's addresses end in "/", so every NPR
+ * article showed its photo twice).
+ */
+export function photoKey(src: string | null | undefined): string {
   if (!src) return '';
   try {
-    const name = new URL(src, 'https://x.invalid/').pathname.split('/').pop() ?? '';
+    let u = new URL(src, 'https://x.invalid/');
+    for (const p of ORIGINAL_PARAMS) {
+      const inner = u.searchParams.get(p);
+      if (inner && /^https?:\/\//i.test(inner)) {
+        u = new URL(inner);
+        break;
+      }
+    }
+    const name = u.pathname.split('/').pop() ?? '';
     return name.replace(/\.(jpe?g|png|webp|avif|gif)$/i, '').replace(/[-_]\d{2,4}x\d{2,4}$/, '').toLowerCase();
   } catch {
     return '';
@@ -283,7 +300,14 @@ export function clean(html: string, heroUrl: string | null, author: string | nul
       if (blocks.some((b) => text(b) && !captionLike(text(b)))) break;
       target = p;
     }
+    // A caption in the block right after the photo goes with it (NPR keeps the photo and
+    // its caption in sibling blocks, the caption ending in "hide caption"; #453).
+    const next = target.nextElementSibling;
     target.remove();
+    if (next && !next.querySelector('img') && words(next) <= 60) {
+      const t = text(next);
+      if (/\b(hide|toggle) caption\b/i.test(t) || (alt.length >= 10 && t.toLowerCase().startsWith(alt))) next.remove();
+    }
   }
 
   // 5. Above the first paragraph: the byline and the bio line after it (shown in the
@@ -307,7 +331,16 @@ export function clean(html: string, heroUrl: string | null, author: string | nul
     }
   }
 
-  // 6. Empty wrappers left behind (empty bullets, figures, paragraphs), innermost first.
+  // 6. A figure left with only a short caption: its video or embed was removed ("See how
+  //    Plan Assist works.", DeepMind, #453). A longer caption is kept: it can carry the
+  //    article's own text even when its photo was lost.
+  for (const f of [...body.querySelectorAll('figure')]) {
+    const nodes = [...f.childNodes];
+    const onlyCaption = nodes.every((n) => (n.nodeType === 1 ? (n as Element).tagName === 'FIGCAPTION' : !(n.textContent ?? '').trim()));
+    if (onlyCaption && f.querySelector('figcaption') && countWords(text(f)) <= 12) f.remove();
+  }
+
+  // 7. Empty wrappers left behind (empty bullets, figures, paragraphs), innermost first.
   for (let pass = 0; pass < 4; pass++) {
     const empty = [...body.querySelectorAll(CONTAINERS)].filter((n) => !text(n) && !n.querySelector('img, br, hr, table'));
     if (!empty.length) break;

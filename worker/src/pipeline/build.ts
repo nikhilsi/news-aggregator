@@ -42,13 +42,21 @@ function onePerStory(list: Article[], storyOf: ReadonlyMap<Article, Story>): Art
   });
 }
 
+/**
+ * The other outlets in a story, one entry each. One article can sit in two feeds
+ * (Ars Technica AI and Tech share URLs), so an entry with the card's own URL or a
+ * URL already listed is skipped (#453): it would open the same article and count
+ * one outlet twice in "Covered by N outlets".
+ */
 function coverage(a: Article, story: Story | undefined): Coverage[] {
   if (!story) return [];
-  const seen = new Set([a.source_name]);
+  const names = new Set([a.source_name]);
+  const urls = new Set([a.url]);
   const out: Coverage[] = [];
   for (const m of story.members) {
-    if (seen.has(m.source_name)) continue;
-    seen.add(m.source_name);
+    if (names.has(m.source_name) || urls.has(m.url)) continue;
+    names.add(m.source_name);
+    urls.add(m.url);
     out.push({ source_name: m.source_name, title: m.title, url: m.url });
   }
   return out;

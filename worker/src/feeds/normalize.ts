@@ -6,24 +6,63 @@ import type { Entry } from './entry.ts';
 import { cutSummary, stripHtml } from './text.ts';
 import { formatDate, parseFeedDate } from './dates.ts';
 
-const IMG_RE = /<img[^>]+src=["']([^"']+)["']/;
+const IMG_RE = /<img[^>]+src=["']([^"']+)["']/g;
 
-/** _extract_image_url: media:content, media:thumbnail, image enclosures, then <img> in HTML. */
+/**
+ * An absolute http(s) address (a protocol-relative one gets https), or null.
+ * NPR's feed has carried <img src='undefined'> (#453, Nov 2026); a value like
+ * that must not count as a photo, so the cron looks up the page's og:image.
+ */
+export function webImage(raw: string | null | undefined): string | null {
+  const s = raw?.trim();
+  if (!s) return null;
+  const abs = s.startsWith('//') ? `https:${s}` : s;
+  try {
+    const u = new URL(abs);
+    return (u.protocol === 'https:' || u.protocol === 'http:') && u.hostname ? abs : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Tracking pixels some feeds put in item HTML (NPR's npr-rss-pixel.png). */
+const PIXEL = /\/tracking\/|pixel\.(png|gif)(\?|$)/i;
+
+/** A web address that is not a tracking pixel, or null. */
+const feedPhoto = (raw: string | null | undefined): string | null => {
+  const u = webImage(raw);
+  return u && !PIXEL.test(u) ? u : null;
+};
+
+/**
+ * _extract_image_url: media:content, media:thumbnail, image enclosures, then <img> in HTML.
+ * The first real photo address wins; placeholders and tracking pixels are skipped, so an
+ * item without a photo gets the page's og:image from the cron.
+ */
 export function extractImage(e: Entry): string | null {
   for (const m of e.mediaContent) {
     const type = m.type ?? '';
-    if (m.url && (type.includes('image') || !type)) return m.url;
+    if (type.includes('image') || !type) {
+      const u = feedPhoto(m.url);
+      if (u) return u;
+    }
   }
   for (const t of e.mediaThumbnail) {
-    if (t.url) return t.url;
+    const u = feedPhoto(t.url);
+    if (u) return u;
   }
   for (const enc of e.enclosures) {
-    if ((enc.type ?? '').includes('image')) return enc.url ?? null;
+    if ((enc.type ?? '').includes('image')) {
+      const u = feedPhoto(enc.url);
+      if (u) return u;
+    }
   }
   for (const html of [e.summary, e.content]) {
     if (!html) continue;
-    const m = IMG_RE.exec(html);
-    if (m) return m[1];
+    for (const m of html.matchAll(IMG_RE)) {
+      const u = feedPhoto(m[1]);
+      if (u) return u;
+    }
   }
   return null;
 }

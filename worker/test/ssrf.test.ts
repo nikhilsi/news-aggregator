@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addressBlocked, checkUrl, checkUrlShape } from '../src/reader/ssrf.ts';
 import { readAhead, readCached, readerKey } from '../src/reader/cache.ts';
 import { photoUrl, rewritePhotos, servePhoto } from '../src/reader/photos.ts';
-import { cleanAuthor, clean, extract, readArticle, sanitize } from '../src/reader/reader.ts';
+import { cleanAuthor, clean, extract, photoKey, readArticle, sanitize } from '../src/reader/reader.ts';
 
 describe('checkUrlShape (spec section 6, review R12)', () => {
   const detail = (u: string) => {
@@ -143,6 +143,61 @@ describe('reader cleanup (#423)', () => {
   it('a video page answers reason video without fetching', async () => {
     const r = await readArticle('https://www.bbc.co.uk/news/videos/ckz652g7093go', undefined, ['getclearnews.com']);
     expect(r).toMatchObject({ status: 'failed', reason: 'video', content_html: null });
+  });
+});
+
+describe('reader cleanup (#453)', () => {
+  const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ');
+  // NPR's image service: the size sits in the path, the original photo in ?url=.
+  const npr = (size: string) =>
+    `https://npr.brightspotcdn.com/dims3/default/strip/false/crop/3575x2378+0+0/resize/${size}/quality/85/format/webp/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fab%2Fcd%2Ftrader-floor.jpg`;
+  it('keys a photo behind an image service by its original (NPR)', () => {
+    expect(photoKey(npr('3575x2378!'))).toBe('trader-floor');
+    expect(photoKey(npr('400'))).toBe(photoKey(npr('3575x2378!')));
+    expect(photoKey('https://cdn.test/a/b/photo-1200x675.jpg')).toBe('photo');
+  });
+  it('drops the photo above the title when the text repeats it at another size (NPR)', () => {
+    const out = clean(`<figure><img src="${npr('400')}" /><figcaption>A trader on the floor.</figcaption></figure><p>${words(60)}</p>`, npr('3575x2378!'));
+    expect(out).not.toContain('<img');
+    expect(out).not.toContain('A trader on the floor.');
+    expect(out).toContain(words(60));
+  });
+  it('drops the caption NPR keeps in the block after the photo, and nothing else', () => {
+    const cap = 'Stocks sank as investors fear an incoming Democratic Congress could crack down on the AI industry.';
+    const out = clean(
+      `<div><img src="${npr('400')}" alt="${cap}" /></div><div><p>${cap} <b>Timothy A. Clary/AFP via Getty Images</b> <b>hide caption</b></p><span>Timothy A. Clary/AFP via Getty Images</span></div><p>${words(60)}</p>`,
+      npr('3575x2378!'),
+    );
+    expect(out).not.toContain('Stocks sank');
+    expect(out).not.toContain('hide caption');
+    expect(out).toContain(words(60));
+  });
+  it('drops the video fallback text and a figure left with only its caption (DeepMind)', () => {
+    const html = sanitize(
+      `<p>${words(40)}</p><div><figure><video controls><source src="https://v.test/a.webm" type="video/webm"> Your browser does not support the video tag.</video><figcaption>Your browser does not support the video tag.</figcaption></figure></div>` +
+        `<figure><video><source src="https://v.test/b.webm"> Your browser does not support the video tag.</video><figcaption>See how Plan Assist works.</figcaption></figure><p>${words(20)}</p>`,
+    );
+    const out = clean(html, null);
+    expect(out).not.toMatch(/does not support/i);
+    expect(out).not.toContain('Plan Assist');
+    expect(out).not.toContain('<figure');
+    expect(out).toContain(words(40));
+    expect(out).toContain(words(20));
+  });
+  it('keeps a long caption even when its figure lost the image', () => {
+    const long = 'Plot of potency against rotatable bonds for every compound the agent found, which clearly shows that the highest potency compounds are the most rigid.';
+    const out = clean(`<p>${words(30)}</p><figure><figcaption>${long}</figcaption></figure>`, null);
+    expect(out).toContain(long);
+  });
+  it('keeps figures that hold a photo or a quote', () => {
+    const out = clean(
+      `<p>${words(30)}</p><figure><img src="https://cdn.test/x.jpg" /><figcaption>Photo caption here.</figcaption></figure><figure><blockquote><p>A pull quote that matters a great deal.</p></blockquote><figcaption>Jane Doe</figcaption></figure>`,
+      null,
+    );
+    expect(out).toContain('x.jpg');
+    expect(out).toContain('Photo caption here.');
+    expect(out).toContain('A pull quote that matters a great deal.');
+    expect(out).toContain('Jane Doe');
   });
 });
 

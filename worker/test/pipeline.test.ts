@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cutSummary, stripHtml } from '../src/feeds/text.ts';
 import { formatDate, parseFeedDate } from '../src/feeds/dates.ts';
-import { extractImage, normalizeEntry } from '../src/feeds/normalize.ts';
+import { extractImage, normalizeEntry, webImage } from '../src/feeds/normalize.ts';
 import { parseEntries } from '../src/feeds/entry.ts';
 import { decodeBody, ogFromHtml } from '../src/feeds/fetch.ts';
 import { gate } from '../src/pipeline/gate.ts';
@@ -115,10 +115,23 @@ describe('feed entries and normalization', () => {
   });
   it('image order: media:content (image or untyped), thumbnail, image enclosure, <img>', () => {
     const base = { mediaContent: [], mediaThumbnail: [], enclosures: [] };
-    expect(extractImage({ ...base, mediaContent: [{ url: 'v', type: 'video/mp4' }], mediaThumbnail: [{ url: 't' }] })).toBe('t');
-    expect(extractImage({ ...base, enclosures: [{ url: 'e', type: 'image/png' }] })).toBe('e');
-    expect(extractImage({ ...base, summary: '<p><img alt="x" src=\'s.jpg\'></p>' })).toBe('s.jpg');
+    expect(extractImage({ ...base, mediaContent: [{ url: 'https://i.test/v.mp4', type: 'video/mp4' }], mediaThumbnail: [{ url: 'https://i.test/t.jpg' }] })).toBe('https://i.test/t.jpg');
+    expect(extractImage({ ...base, enclosures: [{ url: 'https://i.test/e.png', type: 'image/png' }] })).toBe('https://i.test/e.png');
+    expect(extractImage({ ...base, summary: '<p><img alt="x" src=\'https://i.test/s.jpg\'></p>' })).toBe('https://i.test/s.jpg');
     expect(extractImage(base)).toBeNull();
+  });
+  it('only real web addresses count as photos (#453)', () => {
+    const base = { mediaContent: [], mediaThumbnail: [], enclosures: [] };
+    // NPR's feed put <img src='undefined'> first.
+    expect(extractImage({ ...base, content: `<img src='undefined' alt='x'/><p>t</p><img src="https://i.test/real.jpg">` })).toBe('https://i.test/real.jpg');
+    expect(extractImage({ ...base, content: `<img src='undefined' alt='x'/>` })).toBeNull();
+    // NPR's real markup: the placeholder, then a tracking pixel; neither is a photo.
+    const pixel = `<img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=g-s1-1' />`;
+    expect(extractImage({ ...base, content: `<img src='undefined' alt='x'/><p>t</p>${pixel}` })).toBeNull();
+    expect(extractImage({ ...base, content: `${pixel}<img src="https://i.test/photo.jpg">` })).toBe('https://i.test/photo.jpg');
+    expect(extractImage({ ...base, mediaThumbnail: [{ url: '/relative.jpg' }, { url: '//cdn.test/p.jpg' }] })).toBe('https://cdn.test/p.jpg');
+    expect(webImage('javascript:alert(1)')).toBeNull();
+    expect(webImage(' https://i.test/a.jpg ')).toBe('https://i.test/a.jpg');
   });
   it('Atom: alternate link, summary, published', () => {
     const [e] = parseEntries(`<feed xmlns="http://www.w3.org/2005/Atom"><title>x</title><id>x</id><updated>2026-11-01T00:00:00Z</updated>
@@ -152,6 +165,16 @@ describe('gate (review R2)', () => {
   it('repairs lone surrogates', () => {
     const r = gate(art({ summary: 'ab\ud83d' }));
     expect('article' in r && r.article.summary).toBe('ab�');
+  });
+  it('a photo that is not a web address becomes no photo (#453)', () => {
+    const photo = (u: string | null) => {
+      const r = gate(art({ image_url: u }));
+      return 'article' in r ? r.article.image_url : 'dropped';
+    };
+    expect(photo('undefined')).toBeNull();
+    expect(photo('/images/a.jpg')).toBeNull();
+    expect(photo('https://i.test/a.jpg')).toBe('https://i.test/a.jpg');
+    expect(photo(null)).toBeNull();
   });
   it('drops missing required fields and bad dates', () => {
     expect('reason' in gate(art({ title: '' }))).toBe(true);

@@ -7,8 +7,8 @@ import type { Article } from '../types.ts';
 import { readArticle, type ReaderResult } from './reader.ts';
 import { checkUrl } from './ssrf.ts';
 
-/** Bump when extraction, cleanup or photo addresses change. 3: photos served from getclearnews.com. */
-const VERSION = 3;
+/** Bump when extraction, cleanup or photo addresses change. 3: photos served from getclearnews.com. 4: #453 cleanup. */
+const VERSION = 4;
 const KEEP_S = 6 * 3600;
 /** A block or a timeout can pass: try again sooner. */
 const KEEP_FAILED_S = 30 * 60;

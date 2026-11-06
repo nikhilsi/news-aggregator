@@ -235,6 +235,22 @@ describe('buildFeed with the AI step', () => {
     expect(card.topics).toEqual(['tech']);
     expect(urls(f, 'physical_ai')).toEqual([robot.url, report.url]);
   });
+  it('coverage leaves out the card\'s own article from another feed and lists a URL once (#453)', () => {
+    // Ars Technica AI and Tech carry the same article; two outlets share one URL.
+    const tech = art('ars-technica-tech', 'Agility robots list on Nasdaq', 2);
+    const aiCopy = { ...art('ars-technica-ai', 'Agility robots list on Nasdaq', 2), url: tech.url };
+    const rr = art('robot-report', 'Agility begins trading', 3);
+    const tcCopy = { ...art('techcrunch-robotics', 'Agility begins trading', 3), url: rr.url };
+    const same = { [tech.url]: item({ v: axisVector(7) }), [rr.url]: item({ v: axisVector(7) }) };
+    const f = buildFeed(bySource([tech, aiCopy, rr, tcCopy]), NOW, { v: 1, items: same, brief: null });
+    for (const a of f.articles) {
+      const listed = a.coverage.map((c) => c.url);
+      expect(listed).not.toContain(a.url);
+      expect(new Set(listed).size).toBe(listed.length);
+    }
+    const card = f.articles[f.lists.latest[0]];
+    expect(card.coverage).toHaveLength(1);
+  });
   it('Today is the brief while under 6 hours old, else the Latest list', () => {
     const fresh = buildFeed(bySource([verge, guardian, robot, report]), NOW, store({ at: NOW - 3600e3, urls: [report.url, verge.url] }));
     expect(urls(fresh, 'all')).toEqual([report.url, verge.url]);
