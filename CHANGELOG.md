@@ -16,7 +16,7 @@ Each replacement opened 3 of 3 test articles in full through production's reader
 
 ---
 
-## [3.6.0] - 2026-11-05 - iOS 2.1: Today, story coverage, reader fixes (#425; built, not on the App Store)
+## [3.6.0] - 2026-11-05 - iOS 2.1: Today, story coverage, reader fixes (#425; on TestFlight, not on the App Store)
 
 ### Added (iOS 2.1, build 3)
 - **Today screen** on the first tab: the date, the story count and when the edition was built, the brief as numbered compact rows (headline, source, time, a small photo), and "You're all caught up" with the next edition's time. The Home title is now small and inline, so 5 to 6 stories show per screen once scrolled, instead of 1 card. Without a brief, or in a search, the first tab shows the cards as before.
@@ -36,6 +36,7 @@ Each replacement opened 3 of 3 test articles in full through production's reader
 
 ### Changed
 - The decoder sweep (`worker/scripts/sweep/main.swift`) also checks that `topics`, `coverage` and `brief_at` decode exactly as sent.
+- `ios/scripts/testflight-upload.sh` builds and uploads a release to App Store Connect; the project declares standard encryption only, so builds skip that question. 2.1 (3) went to TestFlight's Family Testers group on Nov 5.
 
 ---
 

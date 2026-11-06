@@ -7,7 +7,7 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. Next (Nikhil, Nov 5): a TestFlight build for his daily use and a device test checklist; the App Store release waits for notifications (#435). The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. On TestFlight since Nov 5: 2.1 (3) went to the Family Testers group and waits for Apple's beta review. Then Nikhil uses it daily and walks `docs/ios-2.1-test-checklist.md`. The App Store release waits for notifications (#435) and needs the EU trader status set in App Store Connect first. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 

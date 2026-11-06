@@ -31,7 +31,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 
 ### iOS App (SwiftUI): v2.0 on the App Store; v2.1 built, not released
 - 2.0 is unchanged by the move; it calls `https://getclearnews.com` as before.
-- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Checked with the decoder sweep and a simulator run against production; waiting for Nikhil's phone walk and his release call. Full feature list in [ios/README.md](ios/README.md).
+- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Checked with the decoder sweep and a simulator run against production. On TestFlight since Nov 5 (Family Testers; Apple's beta review submitted), uploaded with `ios/scripts/testflight-upload.sh`. The App Store release waits for notifications (#435). Full feature list in [ios/README.md](ios/README.md).
 
 ### Android App (Kotlin + Jetpack Compose): v1.0.0
 - Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 without merging; ClearNews is not on F-Droid.

@@ -419,6 +419,8 @@ See the full working upload script in the GitaVani project for the complete impl
 
 ## Phase 5: Archive and Upload Build
 
+ClearNews runs phases 5.1 to 5.3 as one script: `ios/scripts/testflight-upload.sh`.
+
 ### 5.1 Archive
 ```bash
 xcodebuild -project <Project>.xcodeproj \
@@ -605,3 +607,8 @@ After TestFlight testing is complete and any bugs are fixed:
 8. **JWT tokens expire in 20 minutes** — regenerate for long-running scripts
 9. **Screenshot upload is 3 steps**: reserve → upload chunks to S3 URLs → commit with MD5
 10. **ExportOptions.plist with `destination: upload`** handles signing + upload in one xcodebuild call
+11. **403 `FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED` from the API** means Apple updated the Program License Agreement and the Account Holder has to accept it (App Store Connect shows a yellow banner; the link goes to developer.apple.com/account). On Nov 5, 2026 the API answered normally about 15 minutes after acceptance.
+12. **Declare encryption in the project:** `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` (standard HTTPS only), and builds skip the export compliance question.
+13. **EU trader status (Digital Services Act)** must be set in App Store Connect, Business, before an update can ship in the EU. TestFlight does not need it. Traders have their contact details shown on the EU App Store.
+14. **TestFlight builds expire after 90 days.** An old build cannot be reinstalled; upload a new one.
+

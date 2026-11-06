@@ -1,6 +1,6 @@
 # iOS App — ClearNews (SwiftUI)
 
-Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 3) is built and not on the App Store yet; the App Store has 2.0.
+Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 3) is on TestFlight; the App Store has 2.0.
 
 ## Quick Start
 
@@ -9,6 +9,13 @@ Native iOS client for ClearNews. Zero external dependencies. Deployment target: 
 3. Build and run (Cmd+R)
 
 The app connects to `https://getclearnews.com` by default (see `Utilities/Constants.swift`).
+
+## Release
+
+1. Raise the build number (`CURRENT_PROJECT_VERSION` in the project); each upload needs a new one.
+2. `ios/scripts/testflight-upload.sh` builds the release archive and uploads it to App Store Connect, signing through the Apple account in Xcode. Output and the log go to `ios/build/`.
+3. Testers and beta review: `docs/app-store-submission-playbook.md`, phase 6. The Family Testers group is external, so each new version gets Apple's beta review.
+4. Before an App Store release: walk the device checklist (`docs/ios-2.1-test-checklist.md` for 2.1) and run the decoder sweep against production (`docs/deploy-runbook.md`).
 
 ## Features
 
