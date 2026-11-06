@@ -4,11 +4,11 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'About ClearNews: a clean, personal news reader. 53 sources, 15 categories, no clickbait. Built by Nikhil Singhal.',
+    'About ClearNews: a clean, personal news reader. 51 sources, 15 categories, no clickbait. Built by Nikhil Singhal.',
   openGraph: {
     title: 'About ClearNews',
     description:
-      'About ClearNews: a clean, personal news reader. 53 sources, 15 categories, no clickbait. Built by Nikhil Singhal.',
+      'About ClearNews: a clean, personal news reader. 51 sources, 15 categories, no clickbait. Built by Nikhil Singhal.',
   },
 };
 
@@ -31,7 +31,7 @@ export default function AboutPage() {
         <h1 className="mb-6 text-3xl font-bold">About ClearNews</h1>
 
         <p className="mb-4 leading-relaxed">
-          ClearNews is a personal news reader. 53 sources across 15 categories.
+          ClearNews is a personal news reader. 51 sources across 15 categories.
           RSS-driven, no clickbait, no tracking, no feed that learns from you. Read what you
           want, in your own order.
         </p>

@@ -2,7 +2,7 @@
 
 **Last Updated**: November 5, 2026
 
-## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 53 sources across 15 categories
+## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 51 sources across 15 categories
 
 ### Move to Cloudflare (Nov 1, 2026, task #400)
 
@@ -46,7 +46,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 | GET | `/api/v1/categories` | Categories with enabled source counts (empty ones hidden) |
 | GET | `/api/v1/status` | Feed build time and per-source status (no client uses it) |
 
-### Sources (53 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
+### Sources (51 enabled, `worker/src/sources.ts`; each shows its newest 30 items from the last 7 days)
 Tabs in the order the apps show them, after Today and Latest:
 
 | Category | Sources | Count |
@@ -56,27 +56,27 @@ Tabs in the order the apps show them, after Today and Latest:
 | Space | NASASpaceflight, Ars Technica Space, Universe Today, NASA | 4 |
 | Technology | The Verge, Wired (deals and buying guides skipped), Ars Technica Tech | 3 |
 | Science | Ars Technica Science, New Scientist, Scientific American, Quanta Magazine | 4 |
-| General | Fox News (politics feed), NPR News (kept balanced right and left), BBC World (world news), 10 each | 3 |
+| General | Fox News (politics feed), NPR News (kept balanced right and left), DW World (world news), 10 each | 3 |
 | Local (Seattle) | GeekWire, KIRO 7, Cascade PBS | 3 |
-| India | BBC News India, NDTV, Times of India, India Today, Scroll.in, The Hindu | 6 |
-| Finance | CNBC (Business feed), BBC Business, The Guardian Business (US edition) | 3 |
-| Feel Good | Good News Network, Positive News, Sunny Skyz, BBC Uplifting, DailyGood | 5 |
+| India | Times of India, India Today, Scroll.in, The Hindu | 4 |
+| Finance | CNBC (Business feed), ABC News (AP business wire), The Guardian Business (US edition) | 3 |
+| Feel Good | Good News Network, Positive News, Sunny Skyz, Reasons to be Cheerful, DailyGood | 5 |
 | Entertainment | A.V. Club, Polygon, Variety, Kotaku | 4 |
-| Health | NPR Health, BBC Health | 2 |
+| Health | NPR Health, The Conversation (health) | 2 |
 | Sports | CBS Sports (betting items skipped) | 1 |
-| Offbeat | Atlas Obscura, UPI Odd News, Smithsonian Magazine | 3 |
+| Offbeat | Atlas Obscura, JSTOR Daily, Popular Science (10 at most, shopping posts skipped) | 3 |
 | Travel | Condé Nast Traveler, The Guardian Travel, Matador Network, Frommer's | 4 |
 
 Good News Network and Frommer's were blocked on the droplet and work from Cloudflare. Hindi headlines are hidden in every tab. The apps build their tabs from `/api/v1/categories`, so new tabs need no release.
 
-**Off:** AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Crosscut (its feed became PBS national video; Cascade PBS replaces it), Engadget (mostly how-to pieces), Seattle Eater (evergreen guides), Mental Floss (lists and quizzes; Smithsonian replaces it), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
+**Off:** BBC (World, India, Business, Uplifting, Health), NDTV, UPI Odd News and Smithsonian since Nov 5, 2026: their stories never open in the reader (#453; replacements tested in `docs/reviews/2026-11-05-source-replacements.md`). AP News (a feedx copy that stopped in September), MyNorthwest and The Seattle Times (403 to Cloudflare), KING 5 (redirects Cloudflare to its YouTube channel), Crosscut (its feed became PBS national video; Cascade PBS replaces it), Engadget (mostly how-to pieces), Seattle Eater (evergreen guides), Mental Floss (lists and quizzes; Smithsonian replaces it), five Google News feeds (URL resolution too slow), WorldNewsAPI (never built).
 
 ## Known Issues
 - **Some repeats stay two cards:** stories group at cosine 0.75, which misses some (the Alaska Senate ruling from CNBC and NPR measured 0.69). Lower thresholds merged unrelated stories.
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **The apps' About screens** say "financial news APIs" until their next release (fixed in iOS 2.1, not released yet).
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
-- **Reader gaps** (#423): NDTV and UPI Odd News block the reader (403; the app shows "doesn't allow reader view" and a link). Since Nov 1, BBC (all five feeds) and Smithsonian refuse the reader from Cloudflare too, though their pages load from a home connection (measured Nov 5, `docs/reviews/2026-11-01-reader-investigation.md` section 8). A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
+- **Reader gaps** (#423): sources whose stories never open in the reader were taken off on Nov 5, 2026: BBC (all five feeds, which began refusing Cloudflare after Nov 1), NDTV, UPI Odd News and Smithsonian (#453; measured in `docs/reviews/2026-11-01-reader-investigation.md` section 8). A publisher can still start blocking at any time; the app then shows "doesn't allow reader view" and a link, and `worker/scripts/measure-reader.mjs` finds it. A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
 - **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.
 - **Web topic picker:** unticking a topic moves it to the other list, so keyboard focus drops to the page.
 - **A new edition reaches the web up to 5 minutes late**: article lists are cached in the browser for 5 minutes (`max-age=300`, unchanged from before); the refresh button bypasses it.

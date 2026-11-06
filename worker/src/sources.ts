@@ -94,8 +94,12 @@ export const SOURCES: readonly Source[] = [
   // 4 were entertainment and 2 sports, against NPR's 6 politics stories of 10.
   { id: 'fox-news', name: 'Fox News', type: 'rss', url: 'https://moxie.foxnews.com/google-publisher/politics.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
   { id: 'npr-news', name: 'NPR News', type: 'rss', url: 'https://feeds.npr.org/1001/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
-  // World news, outside US politics (Nikhil, Nov 1, 2026); about 18 stories a day.
-  { id: 'bbc-world', name: 'BBC World', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
+  // World news, outside US politics (Nikhil, Nov 1, 2026). DW replaces BBC World since Nov 5,
+  // 2026 (#453). The Atom feed: DW's RDF feeds carry no dates our parser reads. No feed photos;
+  // og:image fills them in.
+  { id: 'dw-world', name: 'DW World', type: 'rss', url: 'https://rss.dw.com/atom/rss-en-world', category: 'general', isCuratedPositive: false, enabled: true, maxItems: 10 },
+  // Off since Nov 5, 2026 (#453): the reader gets 403 from Cloudflare on every article, so its stories never open. Nikhil: sources that don't give us the story go.
+  { id: 'bbc-world', name: 'BBC World', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'general', isCuratedPositive: false, enabled: false, maxItems: 10 },
   // Off since Nov 1, 2026: a third-party copy of AP (feedx) that stopped updating in September.
   { id: 'ap-news', name: 'AP News', type: 'rss', url: 'https://feedx.net/rss/ap.xml', category: 'general', isCuratedPositive: false, enabled: false },
   // Local (Seattle)
@@ -113,8 +117,10 @@ export const SOURCES: readonly Source[] = [
   // Off since Nov 1, 2026: answers 403 to every fetch from Cloudflare, even from Seattle.
   { id: 'seattle-times-local', name: 'The Seattle Times', type: 'rss', url: 'https://www.seattletimes.com/seattle-news/feed/', category: 'local', isCuratedPositive: false, enabled: false },
   // India
-  { id: 'bbc-india', name: 'BBC News India', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/asia/india/rss.xml', category: 'india', isCuratedPositive: false, enabled: true },
-  { id: 'ndtv', name: 'NDTV', type: 'rss', url: 'https://feeds.feedburner.com/ndtvnews-top-stories', category: 'india', isCuratedPositive: false, enabled: true },
+  // Off since Nov 5, 2026 (#453): the reader gets 403 from Cloudflare on every article, so its stories never open. Nikhil: sources that don't give us the story go.
+  { id: 'bbc-india', name: 'BBC News India', type: 'rss', url: 'https://feeds.bbci.co.uk/news/world/asia/india/rss.xml', category: 'india', isCuratedPositive: false, enabled: false },
+  // Off since Nov 5, 2026 (#453): refuses the reader everywhere (403), so its stories never open.
+  { id: 'ndtv', name: 'NDTV', type: 'rss', url: 'https://feeds.feedburner.com/ndtvnews-top-stories', category: 'india', isCuratedPositive: false, enabled: false },
   // India-only feed since Nov 1, 2026; the top stories feed carried US and UK news.
   { id: 'times-of-india', name: 'Times of India', type: 'rss', url: 'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms', category: 'india', isCuratedPositive: false, enabled: true },
   { id: 'india-today', name: 'India Today', type: 'rss', url: 'https://www.indiatoday.in/rss/home', category: 'india', isCuratedPositive: false, enabled: true, skipTitle: /weekly news quiz/i },
@@ -123,14 +129,20 @@ export const SOURCES: readonly Source[] = [
   // Finance: replaces FMP (approved by Nikhil, Nov 1, 2026). CNBC's Business feed since
   // Nov 1 (#416): its Top News feed was half US politics. No feed images; og:image fills in.
   { id: 'cnbc-business', name: 'CNBC', type: 'rss', url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html', category: 'finance', isCuratedPositive: false, enabled: true },
-  { id: 'bbc-business', name: 'BBC Business', type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', isCuratedPositive: false, enabled: true },
+  // AP's business wire, with an international slice; replaces BBC Business since Nov 5, 2026 (#453).
+  { id: 'abc-business', name: 'ABC News', type: 'rss', url: 'https://abcnews.com/abcnews/businessheadlines', category: 'finance', isCuratedPositive: false, enabled: true },
+  // Off since Nov 5, 2026 (#453): the reader gets 403 from Cloudflare on every article, so its stories never open. Nikhil: sources that don't give us the story go.
+  { id: 'bbc-business', name: 'BBC Business', type: 'rss', url: 'https://feeds.bbci.co.uk/news/business/rss.xml', category: 'finance', isCuratedPositive: false, enabled: false },
   // US edition since Nov 1, 2026; the UK edition was half UK domestic news.
   { id: 'guardian-business', name: 'The Guardian Business', type: 'rss', url: 'https://www.theguardian.com/us/business/rss', category: 'finance', isCuratedPositive: false, enabled: true },
   // Feel Good / Positive News
   { id: 'good-news-network', name: 'Good News Network', type: 'rss', url: 'https://www.goodnewsnetwork.org/feed/', category: 'feel_good', isCuratedPositive: true, enabled: true },
   { id: 'positive-news', name: 'Positive News', type: 'rss', url: 'https://positive.news/feed', category: 'feel_good', isCuratedPositive: true, enabled: true },
   { id: 'sunny-skyz', name: 'Sunny Skyz', type: 'rss', url: 'https://www.sunnyskyz.com/rss_tebow.php', category: 'feel_good', isCuratedPositive: true, enabled: true },
-  { id: 'bbc-uplifting', name: 'BBC Uplifting', type: 'rss', url: 'https://feeds.bbci.co.uk/news/topics/cx2pk70323et/rss.xml', category: 'feel_good', isCuratedPositive: true, enabled: true },
+  // Long, solution-focused stories, about 5 a week; replaces BBC Uplifting since Nov 5, 2026 (#453).
+  { id: 'reasons-to-be-cheerful', name: 'Reasons to be Cheerful', type: 'rss', url: 'https://reasonstobecheerful.world/feed/', category: 'feel_good', isCuratedPositive: true, enabled: true },
+  // Off since Nov 5, 2026 (#453): the reader gets 403 from Cloudflare on every article, so its stories never open. Nikhil: sources that don't give us the story go.
+  { id: 'bbc-uplifting', name: 'BBC Uplifting', type: 'rss', url: 'https://feeds.bbci.co.uk/news/topics/cx2pk70323et/rss.xml', category: 'feel_good', isCuratedPositive: true, enabled: false },
   { id: 'dailygood', name: 'DailyGood', type: 'rss', url: 'https://www.dailygood.org/feed/', category: 'feel_good', isCuratedPositive: true, enabled: true },
   // Entertainment
   { id: 'av-club', name: 'A.V. Club', type: 'rss', url: 'https://www.avclub.com/rss', category: 'entertainment', isCuratedPositive: false, enabled: true },
@@ -140,14 +152,25 @@ export const SOURCES: readonly Source[] = [
   // Health
   // NPR's current health feed since Nov 1, 2026; the old one (103537970) stopped in January.
   { id: 'npr-health', name: 'NPR Health', type: 'rss', url: 'https://feeds.npr.org/1128/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
-  { id: 'bbc-health', name: 'BBC Health', type: 'rss', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'health', isCuratedPositive: false, enabled: true },
+  // Health explainers by researchers (The Conversation US); replaces BBC Health since Nov 5, 2026 (#453).
+  { id: 'conversation-health', name: 'The Conversation', type: 'rss', url: 'https://theconversation.com/us/health/articles.atom', category: 'health', isCuratedPositive: false, enabled: true },
+  // Off since Nov 5, 2026 (#453): the reader gets 403 from Cloudflare on every article, so its stories never open. Nikhil: sources that don't give us the story go.
+  { id: 'bbc-health', name: 'BBC Health', type: 'rss', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'health', isCuratedPositive: false, enabled: false },
   // Sports: betting odds, picks and promo codes skipped (14 of 21 items on Nov 1).
   { id: 'cbs-sports', name: 'CBS Sports', type: 'rss', url: 'https://www.cbssports.com/rss/headlines/', category: 'sports', isCuratedPositive: false, enabled: true, skipTitle: /\b(odds|picks|predictions?|promo|bonus|betting|bets|parlays?|DFS|fantasy|sportsbooks?)\b/i },
   // Offbeat / Weird / Fun
   { id: 'atlas-obscura', name: 'Atlas Obscura', type: 'rss', url: 'https://www.atlasobscura.com/feeds/latest', category: 'offbeat', isCuratedPositive: false, enabled: true },
-  { id: 'upi-odd', name: 'UPI Odd News', type: 'rss', url: 'https://rss.upi.com/news/odd_news.rss', category: 'offbeat', isCuratedPositive: false, enabled: true },
-  // Replaces Mental Floss (lists and quizzes) since Nov 1, 2026; works from Cloudflare.
-  { id: 'smithsonian', name: 'Smithsonian Magazine', type: 'rss', url: 'https://www.smithsonianmag.com/rss/latest_articles/', category: 'offbeat', isCuratedPositive: false, enabled: true },
+  // Odd history and culture; replaces Smithsonian since Nov 5, 2026 (#453). About 5 a week.
+  { id: 'jstor-daily', name: 'JSTOR Daily', type: 'rss', url: 'https://daily.jstor.org/feed/', category: 'offbeat', isCuratedPositive: false, enabled: true },
+  // Odd animal, archaeology and science stories; replaces UPI Odd News since Nov 5, 2026 (#453).
+  // No working odd-news feed was left. It posts about 50 a week, so capped at 10 to leave room for
+  // the others; shopping posts skipped with Wired's filter.
+  { id: 'popular-science', name: 'Popular Science', type: 'rss', url: 'https://www.popsci.com/feed/', category: 'offbeat', isCuratedPositive: false, enabled: true, maxItems: 10, skipTitle: /\b(deals?|sale|coupons?|lowest price|review)\b|\(20\d\d\)|^(the )?(\d+ )?best\b|worth buying|percent off|gifts? (for|ideas)/i },
+  // Off since Nov 5, 2026 (#453): refuses the reader everywhere (403), so its stories never open.
+  { id: 'upi-odd', name: 'UPI Odd News', type: 'rss', url: 'https://rss.upi.com/news/odd_news.rss', category: 'offbeat', isCuratedPositive: false, enabled: false },
+  // Off since Nov 5, 2026 (#453): Cloudflare bot protection on its site; feed and reader get 403
+  // from Cloudflare since Nov 5, 02:09 UTC. It had replaced Mental Floss on Nov 1.
+  { id: 'smithsonian', name: 'Smithsonian Magazine', type: 'rss', url: 'https://www.smithsonianmag.com/rss/latest_articles/', category: 'offbeat', isCuratedPositive: false, enabled: false },
   { id: 'mental-floss', name: 'Mental Floss', type: 'rss', url: 'https://www.mentalfloss.com/feed', category: 'offbeat', isCuratedPositive: false, enabled: false },
   // Travel
   { id: 'conde-nast-traveler', name: 'Condé Nast Traveler', type: 'rss', url: 'https://www.cntraveler.com/feed/rss', category: 'travel', isCuratedPositive: false, enabled: true },

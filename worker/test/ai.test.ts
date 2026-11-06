@@ -136,7 +136,7 @@ describe('labels', () => {
 describe('stories', () => {
   it('groups by meaning within 48 hours, newest first', () => {
     const a = art('the-verge', 'Binance hack', 2);
-    const b = art('bbc-business', 'Binance stolen funds', 3);
+    const b = art('guardian-business', 'Binance stolen funds', 3);
     const c = art('robot-report', 'Robot arm', 1);
     const old = art('wired', 'Binance last week', 50);
     const items = {
@@ -157,7 +157,7 @@ describe('brief', () => {
   const order = new Map(SOURCES.map((s, i) => [s.id, i]));
   it('shortlist: news and analysis from the last 30 hours; the most important article represents the story', () => {
     const a = art('the-verge', 'Binance hack', 2);
-    const b = art('bbc-business', 'Binance stolen funds', 3);
+    const b = art('guardian-business', 'Binance stolen funds', 3);
     const fluff = art('wired', 'Star gossip', 1);
     const old = art('new-scientist', 'Old news', 40);
     const items = {
@@ -169,7 +169,7 @@ describe('brief', () => {
     const list = shortlist(groupStories([a, b, fluff, old], items, NOW).values(), items, order, NOW);
     expect(list).toHaveLength(1);
     expect(list[0].rep).toBe(b);
-    expect(list[0].outlets).toEqual(['The Verge', 'BBC Business']);
+    expect(list[0].outlets).toEqual(['The Verge', 'The Guardian Business']);
     expect(list[0].topics).toEqual(['markets', 'tech']);
   });
 
@@ -211,13 +211,13 @@ describe('buildFeed with the AI step', () => {
     return m;
   };
   const verge = art('the-verge', 'Binance hack', 2);
-  const bbc = art('bbc-business', 'Binance stolen funds', 3);
+  const guardian = art('guardian-business', 'Binance stolen funds', 3);
   const deal = art('wired', 'Laptop deal', 1);
   const robot = art('the-verge', 'Robot taxi', 4);
   const report = art('robot-report', 'Humanoid factory', 5);
   const items: Record<string, AiItem> = {
     [verge.url]: item({ v: axisVector(0) }),
-    [bbc.url]: item({ v: axisVector(0), t: ['markets'] }),
+    [guardian.url]: item({ v: axisVector(0), t: ['markets'] }),
     [deal.url]: item({ k: 'deals' }),
     [robot.url]: item({ v: axisVector(1), t: ['physical_ai', 'tech'] }),
     [report.url]: item({ v: axisVector(2), t: ['physical_ai'] }),
@@ -226,23 +226,23 @@ describe('buildFeed with the AI step', () => {
   const urls = (f: ReturnType<typeof buildFeed>, tab: string) => f.lists[tab].map((i) => f.articles[i].url);
 
   it('drops fluff, shows one card per story with the other outlets, and tags into Physical AI', () => {
-    const f = buildFeed(bySource([verge, bbc, deal, robot, report]), NOW, store(null));
+    const f = buildFeed(bySource([verge, guardian, deal, robot, report]), NOW, store(null));
     expect(urls(f, 'latest')).not.toContain(deal.url);
     expect(urls(f, 'tech')).toEqual([verge.url, robot.url]);
-    expect(urls(f, 'latest').filter((u) => u === verge.url || u === bbc.url)).toEqual([verge.url]);
+    expect(urls(f, 'latest').filter((u) => u === verge.url || u === guardian.url)).toEqual([verge.url]);
     const card = f.articles[f.lists.latest.find((i) => f.articles[i].url === verge.url)!];
-    expect(card.coverage).toEqual([{ source_name: 'BBC Business', title: bbc.title, url: bbc.url }]);
+    expect(card.coverage).toEqual([{ source_name: 'The Guardian Business', title: guardian.title, url: guardian.url }]);
     expect(card.topics).toEqual(['tech']);
     expect(urls(f, 'physical_ai')).toEqual([robot.url, report.url]);
   });
   it('Today is the brief while under 6 hours old, else the Latest list', () => {
-    const fresh = buildFeed(bySource([verge, bbc, robot, report]), NOW, store({ at: NOW - 3600e3, urls: [report.url, verge.url] }));
+    const fresh = buildFeed(bySource([verge, guardian, robot, report]), NOW, store({ at: NOW - 3600e3, urls: [report.url, verge.url] }));
     expect(urls(fresh, 'all')).toEqual([report.url, verge.url]);
     expect(fresh.brief_at).toBe(NOW - 3600e3);
-    const stale = buildFeed(bySource([verge, bbc, robot, report]), NOW, store({ at: NOW - 7 * 3600e3, urls: [report.url] }));
+    const stale = buildFeed(bySource([verge, guardian, robot, report]), NOW, store({ at: NOW - 7 * 3600e3, urls: [report.url] }));
     expect(stale.lists.all).toEqual(stale.lists.latest);
     expect(stale.brief_at).toBeNull();
-    const none = buildFeed(bySource([verge, bbc]), NOW);
+    const none = buildFeed(bySource([verge, guardian]), NOW);
     expect(none.lists.all).toEqual(none.lists.latest);
   });
 });
@@ -251,7 +251,7 @@ describe('enrich', () => {
   const order = new Map(SOURCES.map((s, i) => [s.id, i]));
   const news = () => [
     art('the-verge', 'Binance hack', 2),
-    art('bbc-business', 'Binance stolen funds', 3),
+    art('guardian-business', 'Binance stolen funds', 3),
     art('robot-report', 'Robot arm', 1),
     art('nasaspaceflight', 'Artemis plan', 4),
     art('wired', 'Laptop deal', 1),

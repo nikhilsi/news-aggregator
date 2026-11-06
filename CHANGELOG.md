@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.6.1] - 2026-11-05 - Sources whose stories never open, replaced (#453)
+
+### Removed
+- **BBC World, BBC News India, BBC Business, BBC Uplifting, BBC Health, NDTV, UPI Odd News, Smithsonian Magazine.** Every article from them failed in the reader. BBC and Smithsonian began refusing Cloudflare after Nov 1 (measured on Nov 5 with `measure-reader.mjs`; a test from a Cloudflare preview got 403 whatever the request looked like); NDTV and UPI Odd News always had. Nikhil, Nov 5: sources that don't give us the story go. They stay listed in `sources.ts`, turned off, with the reason.
+
+### Added
+- **DW World** in General (world news outside US politics, as BBC World was; 10 at most, like Fox News and NPR News). Its Atom feed: DW's RDF feeds carry no dates our parser reads.
+- **ABC News** in Finance (the AP business wire, with an international slice).
+- **The Conversation** in Health (explainers by researchers).
+- **JSTOR Daily** and **Popular Science** in Offbeat. Popular Science posts about 50 a week, so it shows 10 at most, and its shopping posts are skipped. No working odd-news feed in UPI's style is left.
+- **Reasons to be Cheerful** in Feel Good.
+
+Each replacement opened 3 of 3 test articles in full through production's reader and is reachable from Cloudflare (`docs/reviews/2026-11-05-source-replacements.md`). India keeps its four working sources. 51 sources across 15 categories; site copy and the social card updated.
+
+---
+
 ## [3.6.0] - 2026-11-05 - iOS 2.1: Today, story coverage, reader fixes (#425; built, not on the App Store)
 
 ### Added (iOS 2.1, build 3)

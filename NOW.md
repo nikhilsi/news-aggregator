@@ -7,18 +7,19 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. Next: Nikhil's iPhone walk and his release call. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. Next (Nikhil, Nov 5): a TestFlight build for his daily use and a device test checklist; the App Store release waits for notifications (#435). The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 
-**Sources whose stories don't open** (#453, P2): since Nov 1, BBC (all five feeds) and Smithsonian refuse the reader from Cloudflare, as NDTV and UPI Odd News always have. Nikhil, Nov 5: remove sources that don't give us the story and find replacements. The replacements are being tested through the reader; the change waits for his go on the list. The same task holds the cleanup misses from the Nov 5 measurement ([section 8](docs/reviews/2026-11-01-reader-investigation.md)).
+**Reader cleanup** (#453, P2): the misses from the Nov 5 measurement ([section 8](docs/reviews/2026-11-01-reader-investigation.md): The Decoder's pitch, Fox's newsletter line, Good News Network's share line, repeats, NPR's photo twice, DeepMind's video fallback text) and coverage lists that include the article's own URL or one URL twice.
 
-**Watch for a few days** (no task needed; each brief build is logged and `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
+**Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
-Shipped on Nov 1 (see CHANGELOG): the move (#400), India cleanup (#413), #414 steps 1 to 3 (sources, the Today brief, the web Today page), the reader (#423, 3.5.0 and 3.5.1; findings in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md)), Fox politics and CNBC Business feeds (#416, 3.5.2).
+Shipped on Nov 5 (see CHANGELOG): the reader measurement script (#436), iOS 2.1's Must items built (#425), the sources whose stories never open replaced (#453, 3.6.1). On Nov 1: the move (#400), India cleanup (#413), #414 steps 1 to 3 (sources, the Today brief, the web Today page), the reader (#423, 3.5.0 and 3.5.1; findings in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md)), Fox politics and CNBC Business feeds (#416, 3.5.2).
 
 ## Ruled decisions that govern next steps
 
+- A source whose stories don't open in the reader goes, and gets a replacement that does (Nikhil, Nov 5): "its a stupid experience to have sources that dont show the story." Every candidate is tested through production's reader first.
 - General keeps a balance of right- and left-leaning outlets (Fox News and NPR News today).
 - Hindi and other non-Latin headlines stay hidden in every tab.
 - Privacy is not a design driver (Nikhil, Nov 1): don't lead with privacy or tracking arguments; when a feature changes what the privacy page or terms say, update them. No analytics today.

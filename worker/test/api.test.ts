@@ -23,8 +23,8 @@ const art = (i: number, o: Partial<Article> = {}): Article => ({
 
 async function seed(n = 45) {
   const verge = Array.from({ length: n }, (_, i) => art(i));
-  const bbc = [art(100, { url: 'https://bbc.test/h', source_id: 'bbc-health', source_name: 'BBC Health', category: 'health', title: 'Health news today' })];
-  const feed = buildFeed(new Map([['the-verge', verge], ['bbc-health', bbc]]), Date.now());
+  const health = [art(100, { url: 'https://npr.test/h', source_id: 'npr-health', source_name: 'NPR Health', category: 'health', title: 'Health news today' })];
+  const feed = buildFeed(new Map([['the-verge', verge], ['npr-health', health]]), Date.now());
   await env.CACHE.put(FEED_KEY, JSON.stringify(feed));
 }
 
@@ -93,7 +93,7 @@ describe('articles', () => {
   });
   it('search: trimmed, case-insensitive, title or summary; "+" decodes to a space', async () => {
     const b = (await (await get('/api/v1/articles?search=%20HEALTH%20')).json()) as { articles: Article[] };
-    expect(b.articles.map((a) => a.url)).toEqual(['https://bbc.test/h']);
+    expect(b.articles.map((a) => a.url)).toEqual(['https://npr.test/h']);
     const plus = (await (await get('/api/v1/articles?search=health+news')).json()) as { articles: Article[] };
     expect(plus.articles).toHaveLength(1);
   });
@@ -127,9 +127,9 @@ describe('Today and Latest (#414)', () => {
     const now = Date.now();
     const iso = (h: number) => new Date(now - h * 3600e3).toISOString().slice(0, 19) + 'Z';
     const verge = Array.from({ length: 12 }, (_, i) => art(i, { published_at: iso(i + 1) }));
-    const bbc = [art(100, { url: 'https://bbc.test/h', source_id: 'bbc-health', source_name: 'BBC Health', category: 'health', title: 'Health news today', published_at: iso(2) })];
-    const brief = { at: now, urls: [verge[3].url, bbc[0].url] };
-    const feed = buildFeed(new Map([['the-verge', verge], ['bbc-health', bbc]]), now, { v: 1, items: {}, brief });
+    const health = [art(100, { url: 'https://npr.test/h', source_id: 'npr-health', source_name: 'NPR Health', category: 'health', title: 'Health news today', published_at: iso(2) })];
+    const brief = { at: now, urls: [verge[3].url, health[0].url] };
+    const feed = buildFeed(new Map([['the-verge', verge], ['npr-health', health]]), now, { v: 1, items: {}, brief });
     await env.CACHE.put(FEED_KEY, JSON.stringify(feed));
     const today = (await (await get('/api/v1/articles')).json()) as { articles: Article[]; brief_at?: string | null };
     expect(today.articles.map((a) => a.url)).toEqual(brief.urls);
