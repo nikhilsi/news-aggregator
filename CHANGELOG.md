@@ -10,6 +10,7 @@
 - **Feed photo addresses** with `&#038;` (The Verge) are decoded, so the crop settings apply.
 - **Today's ranking** counts one article that sits in two feeds (Ars Technica AI and Tech) as one outlet, as "Covered by N outlets" already did.
 - Reader cache version 5.
+- Deployed Nov 6 as Worker 099fc306: verify 75/75, decoder sweep 1,316 articles with 0 failures. On production, the same 242 articles as the 3.6.2 run: junk lines 10 to 0, photo twice 5 to 0 (DW), repeated text 8 to 6 (the 6 are an address list and a deals list the measure counts loosely), opened 240 of 242 in both.
 
 ### Not changing
 - Atlas Obscura place pages lose their "Know Before You Go" notes; fixing it would take a rule for Atlas's layout alone. The notes are one tap away under "Original" (Nikhil, Nov 6).

@@ -189,3 +189,25 @@ Feed data, production's stored state rebuilt with the new code: cards listing th
 
 **Found on the way, not fixed:** DW's photos inside the text are lost (they carry `data-url` and no `src`), and so are The Conversation's (only `srcset`), so their captions stand alone. Today's shortlist (`src/ai/brief.ts`) still counts one article in two feeds as two outlets, which lifts its score. Still open on #453: The Decoder's pitch, Good News Network's share line, Fox's newsletter line, The Hindu's repeats, the Verge's second copy of its lead photo, Atlas Obscura's "Know Before You Go", the Verge's `&#038;`.
 
+## 10. The rest of #453 (Nov 6, 2026, 3.6.3)
+
+Nikhil asked to finish the remaining items in one pass and leave Atlas Obscura's "Know Before You Go" as is.
+
+- **Junk lines:** The Decoder's subscribe box, Fox's newsletter line and "Subscribed", Good News Network's share line, A.V. Club's "previous recap" link, India Today's "Read more |", The Conversation's "Read more of our stories". The patterns are narrow (a heading such as "Sign up to vote" stays), and the check runs twice, since a removed pitch can leave its box.
+- **Repeats:** a block repeated with only a photo credit or a final period added counts, and the copy that is story text stays: a subtitle, key-points bullet or key-events entry gives way to the paragraph; a credited caption gives way to the paragraph. A block is never a repeat of its own wrapper, which the old rule got wrong: six Verge captions show again.
+- **The Verge's lead photo:** further copies near the top go too, when they have the first copy's address.
+- **DW:** photos inside the text load from a `data-url`, now given to the extractors; DW's photo id matches its og:image across sizes, so its lead photo shown again in the text goes. The Conversation needed nothing: its only `srcset`-only image is its lead photo, which goes anyway.
+- **Feed photo addresses** decode `&#038;` (The Verge).
+- **Today's shortlist** counts one article in two feeds as one outlet.
+- **Breaker pass** found six problems in the first version, all fixed: a credited caption kept over the story paragraph (The Guardian), a heading inside a box, junk patterns that would catch real headings, loose photo names in the lead-photo loop, and a `srcset` fallback that changed nothing (removed).
+- **Regression check:** the deployed and new reader on identical saved pages from four runs; every change is one of the above.
+
+| Production, the same 242 articles | 3.6.2 (run `2026-11-06T15-51-21Z`) | 3.6.3 (run `2026-11-06T17-16-18Z`) |
+|-|-|-|
+| Junk lines | 10 | 0 |
+| Photo twice | 5 (DW) | 0 |
+| Repeated text | 8 | 6 (Matador's address list, a Popular Science deals list: the measure counts any block that starts with another) |
+| Opened | 240 | 240 (India Today: two pages without article text) |
+
+**Left as is:** Atlas Obscura place pages lose their "Know Before You Go" notes (Nikhil, Nov 6). #453 is done.
+

@@ -11,11 +11,9 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 
-**Reader cleanup** (#453, P2): the rest of the Nov 5 findings built as 3.6.3 (junk lines, repeats, the Verge's second photo copy, DW's in-text photos, `&#038;` in photo addresses) with Today's outlet count; deploy and closing #453 next. Atlas Obscura's "Know Before You Go" stays as is (Nikhil, Nov 6).
-
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
-Shipped on Nov 5 (see CHANGELOG): the reader measurement script (#436), iOS 2.1's Must items built (#425), the sources whose stories never open replaced (#453, 3.6.1). On Nov 1: the move (#400), India cleanup (#413), #414 steps 1 to 3 (sources, the Today brief, the web Today page), the reader (#423, 3.5.0 and 3.5.1; findings in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md)), Fox politics and CNBC Business feeds (#416, 3.5.2).
+Shipped on Nov 6 (see CHANGELOG): the reader cleanup from the Nov 5 measurement and Today's outlet count (#453, 3.6.2 and 3.6.3). On Nov 5: the reader measurement script (#436), iOS 2.1's Must items built (#425), the sources whose stories never open replaced (#453, 3.6.1). On Nov 1: the move (#400), India cleanup (#413), #414 steps 1 to 3 (sources, the Today brief, the web Today page), the reader (#423, 3.5.0 and 3.5.1; findings in [docs/reviews/2026-11-01-reader-investigation.md](docs/reviews/2026-11-01-reader-investigation.md)), Fox politics and CNBC Business feeds (#416, 3.5.2).
 
 ## Ruled decisions that govern next steps
 
