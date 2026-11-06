@@ -1,6 +1,6 @@
 # NOW: Current Priorities
 
-**Last Updated**: November 1, 2026
+**Last Updated**: November 5, 2026
 
 Shipped work lives in CHANGELOG.md; this file looks forward only.
 
@@ -10,6 +10,8 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 - **iOS 2.1** (#425): Today screen, story coverage, Fox and NPR marks, the reader display fixes, About text.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
+
+**Sources whose stories don't open** (#453, P2): since Nov 1, BBC (all five feeds) and Smithsonian refuse the reader from Cloudflare, as NDTV and UPI Odd News always have. Nikhil, Nov 5: remove sources that don't give us the story and find replacements. The replacements are being tested through the reader; the change waits for his go on the list. The same task holds the cleanup misses from the Nov 5 measurement ([section 8](docs/reviews/2026-11-01-reader-investigation.md)).
 
 **Watch for a few days** (no task needed; each brief build is logged and `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
@@ -30,5 +32,5 @@ Shipped on Nov 1 (see CHANGELOG): the move (#400), India cleanup (#413), #414 st
 - **Web smart sharing**: match Android's formatted share text with a ClearNews reader link.
 - **iOS**: image caching if AsyncImage flicker shows; iPad layout.
 - **Stale-feed alert** (#417): sources, the Today brief and reader failures; open question on the channel (lean: a daily GitHub Actions check of `/api/v1/status`).
-- **Reader**: the feed's full text as a fallback, only when triggered (#424); the measurement script into the repo (#436).
+- **Reader**: the feed's full text as a fallback, only when triggered (#424: a rerun of `worker/scripts/measure-reader.mjs` shows a source cut short).
 - **Grok digest from X** (#415): an idea; needs an exception to no AI-written text.

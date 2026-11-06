@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.3] - 2026-11-05 - Reader measurement script (#436)
+
+### Added
+- `worker/scripts/measure-reader.mjs`: the reader measurement behind #423, now in the repo (it had run from a session scratch folder). It reads the newest 5 articles of every enabled source through production's reader, paced at 14 a minute under the reader's limit, and scores each one: opened or the reason, words, text cut short against the page's own paragraphs (a plain and a tight yardstick), page junk, empty bullets and blocks, repeated text and the photo shown twice, with a table per source. `run` compares with the previous run of the same shape; `compare` takes any two; `report` scores a saved run again. Read-only on production. Runs are kept in `worker/.fixtures/reader-runs/`, and scores are recomputed from the saved files each time. First run and findings: `docs/reviews/2026-11-01-reader-investigation.md` section 8. No deploy.
+
+---
+
 ## [3.5.2] - 2026-11-01 - Fox politics feed in General, CNBC Business in Finance (#416)
 
 ### Changed

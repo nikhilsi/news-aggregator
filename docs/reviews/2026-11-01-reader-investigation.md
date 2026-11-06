@@ -2,7 +2,7 @@
 
 **Date:** Nov 1, 2026  
 **Ask (Nikhil):** "we never paid much attention to the actual article conversion and display. I think that's a very weak link." Filed as P1, investigation first.  
-**Status:** Nikhil approved the server and web items on Nov 1 ("Yes go ahead"). Built and deployed as 3.5.0 (section 7). Photos through getclearnews.com wait for his yes; the feed's full text is held; the app fixes go with iOS 2.1.
+**Status:** Nikhil approved the server and web items on Nov 1 ("Yes go ahead"). Built and deployed as 3.5.0 (section 7). Photos through getclearnews.com wait for his yes; the feed's full text is held; the app fixes go with iOS 2.1. Rerun on Nov 5 with `worker/scripts/measure-reader.mjs` (section 8).
 
 ## 1. Summary
 
@@ -130,4 +130,35 @@ Defuddle alone loses text on Scientific American (it drops the opening paragraph
 - **Checks:** 104 tests (the extraction runs in the Workers runtime), verify 75/75, the iOS decoder sweep (which also opens one article per tab through the reader) 1,413 articles with 0 failures.
 - **Photos (3.5.1, Nikhil's yes on Nov 1):** every reader photo now loads from `getclearnews.com/img`, resized to 1,200 pixels in AVIF or WebP, with a signed address so only reader photos are resized. A Quanta article's 7 photos: 5.9 MB to 1.3 MB. No zone setting was needed (Cloudflare resizes from a Worker on any zone it serves).
 - **Feed full text:** held with a trigger as #424.
+
+## 8. Rerun with the script (Nov 5, 2026, #436)
+
+- **How:** `worker/scripts/measure-reader.mjs run`, Nov 6, 00:28 UTC (Nov 5 in Seattle). The newest 5 articles of each of the 53 sources, each URL read once: 249 articles. Run folder `2026-11-06T00-28-53Z` under `worker/.fixtures/reader-runs/` (local).
+- **Not quite the Nov 1 measure.** The Nov 1 scripts were lost, so the script rebuilds the measures from sections 3 to 5 and #436. Video pages now answer `video` and count as not opened; on Nov 1 they opened as page text. Cut short has two yardsticks. The plain one is the page's long paragraphs outside nav, header, footer and aside, as #436 describes. The tight one also leaves out dialogs, forms, hidden blocks, headings, junk paragraphs and repeated paragraphs. The articles are different, and Fox News and CNBC changed feeds after the Nov 1 sample (3.5.2).
+
+| Measure | Nov 1, before 3.5.0 | Nov 1, after 3.5.0 | Nov 5, production |
+|-|-|-|-|
+| Opened | 238 of 250 (95%) | not rerun | 210 of 249 (84%) |
+| Blocked by the publisher | NDTV, UPI Odd News | not rerun (NDTV still blocked) | NDTV, UPI Odd News, BBC (5 feeds), Smithsonian: 33 |
+| Time to open, fresh reads | median 0.36 s | median 0.82 s | median 0.92 s, 90th percentile 1.55 s |
+| Cut short 30%+ | 24 | 12 of 236 (offline) | 12 of 203 plain, 4 tight, none on a read-through |
+| Junk lines | 46 | 8 (offline) | 10 |
+| Empty bullets | 79 | 30 (galleries) | 0, plus 7 gallery items holding only a photo |
+| Empty blocks | 195 | 0 | 0 |
+| Repeated text | 13 | 0 | 5 |
+| Photo twice | 40 | 2 | 1 of 196 |
+
+The "before" and "after" columns are section 7's numbers for the same pages; opened and time are from sections 4.1 and 7.
+
+**Findings**
+
+- **BBC and Smithsonian now refuse the reader.** All five BBC feeds (World, India, Business, Uplifting, Health) and Smithsonian answer 403 to the reader on Cloudflare. The same pages load from a home connection. Both opened on Nov 1, so the block started since. BBC World feeds General and the Today brief. Nothing changed here; it needs a decision.
+- **No article misses 30% of its text on a read-through.** The 12 plain cuts are the yardstick counting page extras: Scientific American's subscribe pitches, Cascade PBS's republish box and an author bio printed twice, a sign-up dialog on Latent Space, related headlines on TechCrunch, Kotaku and Atlas Obscura. Atlas Obscura place pages do lose their two or three "Know Before You Go" paragraphs (where it is, tours, best time to visit).
+- **Junk the cleanup misses:** The Decoder's subscribe pitch at the end of all 5 of its articles; Fox's "SIGN UP TO GET THE POLITICS NEWSLETTER" and a "Subscribed" button; Good News Network's "SHARE This … With Your Friends…" line (3 of 5).
+- **Repeated text:** two paragraphs printed twice by The Hindu, a Verge caption, a Guardian headline, an address on Matador.
+- **Photo twice:** one Verge page carries its lead photo twice, and the cleanup removes only the first copy. Its feed photo address also holds a literal `&#038;` where `&` belongs, so the crop settings after it are lost.
+- **14 opened articles are not in the served feed** (grouped under another outlet's card, or dropped as deals or listicles). For those the reader answers with no source name, photo or date, which is what a reader gets on opening one from a "Covered by N outlets" list.
+- **Not checked:** Times of India pages hold their text in `<div>` with line breaks, not paragraphs, so the yardstick has nothing to measure on any of its 5.
+- **Cache:** 15 of 210 opens came from the reader's cache, the oldest extracted 5 hours before the run.
+- **Seen in the iOS simulator run, missed by the measure:** an NPR article shows its photo above the title and again at the top of the text. The feed and the page use different addresses for that photo, so neither the cleanup nor the measure matches them. Google DeepMind posts keep "Your browser does not support the video tag." where a video was.
 

@@ -47,7 +47,7 @@ news-aggregator/
 ├── worker/               # Cloudflare Worker: API, feed refresh, reader (TypeScript)
 │   ├── src/sources.ts    # Every news source and category
 │   ├── test/             # Tests in the Workers runtime
-│   └── scripts/          # deploy, verify, contract diff, decoder sweep, cutover
+│   └── scripts/          # deploy, verify, contract diff, decoder sweep, cutover, brief replay, reader measurement
 ├── web/                  # Next.js site (static export served by the Worker)
 ├── ios/                  # SwiftUI iOS app
 ├── android/ClearNews/    # Kotlin + Jetpack Compose Android app

@@ -1,6 +1,6 @@
 # Current State
 
-**Last Updated**: November 1, 2026
+**Last Updated**: November 5, 2026
 
 ## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 53 sources across 15 categories
 
@@ -20,7 +20,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader** (#423, 3.5.0): Defuddle with Mozilla Readability as the fallback, on linkedom; sanitize-html with the old nh3 allowlist; a cleanup pass for page furniture, repeated photos and captions, bylines and empty blocks; results kept in KV for 6 hours and Today's stories read ahead after each brief; video pages answer reason `video`; photos served resized from `getclearnews.com/img` with signed addresses (3.5.1). SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
 - **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 106 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Tests**: 106 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `measure-reader.mjs` (the reader measured on production, before and after a change, #436), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
@@ -75,7 +75,7 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **The apps' About screens** say "financial news APIs" until their next release.
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
-- **Reader gaps** (#423): NDTV and UPI Odd News block the reader (403; the app shows "doesn't allow reader view" and a link). A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
+- **Reader gaps** (#423): NDTV and UPI Odd News block the reader (403; the app shows "doesn't allow reader view" and a link). Since Nov 1, BBC (all five feeds) and Smithsonian refuse the reader from Cloudflare too, though their pages load from a home connection (measured Nov 5, `docs/reviews/2026-11-01-reader-investigation.md` section 8). A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
 - **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.
 - **Web topic picker:** unticking a topic moves it to the other list, so keyboard focus drops to the page.
 - **A new edition reaches the web up to 5 minutes late**: article lists are cached in the browser for 5 minutes (`max-age=300`, unchanged from before); the refresh button bypasses it.
