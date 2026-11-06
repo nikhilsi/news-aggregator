@@ -172,6 +172,14 @@ describe('brief', () => {
     expect(list[0].outlets).toEqual(['The Verge', 'The Guardian Business']);
     expect(list[0].topics).toEqual(['markets', 'tech']);
   });
+  it('counts one article in two feeds as one outlet (#453)', () => {
+    const tech = art('ars-technica-tech', 'Agility robots list on Nasdaq', 2);
+    const aiCopy = { ...art('ars-technica-ai', 'Agility robots list on Nasdaq', 2), url: tech.url };
+    const rr = art('robot-report', 'Agility begins trading', 3);
+    const items = { [tech.url]: item({ v: axisVector(9) }), [rr.url]: item({ v: axisVector(9) }) };
+    const list = shortlist(groupStories([tech, aiCopy, rr], items, NOW).values(), items, order, NOW);
+    expect(list[0].outlets).toHaveLength(2);
+  });
 
   const cand = (title: string, v: number[], topics: Candidate['topics'] = ['tech']): Candidate => {
     // Each candidate from its own outlet unless a test says otherwise.

@@ -58,7 +58,10 @@ export function shortlist(
         Number(!!b.image_url) - Number(!!a.image_url) ||
         (sourceOrder.get(a.source_id) ?? 0) - (sourceOrder.get(b.source_id) ?? 0),
     )[0];
-    const outlets = [...new Set(story.members.map((a) => a.source_name))];
+    // One article can sit in two feeds (Ars Technica AI and Tech share URLs); it is one outlet (#453).
+    const urls = new Set<string>();
+    const firstPerUrl = story.members.filter((a) => !urls.has(a.url) && !!urls.add(a.url));
+    const outlets = [...new Set(firstPerUrl.map((a) => a.source_name))];
     const topics = [...new Set([...items[rep.url].t, ...labeled.flatMap((a) => items[a.url].t)])];
     const imp = Math.max(...labeled.map((a) => items[a.url].imp));
     const boost = Math.max(0, ...topics.map((t) => BOOST[t] ?? 0));
