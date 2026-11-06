@@ -11,7 +11,10 @@ struct ReaderWebView: UIViewRepresentable {
         config.userContentController.add(context.coordinator, name: "heightChange")
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
+        // The page scrolls with the sheet. Zoom is allowed (#425); while zoomed in, the page
+        // pans on its own (Coordinator.scrollViewDidZoom).
         webView.scrollView.isScrollEnabled = false
+        webView.scrollView.delegate = context.coordinator
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
@@ -38,7 +41,7 @@ struct ReaderWebView: UIViewRepresentable {
         <!DOCTYPE html>
         <html lang="en">
         <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
         <style>
             :root {
@@ -57,7 +60,6 @@ struct ReaderWebView: UIViewRepresentable {
             }
             @media (prefers-color-scheme: dark) {
                 body { color: #e5e5e5; }
-                a { color: #60a5fa; }
             }
             img {
                 max-width: 100%;
@@ -65,8 +67,53 @@ struct ReaderWebView: UIViewRepresentable {
                 border-radius: 8px;
                 margin: 16px 0;
             }
+            /* Photos with captions and credits (#425): no 40 px browser margins, captions set apart from the text. */
+            figure { margin: 16px 0; }
+            figure img { margin: 0; }
+            figcaption {
+                font-size: 0.8em;
+                line-height: 1.45;
+                color: #6b7280;
+                margin-top: 6px;
+            }
+            @media (prefers-color-scheme: dark) {
+                figcaption { color: #9ca3af; }
+            }
+            ul, ol { margin: 0 0 16px 0; padding-left: 1.4em; }
+            li { margin: 0 0 6px 0; }
+            li p { margin: 0; }
+            table {
+                display: block;
+                max-width: 100%;
+                overflow-x: auto;
+                border-collapse: collapse;
+                font-size: 0.85em;
+                line-height: 1.45;
+                margin: 16px 0;
+            }
+            caption { text-align: left; color: #6b7280; padding-bottom: 6px; }
+            th, td {
+                border: 1px solid #d1d5db;
+                padding: 6px 8px;
+                text-align: left;
+                vertical-align: top;
+            }
+            th { background: #f3f4f6; }
+            @media (prefers-color-scheme: dark) {
+                caption { color: #9ca3af; }
+                th, td { border-color: #374151; }
+                th { background: #1f2937; }
+            }
+            hr { border: 0; border-top: 1px solid #d1d5db; margin: 24px 0; }
+            @media (prefers-color-scheme: dark) {
+                hr { border-top-color: #374151; }
+            }
+            a { overflow-wrap: anywhere; }
             a { color: #2563eb; text-decoration: none; }
             a:hover { text-decoration: underline; }
+            @media (prefers-color-scheme: dark) {
+                a { color: #60a5fa; }
+            }
             h1, h2, h3, h4 {
                 line-height: 1.3;
                 margin-top: 24px;
@@ -116,7 +163,7 @@ struct ReaderWebView: UIViewRepresentable {
     // MARK: - Coordinator
 
     @MainActor
-    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, UIScrollViewDelegate {
         let parent: ReaderWebView
         var lastLoadedHTML: String?
 
@@ -142,6 +189,12 @@ struct ReaderWebView: UIViewRepresentable {
                 }
             }
             decisionHandler(.allow)
+        }
+
+        // Any zoom (pinch, double tap, rotation): the zoomed page pans on its own; at normal
+        // size the sheet does the scrolling, as before.
+        func scrollViewDidZoom(_ scrollView: UIScrollView) {
+            scrollView.isScrollEnabled = scrollView.zoomScale > scrollView.minimumZoomScale + 0.01
         }
 
         // Receive content height from JavaScript

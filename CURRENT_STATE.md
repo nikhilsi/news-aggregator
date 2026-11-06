@@ -29,8 +29,9 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - Google Analytics removed. The API base is `/api/v1` on the same origin.
 - `/privacy` and `/support` are static pages in `web/public/` (opened from both apps).
 
-### iOS App (SwiftUI): v2.0, live on the App Store
-- Unchanged by the move; it calls `https://getclearnews.com` as before. Full feature list in [ios/README.md](ios/README.md).
+### iOS App (SwiftUI): v2.0 on the App Store; v2.1 built, not released
+- 2.0 is unchanged by the move; it calls `https://getclearnews.com` as before.
+- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Checked with the decoder sweep and a simulator run against production; waiting for Nikhil's phone walk and his release call. Full feature list in [ios/README.md](ios/README.md).
 
 ### Android App (Kotlin + Jetpack Compose): v1.0.0
 - Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 without merging; ClearNews is not on F-Droid.
@@ -73,7 +74,7 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 ## Known Issues
 - **Some repeats stay two cards:** stories group at cosine 0.75, which misses some (the Alaska Senate ruling from CNBC and NPR measured 0.69). Lower thresholds merged unrelated stories.
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
-- **The apps' About screens** say "financial news APIs" until their next release.
+- **The apps' About screens** say "financial news APIs" until their next release (fixed in iOS 2.1, not released yet).
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
 - **Reader gaps** (#423): NDTV and UPI Odd News block the reader (403; the app shows "doesn't allow reader view" and a link). Since Nov 1, BBC (all five feeds) and Smithsonian refuse the reader from Cloudflare too, though their pages load from a home connection (measured Nov 5, `docs/reviews/2026-11-01-reader-investigation.md` section 8). A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post. First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
 - **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.

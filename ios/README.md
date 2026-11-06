@@ -1,6 +1,6 @@
 # iOS App — ClearNews (SwiftUI)
 
-Native iOS client for ClearNews. Full feature parity with the web frontend. 22 Swift files, zero external dependencies. Deployment target: iOS 17.0.
+Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 3) is built and not on the App Store yet; the App Store has 2.0.
 
 ## Quick Start
 
@@ -12,10 +12,11 @@ The app connects to `https://getclearnews.com` by default (see `Utilities/Consta
 
 ## Features
 
+- **Today** (2.1, #425): on the first tab, the hourly brief as numbered compact rows with the date, story count and edition time, "Covered by N outlets" (each outlet's headline opens in the reader), Fox and NPR marks on US politics stories, and "You're all caught up" with the next edition's time. Without a brief, the first tab shows cards
 - **Article feed**: Cards with hero images, infinite scroll, pull-to-refresh (force cache bypass), shimmer skeleton loading
 - **Category filtering**: Horizontal scroll capsule pills, fetched dynamically from API
 - **Search**: `.searchable` with 400ms debounce, composes with category filter
-- **Reader view**: WKWebView rendering extracted HTML content, dark mode CSS, responsive images, configurable font size, external links open in Safari, fallback for paywalled sites
+- **Reader view**: WKWebView rendering extracted HTML content, dark mode CSS, responsive images, styled figures, captions, tables and lists, zoom, configurable font size, external links open in Safari. A placeholder holds the photo's place while it loads. When the reader cannot show an article, a message per reason (blocked, slow, video, no text) and a link to the original
 - **Share**: Share any article from the card footer or reader toolbar via native iOS share sheet
 - **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), about page with content attribution + links
 - **Dynamic Type**: All text uses semantic fonts, padding/sizes scale via `@ScaledMetric`
@@ -34,7 +35,8 @@ ios/ClearNews/ClearNews/ClearNews/
 ├── Models/
 │   ├── Article.swift           # Codable article model (url as Identifiable id)
 │   ├── Category.swift          # id, name, sourceCount
-│   └── ReaderContent.swift     # Reader extraction result + estimated read time
+│   ├── ReaderContent.swift     # Reader extraction result + estimated read time
+│   └── ReaderTarget.swift      # What the reader opens: an article or a coverage headline
 │
 ├── Services/
 │   ├── APIClient.swift         # Singleton URLSession wrapper, generic get<T>/post<Body,T>, ISO 8601 date decoding
@@ -50,7 +52,8 @@ ios/ClearNews/ClearNews/ClearNews/
 ├── Views/
 │   ├── Home/
 │   │   ├── HomeView.swift          # NavigationStack, search bar, category tabs, article list, reader sheet
-│   │   ├── ArticleListView.swift   # LazyVGrid (1 col iPhone, 2 col iPad), 4 states, infinite scroll sentinel
+│   │   ├── ArticleListView.swift   # LazyVGrid (1 col iPhone, 2 col iPad), 4 states, infinite scroll sentinel; Today on the first tab
+│   │   ├── TodayView.swift         # Today: header, numbered rows, caught-up line (2.1)
 │   │   ├── ArticleCardView.swift   # Hero image (AsyncImage), title, summary, source + relative time
 │   │   └── CategoryTabsView.swift  # Horizontal ScrollView, capsule pill buttons
 │   │
@@ -66,7 +69,8 @@ ios/ClearNews/ClearNews/ClearNews/
 │       ├── EmptyStateView.swift    # Icon + message (accessibility combined)
 │       ├── ErrorView.swift         # Icon + message + optional retry button (accessibility combined)
 │       ├── RelativeTimeText.swift  # "just now", "5m ago", "2h ago", "3d ago", "Feb 8"
-│       └── SkeletonView.swift      # Shimmer animation skeleton cards
+│       ├── SkeletonView.swift      # Shimmer animation skeleton cards
+│       └── StoryBits.swift         # Fox/NPR marks, "Covered by N outlets", thumbnail (2.1)
 │
 └── Assets.xcassets/
     ├── AccentColor.colorset/

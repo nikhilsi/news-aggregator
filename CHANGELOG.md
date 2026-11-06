@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.6.0] - 2026-11-05 - iOS 2.1: Today, story coverage, reader fixes (#425; built, not on the App Store)
+
+### Added (iOS 2.1, build 3)
+- **Today screen** on the first tab: the date, the story count and when the edition was built, the brief as numbered compact rows (headline, source, time, a small photo), and "You're all caught up" with the next edition's time. About 4 to 5 stories show per screen instead of 1 card. Without a brief, or in a search, the first tab shows the cards as before.
+- **Covered by N outlets** on Today's rows: opens to each other outlet's own headline, each readable in the reader. **Fox and NPR marks** on stories mainly about US politics.
+- The app reads `topics`, `coverage` and `brief_at`. If any of them goes missing or changes shape, articles still load without it.
+- Back in the app after a while, Today reloads once its edition is over an hour old; "updated" and the next edition's time stay current while the app is open.
+
+### Fixed (iOS 2.1)
+- Reader: captions and photo credits styled apart from the text, figures without the 40-point side margins, tables with borders that scroll sideways when wide, list spacing.
+- Reader: the photo above the title holds its place while it loads, so the text no longer jumps; a very wide photo no longer widens the page (it cut a few points off the right edge in 2.0).
+- Reader: the source, author, time and reading time wrap as one line instead of squeezing into columns.
+- Reader: a message per failure ("BBC World doesn't allow reader view.", "This is a video, not an article." with "Watch on…"), as on the web.
+- Reader: zoom allowed; the page pans while zoomed in.
+- Reader: links in dark mode use the light blue meant for them (2.0 showed the dark blue).
+- Pull to refresh keeps the list on screen instead of swapping it for the loading placeholder, so the refresh is not cancelled midway.
+- About: no longer says "financial news APIs".
+
+### Changed
+- The decoder sweep (`worker/scripts/sweep/main.swift`) also checks that `topics`, `coverage` and `brief_at` decode exactly as sent.
+
+---
+
 ## [3.5.3] - 2026-11-05 - Reader measurement script (#436)
 
 ### Added

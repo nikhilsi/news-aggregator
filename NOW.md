@@ -6,8 +6,8 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 ## Now
 
-**The apps** (all P1, Nikhil, Nov 1; not started, soon):
-- **iOS 2.1** (#425): Today screen, story coverage, Fox and NPR marks, the reader display fixes, About text.
+**The apps** (all P1, Nikhil, Nov 1):
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. Next: Nikhil's iPhone walk and his release call. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 

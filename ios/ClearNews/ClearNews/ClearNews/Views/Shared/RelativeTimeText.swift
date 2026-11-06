@@ -11,12 +11,13 @@ struct RelativeTimeText: View {
     }()
 
     var body: some View {
-        Text(formatRelativeTime(date))
+        Text(Self.format(date))
             .font(.caption)
             .foregroundStyle(.secondary)
     }
 
-    private func formatRelativeTime(_ date: Date) -> String {
+    /// The same text as the view, for places that build a line of their own.
+    static func format(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
 
         if seconds < 60 { return "just now" }
@@ -27,7 +28,7 @@ struct RelativeTimeText: View {
         let days = hours / 24
         if days < 7 { return "\(days)d ago" }
 
-        // Older than a week — show short date
-        return Self.shortDateFormatter.string(from: date)
+        // Older than a week: the short date
+        return shortDateFormatter.string(from: date)
     }
 }

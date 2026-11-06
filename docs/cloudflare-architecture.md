@@ -3,7 +3,7 @@
 **Status:** live on getclearnews.com since Nov 1, 2026, 17:02 UTC (task #400, the move off DigitalOcean). Spec revised the same day after the independent review (`docs/reviews/2026-11-01-spec-review.md`, 16 findings, responses in that file). Runbook: [deploy-runbook.md](deploy-runbook.md).  
 **Decided by Nikhil, Nov 1, 2026:** move to the OmSpark Cloudflare account to retire the $6 droplet; remove Google Analytics; drop the repo's no-cron rule and refresh feeds with a Cron Trigger; drop FMP and refill Finance with free RSS feeds; rewrite the API in TypeScript in one Worker; add DKIM and DMARC after the switchover. He also agreed to the design calls in section 11.  
 **Inputs:** inventory `docs/reviews/2026-11-01-inventory.md`, research `docs/reviews/2026-11-01-research-cloudflare.md`. References such as "O8" and "inventory 2.7" point into the inventory; "R5" points into the review.  
-**Fixed by the published apps:** the hostname `https://getclearnews.com`, the paths `/api/v1/articles`, `/api/v1/articles/reader`, `/api/v1/categories`, `/health`, `/privacy`, `/support`, the web route `/article?url=`, and every JSON field name and type the apps decode (inventory 6.2).
+**Fixed by the published apps:** the hostname `https://getclearnews.com`, the paths `/api/v1/articles`, `/api/v1/articles/reader`, `/api/v1/categories`, `/health`, `/privacy`, `/support`, the web route `/article?url=`, and every JSON field name and type the apps decode (inventory 6.2). iOS 2.1 (#425, built Nov 5, 2026, not released yet) also reads `topics`, `coverage` and `brief_at`, leniently: without them it still loads. Once 2.1 is on the App Store, keep them.
 
 
 ## 1. What changes

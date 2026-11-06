@@ -8,6 +8,8 @@ final class ArticleService {
     private(set) var isLoadingMore = false
     private(set) var error: String?
     private(set) var hasMore = false
+    /// When Today's brief was built; nil on other tabs, in a search, or while the server has no brief.
+    private(set) var briefAt: Date?
     var selectedCategory = "all"
     var searchQuery = ""
 
@@ -19,10 +21,15 @@ final class ArticleService {
         currentRequestId += 1
         let requestId = currentRequestId
 
-        isLoading = true
         error = nil
-        articles = []
-        hasMore = false
+        // A pull to refresh keeps the list on screen. Swapping it for the skeleton would remove
+        // the view that owns the refresh, and SwiftUI would cancel the request.
+        if !refresh {
+            isLoading = true
+            articles = []
+            hasMore = false
+            briefAt = nil
+        }
 
         do {
             let response: ArticleListResponse = try await APIClient.shared.get(
@@ -35,6 +42,7 @@ final class ArticleService {
 
             articles = response.articles
             hasMore = response.pagination.page < response.pagination.totalPages
+            briefAt = response.briefAt
 
             // Auto-retry if backend returned partial data (cold cache only).
             // Skip on manual refresh — user already has full cached data,
@@ -51,6 +59,7 @@ final class ArticleService {
                     guard requestId == currentRequestId else { return }
                     articles = retryResponse.articles
                     hasMore = retryResponse.pagination.page < retryResponse.pagination.totalPages
+                    briefAt = retryResponse.briefAt
                 }
                 return
             }

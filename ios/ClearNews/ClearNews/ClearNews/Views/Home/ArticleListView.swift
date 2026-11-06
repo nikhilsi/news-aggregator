@@ -3,7 +3,7 @@ import SwiftUI
 struct ArticleListView: View {
     @Environment(ArticleService.self) private var articleService
     @Environment(\.horizontalSizeClass) private var sizeClass
-    var onArticleTap: (Article) -> Void
+    var onOpen: (ReaderTarget) -> Void
 
     /// 1 column on iPhone (compact), 2 columns on iPad (regular)
     private var columns: [GridItem] {
@@ -21,6 +21,11 @@ struct ArticleListView: View {
             }
         } else if articleService.articles.isEmpty {
             EmptyStateView()
+        } else if let briefAt = articleService.briefAt {
+            // The first tab while the server has a brief (#425). Otherwise the cards, as in 2.0.
+            TodayView(articles: articleService.articles, briefAt: briefAt, onOpen: onOpen) {
+                await articleService.fetchArticles(refresh: true)
+            }
         } else {
             articleList
         }
@@ -33,7 +38,7 @@ struct ArticleListView: View {
                     ArticleCardView(article: article)
                         .onTapGesture {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            onArticleTap(article)
+                            onOpen(ReaderTarget(article))
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityAddTraits(.isButton)

@@ -3,8 +3,9 @@ import SwiftUI
 struct HomeView: View {
     @Environment(ArticleService.self) private var articleService
     @Environment(CategoryService.self) private var categoryService
+    @Environment(\.scenePhase) private var scenePhase
     @State private var searchText = ""
-    @State private var selectedArticle: Article?
+    @State private var selectedTarget: ReaderTarget?
 
     var body: some View {
         @Bindable var articleService = articleService
@@ -16,15 +17,15 @@ struct HomeView: View {
                     CategoryTabsView(selectedCategory: $articleService.selectedCategory)
                 }
 
-                ArticleListView(onArticleTap: { article in
-                    selectedArticle = article
+                ArticleListView(onOpen: { target in
+                    selectedTarget = target
                 })
             }
             .navigationTitle("ClearNews")
             .searchable(text: $searchText, prompt: "Search articles")
         }
-        .sheet(item: $selectedArticle) { article in
-            ReaderView(article: article)
+        .sheet(item: $selectedTarget) { target in
+            ReaderView(target: target)
         }
         .task {
             await articleService.fetchArticles()
@@ -40,6 +41,13 @@ struct HomeView: View {
         }
         .onChange(of: articleService.selectedCategory) {
             Task { await articleService.fetchArticles() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Back in the app: once Today's brief is an hour old, a newer edition exists.
+            if phase == .active, let briefAt = articleService.briefAt,
+               Date().timeIntervalSince(briefAt) > TodayView.editionInterval {
+                Task { await articleService.fetchArticles(refresh: true) }
+            }
         }
     }
 }

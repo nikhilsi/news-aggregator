@@ -1,6 +1,6 @@
 # #414: Make ClearNews worth opening every morning
 
-**Status:** approved by Nikhil, Nov 1, 2026 (section 5 leans taken). Step 1 built as 3.2.0, step 2 as 3.3.0 and 3.3.1, step 3 (the web) as 3.4.0, with one change from the table: Google DeepMind went to the AI tab, since its posts this week were a frontier model and a world model.  
+**Status:** approved by Nikhil, Nov 1, 2026 (section 5 leans taken). Step 1 built as 3.2.0, step 2 as 3.3.0 and 3.3.1, step 3 (the web) as 3.4.0, step 4's Must items (iOS 2.1, #425) built on Nov 5 and not released yet (section 9), with one change from the table: Google DeepMind went to the AI tab, since its posts this week were a frontier model and a world model.  
 **Ask (Nikhil, Nov 1):** "I need to feel the attraction and addiction to open the app for my news." Gut feel: the presentation is not the best, and sources for things like AI and space are missing. Also: "physical AI is a topic that I love."  
 **Inputs:** `docs/reviews/2026-11-01-product-patterns-research.md` (what makes news products worth opening), `docs/reviews/2026-11-01-sources-research.md` (source audit and tested candidates), and a prototype of story grouping run on the live feed (section 3).
 
@@ -141,3 +141,18 @@ Built from section 4 and the approved mockup (the artifact linked on #414). Nikh
 - **Kept in the browser only.** The topic list and the last-visit time live in localStorage, like the theme. Nothing about them reaches the server; the privacy page says so.
 - **Not in this step:** AI-written text, mutes, sharing changes, the apps.
 - **Checks:** a Worker test and a live check for `brief_at`; a browser walk on a local Worker serving production's feed, then on production, at desktop and phone widths, light and dark.
+
+## 9. Step 4 build design (Nov 5, iOS 2.1, the Must items of #425)
+
+Nikhil asked for the Must items only, on Nov 5. Notifications wait for the #435 design; the Should and Could items (topic sections, "new since your last visit", widget, reminder, mutes) are not in this build. No App Store release in this step.
+
+- **Today screen.** On the first tab, while the server has a brief (`brief_at` present): "Today", the date, chips for the story count and "updated N min ago", numbered compact rows (the publisher's headline up to 3 lines, source and time, a 64-point photo), then "You're all caught up" with the next edition's time (`brief_at` plus an hour). A search, another tab, or no brief shows the 2.0 cards. About 4 to 5 rows fit under the app's existing header, against 1 card in 2.0.
+- **Coverage and marks**, on Today's rows as on the web: "Covered by N outlets" opens to each outlet's own headline, each opening in the reader; Fox and NPR marks on stories whose main topic is US politics. The cards in other tabs are unchanged.
+- **New fields read leniently.** The app now decodes `topics`, `coverage` and `brief_at`. If any of them is missing or changes shape, the article list still loads without it; the old fields are decoded as strictly as before. The decoder sweep compares what it decoded with the raw JSON, so a silent loss shows up there.
+- **Coverage links** carry only an outlet, a headline and an address, and the server usually has no feed data for them, so the reader shows the outlet and headline from the list.
+- **Reader.** The photo above the title keeps a fixed height while it loads. It is the list's photo, usually cached already; if that fails, the reader's resized copy. Coverage links show no photo, so the title never jumps when the reader answers. The meta line is one wrapping line. Failure messages per reason, as on the web, with "Watch on" for videos. Figures, captions, tables and lists styled; zoom allowed, and the page pans while zoomed in.
+- **Staying current.** Pull to refresh keeps the list on screen. Coming back to the app reloads Today once its edition is over an hour old, and the "updated" and next-edition times redraw every minute.
+- **Readable colours.** The links, chips and the caught-up line use the web's darker shades in light mode; the system blue and green are too light on white.
+- **About** no longer mentions financial news APIs. Version 2.1, build 3.
+- **Checks:** the decoder sweep against production; a simulator run against production (iPhone 17, light and dark, and the largest text size) through a temporary launch hook, removed after; an independent breaker review (one bug, the coverage label overflowing at the largest text sizes, and several smaller items, all fixed). Not exercised in the simulator: pinch zoom, VoiceOver, iPad, pull to refresh. Those go on Nikhil's phone walk.
+

@@ -19,7 +19,7 @@ struct AboutView: View {
             }
 
             Section {
-                Text("A personal news aggregator that pulls from multiple sources and presents them through a clean, filterable interface — without clickbait, ad overload, and political noise.")
+                Text("A personal news aggregator that pulls from multiple sources into one clean, filterable interface. No clickbait, no ad overload, no political noise.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } header: {
@@ -27,7 +27,7 @@ struct AboutView: View {
             }
 
             Section {
-                Text("Articles are aggregated from publicly available RSS feeds and financial news APIs. All content belongs to its respective publishers. Tap \"Original\" in the reader to visit the source.")
+                Text("Articles come from publicly available RSS feeds. All content belongs to its respective publishers. Tap \"Original\" in the reader to visit the source.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } header: {
