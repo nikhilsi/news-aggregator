@@ -147,6 +147,22 @@ async function fetchPage(url: string, ownHosts: string[]): Promise<Fetched> {
   }
 }
 
+/** The widest candidate in a srcset ("url 768w, url 1200w"), or the last one. */
+/**
+ * Lazy-loaded photos keep their address outside src, and the sanitizer keeps only src
+ * (#453): DW puts it in data-url with a ${formatId} size placeholder (605 is about 1,200
+ * pixels wide). A photo without a real src gets one from its data attributes.
+ */
+function fillImageSources(document: ReturnType<typeof parseHTML>['document']) {
+  for (const img of [...document.querySelectorAll('img')]) {
+    const src = (img.getAttribute('src') ?? '').trim();
+    if (src && !src.startsWith('data:')) continue;
+    const lazy = ['data-src', 'data-lazy-src', 'data-original', 'data-url'].map((a) => (img.getAttribute(a) ?? '').trim()).find(Boolean);
+    const pick = lazy?.replace('${formatId}', '605');
+    if (pick && !pick.includes('${')) img.setAttribute('src', pick);
+  }
+}
+
 /** A linkedom document with a <base>, so relative links and images become absolute. */
 function pageDocument(html: string, finalUrl: string) {
   const { document } = parseHTML(html);
@@ -157,6 +173,7 @@ function pageDocument(html: string, finalUrl: string) {
     base.setAttribute('href', finalUrl);
     head.insertBefore(base, head.firstChild);
   }
+  fillImageSources(document);
   return document;
 }
 
@@ -213,17 +230,43 @@ export function sanitize(html: string): string {
 
 /** Whole lines of page furniture, matched against a block's entire text. */
 const BOILERPLATE =
-  /^(skip to (main )?content|skip past newsletter promotion|after newsletter promotion|advertisement|close|sponsored( content)?( by .{1,40})?|subscribe( now)?|subscribe to .{1,60}|sign up( now)?|sign up for .{1,60}|newsletter|click here to download .{1,60}|download the .{1,40} app.{0,80}|new you can now listen to .{1,60}|listen to this article.{0,40}|\d+ comments?|read more|related( stories| articles| coverage)?:?|share this( article| story)?|follow (us|topics and authors)\b.{0,140}|most (read|popular)|email \(required\)|\d+ min read|your browser does(n't| not) support (the )?(html5 )?(video|audio)( tag| element)?\.?)$/i;
+  /^(skip to (main )?content|skip past newsletter promotion|after newsletter promotion|advertisement|close|sponsored( content)?( by .{1,40})?|subscribed?( now)?|subscribe to .{1,60}|ai news without the hype.{0,60}|sign up( now)?|sign up for .{1,60}|sign up to .{0,50}newsletter|newsletter|click here to download .{1,60}|click here to read (the )?(previous|next)\b.{0,60}|download the .{1,40} app.{0,80}|new you can now listen to .{1,60}|listen to this article.{0,40}|\d+ comments?|read more( ?\|.{1,200}| of our stories about .{1,100})?|related( stories| articles| coverage)?:?|share this( article| story| .{1,100} with your friends.{0,3})?|follow (us|topics and authors)\b.{0,140}|most (read|popular)|email \(required\)|\d+ min read|your browser does(n't| not) support (the )?(html5 )?(video|audio)( tag| element)?\.?)$/i;
 /** Support pitches written as whole paragraphs. */
-const PITCH = /^(great science journalism requires|when you subscribe, you are supporting|subscriptions keep this engine running|support (our|independent) journalism|if you('re| are) enjoying (this|our) )/i;
+const PITCH = /^(subscribe to the decoder\b|great science journalism requires|when you subscribe, you are supporting|subscriptions keep this engine running|support (our|independent) journalism|if you('re| are) enjoying (this|our) )/i;
 /** A photo credit on its own line. */
 const CREDIT = /^((photo|image|picture|illustration)s?( credit)?|credit|photograph)( by)?\s*:|getty images|shutterstock|picture alliance|ap photo/i;
+/** A photo credit at the end of a block, after a sentence: "… thread. Image: Perplexity". */
+const CREDIT_TAIL = /(^|[.!?"”)\]]\s*)(photograph|photo|image|illustration|picture|credit)s?( by)?\s*:.{1,100}$/i;
+/** A block's text for comparing copies: lowercase, without final punctuation. */
+const plainKey = (t: string) => t.replace(/[\s.,;:!?…"'”’)]+$/, '').toLowerCase();
+/** The same without a trailing photo credit. */
+const creditlessKey = (t: string) => plainKey(t.replace(CREDIT_TAIL, '$1'));
 /** Whole blocks only: a link reading "close" inside a sentence stays. */
 const BLOCKS = 'p, li, h1, h2, h3, h4, h5, h6, figcaption, blockquote, div';
 const CONTAINERS = 'p, li, ul, ol, figure, figcaption, div, span, a, blockquote, h1, h2, h3, h4, h5, h6, b, strong, em, i';
 
 /** Query parameters image services use for the original photo (NPR's Brightspot: ?url=). */
 const ORIGINAL_PARAMS = ['url', 'u', 'src', 'image'];
+
+/** The original photo's address: the one an image service names in a query parameter, else the address itself. */
+function photoOriginal(src: string): URL {
+  const u = new URL(src, 'https://x.invalid/');
+  for (const p of ORIGINAL_PARAMS) {
+    const inner = u.searchParams.get(p);
+    if (inner && /^https?:\/\//i.test(inner)) return new URL(inner);
+  }
+  return u;
+}
+
+/** Host and path of the original photo, for telling apart photos that share a file name. */
+function photoPath(src: string | null | undefined): string {
+  try {
+    const u = photoOriginal(src ?? '');
+    return u.hostname + u.pathname;
+  } catch {
+    return '';
+  }
+}
 
 /**
  * The last path segment of an image URL, without size suffixes or extension, to spot one
@@ -234,16 +277,13 @@ const ORIGINAL_PARAMS = ['url', 'u', 'src', 'image'];
 export function photoKey(src: string | null | undefined): string {
   if (!src) return '';
   try {
-    let u = new URL(src, 'https://x.invalid/');
-    for (const p of ORIGINAL_PARAMS) {
-      const inner = u.searchParams.get(p);
-      if (inner && /^https?:\/\//i.test(inner)) {
-        u = new URL(inner);
-        break;
-      }
-    }
-    const name = u.pathname.split('/').pop() ?? '';
-    return name.replace(/\.(jpe?g|png|webp|avif|gif)$/i, '').replace(/[-_]\d{2,4}x\d{2,4}$/, '').toLowerCase();
+    const name = photoOriginal(src).pathname.split('/').pop() ?? '';
+    return name
+      .replace(/\.(jpe?g|png|webp|avif|gif)$/i, '')
+      .replace(/[-_]\d{2,4}x\d{2,4}$/, '')
+      // DW: 79751428_6.jpg above the title, 79751428_605.jpg in the text (#453).
+      .replace(/^(\d{6,})_\d{1,4}$/, '$1')
+      .toLowerCase();
   } catch {
     return '';
   }
@@ -262,16 +302,48 @@ export function clean(html: string, heroUrl: string | null, author: string | nul
   // Leaf-most blocks: those with no block inside them.
   const leaves = () => [...body.querySelectorAll(BLOCKS)].filter((n) => !n.querySelector('p, li, div, blockquote, figure'));
 
-  // 1. Page furniture, by whole-line match, and support pitches.
-  for (const n of leaves()) if (BOILERPLATE.test(text(n)) || PITCH.test(text(n))) n.remove();
+  // 1. Page furniture, by whole-line match, and support pitches. Twice: removing a pitch
+  //    can leave the rest of its box as a block of its own (The Decoder's "… Subscribe now").
+  for (let pass = 0; pass < 2; pass++) {
+    for (const n of leaves()) if (BOILERPLATE.test(text(n)) || PITCH.test(text(n))) n.remove();
+  }
 
-  // 2. A block repeated word for word (a caption shown twice, a subtitle repeated).
-  const seen = new Set<string>();
+  // 2. A block repeated (a caption shown twice, a subtitle repeated, #453), keeping the
+  //    copy that is story text:
+  //    - the same words (6+, final punctuation aside): the later copy goes, unless the earlier
+  //      one is a list item or heading and the later one is not (a key-points bullet, a
+  //      subtitle or a key-events entry repeating a paragraph: The Hindu, CNBC, live blogs);
+  //    - the same words once a trailing photo credit is set aside ("… Image: Perplexity"):
+  //      the copy with the credit, a caption, goes (The Verge, The Guardian).
+  //    A block is never a repeat of a block it holds or sits in, and an inner copy stands
+  //    for its wrapper (<div><h2>…</h2></div>, <div><figcaption>…</figcaption> Image: …</div>).
+  type Leaf = ReturnType<typeof leaves>[number];
+  const isHeading = (n: Leaf) => /^H[1-6]$/.test(n.tagName);
+  const rank = (n: Leaf) => (n.tagName === 'LI' ? 0 : isHeading(n) ? 1 : 2);
+  const same = new Map<string, Leaf>();
+  const credited = new Map<string, Leaf>();
+  const register = (map: Map<string, Leaf>, k: string, n: Leaf) => {
+    const e = map.get(k);
+    if (!e || !e.isConnected || e.contains(n)) map.set(k, n);
+  };
   for (const n of leaves()) {
-    const t = text(n).toLowerCase();
-    if (t.split(' ').length < 6) continue;
-    if (seen.has(t)) n.remove();
-    else seen.add(t);
+    if (!n.isConnected) continue;
+    const t = text(n);
+    const plain = countWords(t) >= 6 ? plainKey(t) : null;
+    const bare = creditlessKey(t);
+    const hasCredit = bare !== plainKey(t) && countWords(bare) >= 6;
+    const other = (e: Leaf | undefined): e is Leaf => !!e && e.isConnected && !e.contains(n) && !n.contains(e);
+    let drop: Leaf | undefined;
+    const exact = plain ? same.get(plain) : undefined;
+    const creditFirst = plain ? credited.get(plain) : undefined;
+    const creditNow = hasCredit ? same.get(bare) : undefined;
+    if (other(exact)) drop = rank(exact) < rank(n) ? exact : n;
+    else if (other(creditNow)) drop = n;
+    else if (other(creditFirst)) drop = creditFirst;
+    if (drop) drop.remove();
+    if (drop === n) continue;
+    if (plain) register(same, plain, n);
+    if (hasCredit) register(credited, bare, n);
   }
 
   // 3. Images: the first address of a comma-joined srcset, no tracking pixels.
@@ -285,9 +357,26 @@ export function clean(html: string, heroUrl: string | null, author: string | nul
   // 4. The photo above the title, again at the top of the text: remove it with its caption
   //    (the largest wrapper holding no other image and only caption text: a figcaption,
   //    the photo's own description, a credit or a short line).
-  const first = body.querySelector('img');
+  //    The first copy goes wherever it is; a further copy goes while no more than 60 words
+  //    of text come before it (The Verge carries the photo twice, under its subtitle and
+  //    byline; #453). A photo farther down, such as a player list's thumbnail, stays.
   const hero = photoKey(heroUrl);
-  if (first && hero && photoKey(first.getAttribute('src')) === hero) {
+  const wordsBefore = (img: Element) => {
+    let n = 0;
+    for (const el of body.querySelectorAll(`img, ${BLOCKS}`)) {
+      if (el === img) break;
+      if (el.tagName !== 'IMG' && !el.contains(img) && !el.querySelector('p, li, div, blockquote, figure')) n += countWords(text(el));
+    }
+    return n;
+  };
+  //    A further copy must also have the first copy's address: some sites give many photos
+  //    one file name (beehiiv's image.png).
+  let firstPath = '';
+  for (let copy = 0; hero && copy < 3; copy++) {
+    const first = body.querySelector('img');
+    if (!first || photoKey(first.getAttribute('src')) !== hero) break;
+    if (copy > 0 && (wordsBefore(first) > 60 || photoPath(first.getAttribute('src')) !== firstPath)) break;
+    if (copy === 0) firstPath = photoPath(first.getAttribute('src'));
     const words = (n: { textContent: string | null }) => countWords(text(n));
     const total = words(body);
     const alt = (first.getAttribute('alt') ?? '').trim().slice(0, 30).toLowerCase();

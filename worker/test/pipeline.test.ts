@@ -132,6 +132,8 @@ describe('feed entries and normalization', () => {
     expect(extractImage({ ...base, mediaThumbnail: [{ url: '/relative.jpg' }, { url: '//cdn.test/p.jpg' }] })).toBe('https://cdn.test/p.jpg');
     expect(webImage('javascript:alert(1)')).toBeNull();
     expect(webImage(' https://i.test/a.jpg ')).toBe('https://i.test/a.jpg');
+    // The Verge's feed leaves &#038; in its photo addresses.
+    expect(webImage('https://p.test/a.png?quality=90&#038;strip=all')).toBe('https://p.test/a.png?quality=90&strip=all');
   });
   it('Atom: alternate link, summary, published', () => {
     const [e] = parseEntries(`<feed xmlns="http://www.w3.org/2005/Atom"><title>x</title><id>x</id><updated>2026-11-01T00:00:00Z</updated>

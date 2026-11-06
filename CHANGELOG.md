@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.6.3] - 2026-11-06 - Reader cleanup, the rest of #453; Today counts outlets once
+
+### Fixed
+- **Junk lines:** The Decoder's subscribe box, Fox's "SIGN UP TO GET THE POLITICS NEWSLETTER" and "Subscribed", Good News Network's "SHARE This … With Your Friends…", A.V. Club's "Click here to read the previous recap", India Today's "Read more | …", The Conversation's "Read more of our stories about …". The patterns are narrow, so a heading such as "Sign up to vote: deadlines by state" stays.
+- **Repeats:** a block repeated with only a photo credit or a final period added counts as a repeat, and the copy that is story text stays: a subtitle, key-points bullet or key-events entry gives way to the paragraph that repeats it (The Hindu, CNBC), and a caption gives way to the paragraph its credit was added to (The Guardian). A caption nested in a box with its credit is no longer deleted as a repeat of its own box; six Verge captions show again.
+- **The Verge's lead photo:** every copy near the top goes, not only the first, when it is the same address.
+- **Photos inside DW articles:** DW loads them lazily from a `data-url`, which the reader dropped; they now show. DW's repeated lead photo is recognized by its photo id.
+- **Feed photo addresses** with `&#038;` (The Verge) are decoded, so the crop settings apply.
+- **Today's ranking** counts one article that sits in two feeds (Ars Technica AI and Tech) as one outlet, as "Covered by N outlets" already did.
+- Reader cache version 5.
+
+### Not changing
+- Atlas Obscura place pages lose their "Know Before You Go" notes; fixing it would take a rule for Atlas's layout alone. The notes are one tap away under "Original" (Nikhil, Nov 6).
+
+---
+
 ## [3.6.2] - 2026-11-06 - Reader and feed cleanup: NPR photos, video leftovers, coverage lists, photo addresses (#453)
 
 ### Fixed

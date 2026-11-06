@@ -184,6 +184,88 @@ describe('reader cleanup (#453)', () => {
     expect(out).toContain(words(40));
     expect(out).toContain(words(20));
   });
+  it('drops the junk lines left after the Nov 5 measurement', () => {
+    const junk = [
+      'Subscribe to THE DECODER for ad-free reading, a weekly AI newsletter, our exclusive "AI Radar" frontier report six times a year, full archive access, and access to our comment section. Subscribe now',
+      'SIGN UP TO GET THE POLITICS NEWSLETTER',
+      'Subscribed',
+      'SHARE This Delightful Story Of A Mystery Resolved With Your Friends…',
+      'Click here to read the previous recap.',
+      'Read more | Does Ramayana glorify Ravana? The uncomfortable question internet is asking',
+      'Read more of our stories about Pittsburgh and Pennsylvania.',
+    ];
+    const out = clean(`<p>${words(40)}</p>` + junk.map((j) => `<p>${j}</p>`).join(''), null);
+    expect(out).toBe(`<p>${words(40)}</p>`);
+    // Real lines that look a little like those stay.
+    const real = ['Why Disney+ fans should not subscribe now', 'Sign up to vote: deadlines by state', 'Click here to read the full ruling.'];
+    const kept = clean(`<p>${words(40)}</p><h2>${real[0]}</h2><h2>${real[1]}</h2><p><a href="https://court.test/r.pdf">${real[2]}</a></p>`, null);
+    for (const r of real) expect(kept).toContain(r);
+  });
+  it('treats a block repeated with a photo credit or a final period added as a repeat', () => {
+    const out = clean(
+      `<figure><img src="https://cdn.test/t.jpg" /><figcaption>Each Teammate gets their own thread. Image: Perplexity</figcaption></figure><p>Each Teammate gets their own thread.</p><p>${words(40)}</p>`,
+      null,
+    );
+    expect(out.match(/Each Teammate gets their own thread/g)).toHaveLength(1);
+    // A caption inside a block that adds the credit is one caption, not two (The Verge).
+    const wrapped = clean(`<p>${words(30)}</p><div><figcaption><em>At least this example shows you an image of the product.</em></figcaption> Image: Amazon</div><p>${words(20)}</p>`, null);
+    expect(wrapped).toContain('At least this example shows you an image of the product.');
+    // The Guardian: the caption with its credit comes first; the story paragraph stays.
+    const cyber = 'The Cybertruck never made it on sale in Europe because it did not reach the required safety standards.';
+    const guardian = clean(`<figure><img src="https://cdn.test/c.jpg" /><figcaption>${cyber} Photograph: Creative Touch Imaging Ltd/NurPhoto</figcaption></figure><p>${words(30)}</p><p>${cyber}</p><p>${words(20)}</p>`, null);
+    expect(guardian).toContain(`<p>${cyber}</p>`);
+    expect(guardian).not.toContain('Creative Touch');
+    // A heading wrapped in a box still counts as the heading.
+    const sub = 'A judge has blocked construction of the arch moments after it won approval';
+    const boxed = clean(`<div><h2>${sub}</h2></div><p>${words(30)}</p><p>${sub}.</p>`, null);
+    expect(boxed).toContain(`<p>${sub}.</p>`);
+    expect(boxed).not.toContain('<h2>');
+    // CNBC: a key-points bullet repeats a paragraph; the paragraph stays.
+    const point = 'Tesla delivered fewer Cybertrucks in Texas than it had planned for this quarter';
+    const cnbc = clean(`<ul><li>${point}</li><li>${words(8)}</li></ul><p>${words(30)}</p><p>${point}.</p>`, null);
+    expect(cnbc).toContain(`<p>${point}.</p>`);
+    expect(cnbc).not.toContain(`<li>${point}</li>`);
+    // Two credit lines are not repeats of each other (Positive News).
+    const credits = clean(`<p>${words(30)}</p><p>Image: Drazen Zigic, Getty Images Pro</p><p>${words(20)}</p><p>Image: Drazen Zigic Main image: filipefrazao</p>`, null);
+    expect(credits).toContain('Main image: filipefrazao');
+    // The Hindu: the subtitle repeats a later paragraph; the subtitle goes, the paragraph stays.
+    const dek = 'Earlier, a NATO spokeswoman said allies are working for a just end to the war';
+    const hindu = clean(`<h2>${dek}</h2><p>${words(30)}</p><p>${dek}.</p><p>${words(20)}</p>`, null);
+    expect(hindu).not.toContain('<h2>');
+    expect(hindu).toContain(`<p>${dek}.</p>`);
+    // Matador: a heading and the address line that starts with it are different blocks.
+    const name = 'The Pendleton House Historic Inn Bed & Breakfast';
+    const matador = clean(`<h3>${name}</h3><p>${words(30)}</p><p>${name}: 311 N Main St, Pendleton, OR 97801</p>`, null);
+    expect(matador).toContain('311 N Main St');
+    expect(matador).toContain('<h3>');
+  });
+  it('drops every copy of the photo above the title before the story starts, and keeps it farther down', () => {
+    const shot = (q: string) => `<p><img src="https://platform.test/uploads/Screenshot-PM.png?${q}" /></p>`;
+    const top = clean(
+      `${shot('a=1')}<p>A short subtitle line for the story about it all.</p><p>by Jay Peters</p>${shot('crop=2')}<p>${words(60)}</p>`,
+      'https://platform.test/uploads/Screenshot-PM.png?quality=90',
+    );
+    expect(top).not.toContain('<img');
+    const later = clean(
+      `${shot('a=1')}<p>${words(80)}</p><ul><li><figure>${shot('thumb=140')}</figure> Josh Downs, Colts</li></ul>`,
+      'https://platform.test/uploads/Screenshot-PM.png?quality=90',
+    );
+    expect(later.match(/<img/g)).toHaveLength(1);
+    // beehiiv names every upload image.png: a different photo near the top stays.
+    const beehiiv = clean(
+      `<p><img src="https://media.test/uploads/a1/image.png" /></p><p>A short subtitle line for this post.</p><p><img src="https://media.test/uploads/b2/image.png" /></p><p>${words(60)}</p>`,
+      'https://media.test/uploads/a1/image.png',
+    );
+    expect(beehiiv).toContain('b2/image.png');
+  });
+  it('gives lazy-loaded photos their address before extraction (DW)', () => {
+    const page = `<html><head><title>t</title></head><body><article><h1>Title</h1><p>${words(60)}</p>
+      <figure><img data-src="" data-url="https://static.dw.com/image/75314209_\${formatId}.jpg" alt="A man in Prague" /><figcaption>A man in front of a sign in Prague.</figcaption></figure>
+      <p>${words(40)}</p></article></body></html>`;
+    const r = extract(page, 'https://www.dw.com/en/a')!;
+    expect(r.content).toContain('https://static.dw.com/image/75314209_605.jpg');
+    expect(photoKey('https://static.dw.com/image/79751428_6.jpg')).toBe(photoKey('https://static.dw.com/image/79751428_605.jpg'));
+  });
   it('keeps a long caption even when its figure lost the image', () => {
     const long = 'Plot of potency against rotatable bonds for every compound the agent found, which clearly shows that the highest potency compounds are the most rigid.';
     const out = clean(`<p>${words(30)}</p><figure><figcaption>${long}</figcaption></figure>`, null);

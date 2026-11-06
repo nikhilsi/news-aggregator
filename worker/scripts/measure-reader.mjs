@@ -273,6 +273,7 @@ function photoKey(src) {
       .replace(/=[swh]\d+.*$/, '')
       .replace(/\.(jpe?g|png|webp|avif|gif)$/i, '')
       .replace(/[-_]\d{2,4}x\d{2,4}$/, '')
+      .replace(/^(\d{6,})_\d{1,4}$/, '$1')
       .toLowerCase();
     return GENERIC_NAME.test(name) ? `${u.hostname}${u.pathname}` : name;
   } catch {

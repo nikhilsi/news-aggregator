@@ -1,5 +1,6 @@
 // Port of _normalize_entry and its helpers in backend/app/sources/rss_fetcher.py.
 
+import { decodeHTMLStrict } from 'entities';
 import type { Source } from '../sources.ts';
 import type { Article } from '../types.ts';
 import type { Entry } from './entry.ts';
@@ -14,7 +15,8 @@ const IMG_RE = /<img[^>]+src=["']([^"']+)["']/g;
  * that must not count as a photo, so the cron looks up the page's og:image.
  */
 export function webImage(raw: string | null | undefined): string | null {
-  const s = raw?.trim();
+  // Entities left in an address (The Verge's feed: ?quality=90&#038;strip=all) decoded (#453).
+  const s = raw ? decodeHTMLStrict(raw).trim() : '';
   if (!s) return null;
   const abs = s.startsWith('//') ? `https:${s}` : s;
   try {
