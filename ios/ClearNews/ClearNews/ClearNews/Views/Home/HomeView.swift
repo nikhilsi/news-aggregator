@@ -22,6 +22,8 @@ struct HomeView: View {
                 })
             }
             .navigationTitle("ClearNews")
+            // A small title in the bar: the large one took room from the stories (#425).
+            .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search articles")
         }
         .sheet(item: $selectedTarget) { target in

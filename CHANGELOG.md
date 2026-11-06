@@ -3,7 +3,7 @@
 ## [3.6.0] - 2026-11-05 - iOS 2.1: Today, story coverage, reader fixes (#425; built, not on the App Store)
 
 ### Added (iOS 2.1, build 3)
-- **Today screen** on the first tab: the date, the story count and when the edition was built, the brief as numbered compact rows (headline, source, time, a small photo), and "You're all caught up" with the next edition's time. About 4 to 5 stories show per screen instead of 1 card. Without a brief, or in a search, the first tab shows the cards as before.
+- **Today screen** on the first tab: the date, the story count and when the edition was built, the brief as numbered compact rows (headline, source, time, a small photo), and "You're all caught up" with the next edition's time. The Home title is now small and inline, so 5 to 6 stories show per screen once scrolled, instead of 1 card. Without a brief, or in a search, the first tab shows the cards as before.
 - **Covered by N outlets** on Today's rows: opens to each other outlet's own headline, each readable in the reader. **Fox and NPR marks** on stories mainly about US politics.
 - The app reads `topics`, `coverage` and `brief_at`. If any of them goes missing or changes shape, articles still load without it.
 - Back in the app after a while, Today reloads once its edition is over an hour old; "updated" and the next edition's time stay current while the app is open.
