@@ -9,6 +9,11 @@
 //       Scores a saved run again (after a change to the scoring).
 //   node scripts/measure-reader.mjs compare <older run> <newer run>
 //       Run folders under .fixtures/reader-runs/, by name.
+// Two settings for trying a reader change before it is deployed:
+//   READER_BASE=http://localhost:8787   read through a local Worker (scripts/dev.sh start)
+//   SAMPLE_FROM=<run>                   read that run's articles again instead of a new sample
+// A local Worker fetches pages from this Mac, not from Cloudflare, so a publisher
+// that blocks one and not the other shows up as opened or not opened between runs.
 //
 // Read-only on production. It reads the KV key "state" with the ClearNews token
 // and calls the public reader. The reader keeps each result in its own cache
@@ -59,7 +64,8 @@ import { addressBlocked, checkUrl } from '../src/reader/ssrf.ts';
 import { SOURCES } from '../src/sources.ts';
 import { STATE_VERSION } from '../src/types.ts';
 
-const READER = 'https://getclearnews.com/api/v1/articles/reader?url=';
+const READER_BASE = process.env.READER_BASE ?? 'https://getclearnews.com';
+const READER = `${READER_BASE}/api/v1/articles/reader?url=`;
 const PER_MINUTE = 14;
 const RUNS = new URL('../.fixtures/reader-runs/', import.meta.url).pathname;
 const LOCK = join(RUNS, '.lock');
@@ -188,7 +194,7 @@ async function fetchPage(url) {
 const LEAF_BLOCKS = 'p, li, h1, h2, h3, h4, h5, h6, figcaption, blockquote, div';
 /** A block that opens like page furniture. */
 const FURNITURE =
-  /^(skip to (main )?content|skip past newsletter|sign up|subscribe|newsletter|advertisement|sponsored|follow (us|topics)|click here|download the |new you can now listen|listen to this article|share this|read more|related (stories|articles|coverage)|most (read|popular)|\d+ comments?\b|email \(required\)|enjoy today's videos)/i;
+  /^(skip to (main )?content|skip past newsletter|sign up|subscribe|newsletter|advertisement|sponsored|follow (us|topics)|click here|download the |new you can now listen|listen to this article|share this|read more|related (stories|articles|coverage)|most (read|popular)|\d+ comments?\b|email \(required\)|enjoy today's videos|your browser does(n't| not) support)/i;
 /** A support or subscription pitch, wherever it sits in the block. */
 const PITCH =
   /support (our|independent) journalism|if you('re| are) enjoying (this|our)|great science journalism requires|when you subscribe|subscriptions keep|by purchasing a subscription|republish (this|our) (article|story)|you can republish|sign up for (our|the|a) (free )?.{0,30}newsletter/i;
@@ -244,14 +250,25 @@ function originalPhoto(src) {
 /** File names too common to identify a photo (beehiiv calls pasted photos image.png). */
 const GENERIC_NAME = /^(image|img|photo|picture|untitled|unnamed|default|original|download|file)(\d{0,3})$/;
 
+/** Query parameters image services use for the original photo (NPR's Brightspot: ?url=). */
+const ORIGINAL_PARAMS = ['url', 'u', 'src', 'image'];
+
 /**
  * The photo's file name without size suffix or extension (as photoKey in
- * src/reader/reader.ts), also without Google's "=w528-h297" size suffix.
+ * src/reader/reader.ts), keyed by the original photo when an image service
+ * names it in a query parameter, also without Google's "=w528-h297" size suffix.
  * Generic names keep their whole path.
  */
 function photoKey(src) {
   try {
-    const u = new URL(src, 'https://x.invalid/');
+    let u = new URL(src, 'https://x.invalid/');
+    for (const p of ORIGINAL_PARAMS) {
+      const inner = u.searchParams.get(p);
+      if (inner && /^https?:\/\//i.test(inner)) {
+        u = new URL(inner);
+        break;
+      }
+    }
     const name = (u.pathname.split('/').pop() ?? '')
       .replace(/=[swh]\d+.*$/, '')
       .replace(/\.(jpe?g|png|webp|avif|gif)$/i, '')
@@ -442,8 +459,9 @@ function report(run) {
   const t = totals(scores);
   const out = [];
   const shape = run.meta ? `, newest ${run.meta.per_source} per source${run.meta.sources ? ` of ${run.meta.sources.join(', ')}` : ''}` : '';
+  const where = run.meta?.reader ? `, read through ${run.meta.reader}${run.meta.sample_from ? ` (the articles of ${run.meta.sample_from})` : ''}` : '';
   out.push(`Reader measurement, run ${run.name}`);
-  out.push(`Articles        ${t.n} from ${t.sources} sources${shape}`);
+  out.push(`Articles        ${t.n} from ${t.sources} sources${shape}${where}`);
   if (t.n !== t.measured) out.push(`Not measured    ${listCounts(t.notMeasured)} (no answer from the reader; left out below)`);
   out.push(`Opened          ${t.opened} of ${t.measured} (${pct(t.opened, t.measured)})`);
   const failed = Object.entries(t.failed).map(([r, n]) => `${r} ${n} (${[...t.reasons[r]].join(', ')})`);
@@ -610,12 +628,17 @@ function takeLock() {
 async function run(perSource, only) {
   takeLock();
   try {
-    const picks = sample(await readState(), perSource, only);
+    const picks = process.env.SAMPLE_FROM ? loadRun(process.env.SAMPLE_FROM).lines.map(({ source_id, source_name, url, title, published_at }) => ({ source_id, source_name, url, title, published_at })) : sample(await readState(), perSource, only);
     if (!picks.length) throw new Error('nothing to read: check the source ids');
     const name = new Date().toISOString().slice(0, 19).replace(/:/g, '-') + 'Z';
     const dir = join(RUNS, name);
     mkdirSync(join(dir, 'pages'), { recursive: true });
-    const meta = { per_source: perSource, sources: only ? [...only].sort() : null };
+    const meta = {
+      per_source: perSource,
+      sources: only ? [...only].sort() : null,
+      ...(process.env.READER_BASE ? { reader: READER_BASE } : {}),
+      ...(process.env.SAMPLE_FROM ? { sample_from: process.env.SAMPLE_FROM } : {}),
+    };
     writeFileSync(join(dir, 'meta.json'), JSON.stringify(meta) + '\n');
     const sources = new Set(picks.map((p) => p.source_id)).size;
     console.log(`${picks.length} articles from ${sources} sources at ${PER_MINUTE} a minute: about ${Math.ceil(picks.length / PER_MINUTE)} minutes`);
