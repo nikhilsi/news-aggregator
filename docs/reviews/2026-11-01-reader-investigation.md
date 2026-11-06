@@ -164,7 +164,7 @@ The "before" and "after" columns are section 7's numbers for the same pages; ope
 
 ## 9. Four fixes from section 8 (Nov 6, 2026, #453)
 
-Nikhil asked for four: NPR's photo shown twice, the video tag fallback text, coverage lists that include the card's own URL or one URL twice, and photos that come through as "undefined". Built as 3.6.2, not deployed.
+Nikhil asked for four: NPR's photo shown twice, the video tag fallback text, coverage lists that include the card's own URL or one URL twice, and photos that come through as "undefined". Built as 3.6.2 and deployed Nov 6 (Worker b1e80c93).
 
 - **NPR's photo twice:** NPR's photo addresses end in "/" and carry the original in `?url=`, so the photo key was empty and never matched. The key now comes from the original. Nearly every NPR article had shown its photo twice; the measure missed it for the same reason and now counts it. The caption in the block right after the removed photo goes too, when it starts with the photo's alt text or carries NPR's "hide caption".
 - **Video leftovers:** sanitize-html now drops what is inside `video` and `audio`; the fallback sentence is page furniture; a figure left with only a caption of 12 words or fewer is removed.
@@ -184,6 +184,8 @@ Nikhil asked for four: NPR's photo shown twice, the video tag fallback text, cov
 Before: run `2026-11-06T14-55-19Z` on production. After: `2026-11-06T15-12-52Z`, the same articles through a local Worker running the new code (`READER_BASE`, `SAMPLE_FROM`); its pages came from a Mac, not Cloudflare, so its open times and the few pages that changed in between (a live blog, a CNBC update) are not part of the comparison.
 
 Feed data, production's stored state rebuilt with the new code: cards listing their own URL 2 to 0, cards listing a URL twice 1 to 0, photos that are not web addresses 2 to 0.
+
+**On production after the deploy** (run `2026-11-06T15-51-21Z`, a new sample of 242): photo twice 9 to 0, the DeepMind video line gone, opened 240 of 242. Junk lines stayed at 10: a newly sampled Fox article brought its newsletter line, an open item. The live feed, once rebuilt: no card lists its own URL or a URL twice, and no photo is anything but a web address (NPR's re-read at the next fetch).
 
 **Found on the way, not fixed:** DW's photos inside the text are lost (they carry `data-url` and no `src`), and so are The Conversation's (only `srcset`), so their captions stand alone. Today's shortlist (`src/ai/brief.ts`) still counts one article in two feeds as two outlets, which lifts its score. Still open on #453: The Decoder's pitch, Good News Network's share line, Fox's newsletter line, The Hindu's repeats, the Verge's second copy of its lead photo, Atlas Obscura's "Know Before You Go", the Verge's `&#038;`.
 

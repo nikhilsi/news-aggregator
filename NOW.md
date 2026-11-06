@@ -11,7 +11,7 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 - **Android** (#426): the same, plus Android-only reader fixes.
 - **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
 
-**Reader cleanup** (#453, P2): four fixes built and measured, not deployed (3.6.2): NPR's photo twice, video leftovers, coverage lists, photo addresses ([section 9](docs/reviews/2026-11-01-reader-investigation.md)). Still open: The Decoder's pitch, Fox's newsletter line, Good News Network's share line, repeats, the Verge's second photo copy, Atlas Obscura's "Know Before You Go", DW's and The Conversation's lost in-text photos.
+**Reader cleanup** (#453, P2): four fixes shipped Nov 6 (3.6.2): NPR's photo twice, video leftovers, coverage lists, photo addresses ([section 9](docs/reviews/2026-11-01-reader-investigation.md)). Still open: The Decoder's pitch, Fox's newsletter line, Good News Network's share line, repeats, the Verge's second photo copy, Atlas Obscura's "Know Before You Go", DW's and The Conversation's lost in-text photos.
 
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 

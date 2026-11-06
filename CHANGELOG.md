@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.6.2] - 2026-11-06 - Reader and feed cleanup: NPR photos, video leftovers, coverage lists, photo addresses (#453; not deployed)
+## [3.6.2] - 2026-11-06 - Reader and feed cleanup: NPR photos, video leftovers, coverage lists, photo addresses (#453)
 
 ### Fixed
 - **NPR's photo shown twice.** NPR serves photos through an image service whose addresses end in "/" and name the original in `?url=`, so the cleanup never matched the photo above the title with the same photo in the text. It now compares the original photo. It also removes that photo's caption when it sits in the next block, as NPR's does ("… hide caption") and Fox's. On the same 241 articles: photo twice 9 to 1. The one left is a CBS Sports player list that repeats the lead photo as a thumbnail halfway down, where it belongs.
@@ -8,6 +8,7 @@
 - **Coverage lists.** One article can sit in two feeds (Ars Technica AI and Tech share URLs), so a card could list its own article as another outlet, or one URL twice. On production's data that was 2 and 1 cards; now 0.
 - **Photo addresses.** NPR's feed puts `<img src='undefined'>` and a tracking pixel ahead of any photo, and both were taken as the photo. Only real photo addresses count now, so such an item gets the page's og:image like any item without a feed photo. The output gate turns anything else into "no photo".
 - Reader cache version 4, so stored articles are read again with the new cleanup.
+- Deployed Nov 6 as Worker b1e80c93: verify 75/75, decoder sweep 1,296 articles with 0 failures. On production, photo twice went from 9 to 0; the live feed has no self-listed or repeated coverage and no photo that is not a web address.
 
 ### Changed
 - `measure-reader.mjs` recognizes photos behind an image service and the video fallback text. It can also measure a change before it is deployed: `READER_BASE` reads through a local Worker, `SAMPLE_FROM` reuses a run's articles.
