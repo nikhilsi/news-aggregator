@@ -66,7 +66,14 @@ export default {
   },
 
   async scheduled(_event: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
-    // The refresh runs in the Refresher, pinned to Western North America.
-    await refresher(env).refresh();
+    // The refresh runs in the Refresher, pinned to Western North America. The
+    // morning edition (#435) is its own call next to it, so neither holds up the other.
+    const r = refresher(env);
+    const [refresh, morning] = await Promise.allSettled([r.refresh(), r.sendMorning()]);
+    if (morning.status === 'rejected') {
+      console.error(JSON.stringify({ msg: 'morning edition failed', error: String(morning.reason) }));
+    }
+    // A failed refresh still fails the cron run, as before.
+    if (refresh.status === 'rejected') throw refresh.reason;
   },
 } satisfies ExportedHandler<Env>;

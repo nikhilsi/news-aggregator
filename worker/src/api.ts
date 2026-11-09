@@ -2,6 +2,7 @@
 // app 2.0, the Android app and the site use, served from what the cron stored.
 
 import { Hono, type Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { CATEGORIES, SOURCES } from './sources.ts';
 import { enabledSources } from './pipeline/build.ts';
 import { mergeForTab } from './pipeline/merge.ts';
@@ -11,6 +12,8 @@ import type { Article } from './types.ts';
 import { boolParam, intParam, missing, type FieldError } from './validate.ts';
 import { checkUrl } from './reader/ssrf.ts';
 import { readCached } from './reader/cache.ts';
+import { canonicalTimeZone } from './notify/devices.ts';
+import { refresher } from './refresher.ts';
 
 type App = { Bindings: Env };
 const app = new Hono<App>();
@@ -135,6 +138,66 @@ app.get('/api/v1/articles/reader', async (c) => {
   return c.json(await readCached(c.env.CACHE, url, meta, own, (p) => c.executionCtx.waitUntil(p), c.env.PHOTO_KEY));
 });
 
+// The morning edition sign-up (#435, docs/435-notifications-design.md 6.1). The app
+// sends its whole state; "morning": null turns it off. New and additive: the
+// published paths and fields are untouched.
+const TOKEN_RE = /^[0-9a-f]{64,200}$/i;
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const MAX_BODY = 2048;
+const bodyError = (name: string, msg: string, input: unknown, type = 'value_error'): FieldError => ({
+  type,
+  loc: ['body', name],
+  msg,
+  input: typeof input === 'string' ? input : input === undefined ? null : JSON.stringify(input),
+});
+
+// The size limit applies before the body is read; JSON only, so a web page can't
+// post sign-ups from its visitors' browsers without a preflight.
+const signUpBody = bodyLimit({ maxSize: MAX_BODY, onError: (c) => detail(c, 413, 'Payload Too Large') });
+
+app.post('/api/v1/notifications', signUpBody, async (c) => {
+  const { success } = await c.env.NOTIFY_LIMITER.limit({ key: ip(c) });
+  if (!success) return detail(c, 429, 'Too Many Requests');
+  if (!(c.req.header('content-type') ?? '').toLowerCase().startsWith('application/json')) {
+    return detail(c, 415, 'Unsupported Media Type');
+  }
+  const raw = await c.req.text();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return detail(c, 422, [bodyError('', 'JSON decode error', null, 'json_invalid')]);
+  }
+  const b = (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}) as Record<string, unknown>;
+  const errors: FieldError[] = [];
+  if (b.platform !== 'ios') errors.push(bodyError('platform', "Input should be 'ios'", b.platform, 'literal_error'));
+  if (typeof b.token !== 'string' || !TOKEN_RE.test(b.token)) {
+    errors.push(bodyError('token', 'Input should be a push token: hex, 64 to 200 characters', b.token));
+  }
+  // Turning off works whatever the time zone says.
+  const tz = typeof b.tz === 'string' ? canonicalTimeZone(b.tz) : null;
+  if (b.morning !== null && !tz) {
+    errors.push(bodyError('tz', 'Input should be a time zone such as America/Los_Angeles', b.tz));
+  }
+  if (!('morning' in b)) errors.push(bodyError('morning', 'Field required', undefined, 'missing'));
+  const time = typeof b.morning === 'string' ? TIME_RE.exec(b.morning) : null;
+  if ('morning' in b && b.morning !== null && !time) {
+    errors.push(bodyError('morning', 'Input should be null or a time as HH:MM', b.morning));
+  }
+  if (errors.length) return detail(c, 422, errors);
+
+  const result = await refresher(c.env).signUp({
+    token: (b.token as string).toLowerCase(),
+    tz: tz ?? 'UTC',
+    morning: time ? Number(time[1]) * 60 + Number(time[2]) : null,
+  });
+  if (result === 'full') {
+    console.error(JSON.stringify({ msg: 'morning edition device list full' }));
+    return detail(c, 503, 'Service Unavailable');
+  }
+  return c.body(null, 204);
+});
+
 app.get('/api/v1/status', async (c) => {
   const [feed, state] = await Promise.all([readFeed(c.env.CACHE), readState(c.env.CACHE)]);
   return c.json({
@@ -173,9 +236,9 @@ app.notFound((c) => {
   if (url.pathname.endsWith('/') && KNOWN.has(url.pathname.slice(0, -1))) {
     return c.redirect(`${url.pathname.slice(0, -1)}${url.search}`, 301);
   }
-  if (KNOWN.has(url.pathname)) {
+  if (KNOWN.has(url.pathname) || url.pathname === '/api/v1/notifications') {
     const res = detail(c, 405, 'Method Not Allowed');
-    res.headers.set('Allow', 'GET');
+    res.headers.set('Allow', url.pathname === '/api/v1/notifications' ? 'POST' : 'GET');
     return res;
   }
   return detail(c, 404, 'Not Found');

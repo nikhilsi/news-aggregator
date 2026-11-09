@@ -17,6 +17,14 @@ export interface Env {
   REFRESHER: DurableObjectNamespace<Refresher>;
   /** Signs reader photo addresses for /img (#423). A Worker secret; absent in tests. */
   PHOTO_KEY?: string;
+  /** Sign-ups for the morning edition: 10 a minute per address (#435). */
+  NOTIFY_LIMITER: RateLimit;
+  /** Apple's push key (.p8 contents) for the morning edition (#435). A Worker secret; absent in tests. */
+  APNS_KEY?: string;
+  APNS_KEY_ID?: string;
+  APNS_TEAM_ID?: string;
+  /** The app's bundle id. */
+  APNS_TOPIC?: string;
 }
 
 export const STATE_KEY = 'state';

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Live checks against a deployed Worker (spec section 9). Read-only GETs.
+// Live checks against a deployed Worker (spec section 9). Read-only: GETs, plus
+// one morning edition sign-up with bad input, which the Worker refuses (#435).
 //   node scripts/verify.mjs [https://getclearnews.com]
 // Default base: production. Exits 1 on any failure.
 
@@ -72,6 +73,20 @@ check('categories: finance listed', cats.some((c) => c.id === 'finance'), 'Finan
 {
   const r = await get('/api/v1/articles?page=0');
   check('422 on page=0', r.status === 422 && (await r.json()).detail?.[0]?.type === 'greater_than_equal');
+}
+
+// The morning edition sign-up (#435): bad input is refused and stores nothing; other methods get 405.
+{
+  const r = await fetch(BASE + '/api/v1/notifications', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ platform: 'ios', token: 'not-a-token', tz: 'Mars/Olympus', morning: '25:00' }),
+    redirect: 'manual',
+  });
+  const d = await r.json().catch(() => ({}));
+  check('sign-up refuses bad input', r.status === 422 && d.detail?.length === 3, `${r.status} ${JSON.stringify(d).slice(0, 120)}`);
+  const g = await get('/api/v1/notifications');
+  check('sign-up: other methods 405', g.status === 405 && g.headers.get('allow') === 'POST', `${g.status} ${g.headers.get('allow')}`);
 }
 
 // Feed freshness (review R3).
