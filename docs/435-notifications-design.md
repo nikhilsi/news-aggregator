@@ -145,8 +145,11 @@ A device with the morning edition off has no row. With #426 the table gains a `p
 - The app sends its whole state each time (section 6.2). The server replaces the row.
 - `"morning": null` deletes the row.
 - Answers `204` on success and `422` with a reason on bad input, like the other endpoints.
-- Checks: `platform` is `ios` (the only one for now); token is hex, 64 to 200 characters; the time zone is accepted by the runtime's `Intl.DateTimeFormat` (this also accepts older names such as `Asia/Calcutta`); time is `HH:MM`.
+- Checks: `platform` is `ios` (the only one for now); token is hex, 64 to 200 characters; time is `HH:MM`. The time zone must be a named zone the runtime knows, older names such as `Asia/Calcutta` included. It is stored in the runtime's own spelling: `america/los_angeles` becomes `America/Los_Angeles`. Offsets such as `+05:30` are refused. Turning off works whatever the time zone says.
+- JSON only: other content types get `415`. A web page can't post sign-ups from its visitors' browsers without a preflight.
+- The body is limited to 2 KB before it is read (`413`).
 - Its own rate limit: 10 requests a minute per address, a new limiter next to the existing two.
+- A new time for the same device starts the day fresh: moving 22:00 to 07:00 doesn't skip the next morning. Not while the new time's hour is open: nudging 07:00 to 07:05 at 07:10, after the edition came, doesn't send it again.
 - The list holds at most 1,000 devices. When it is full, a new sign-up replaces the oldest row that has never had a delivery. If every row has had one, the endpoint answers `503` and logs it.
 - There are no accounts. The token is the identity. A made-up token gets an error from Apple on its first send and is deleted then.
 
@@ -158,11 +161,11 @@ await Promise.allSettled([refresher(env).refresh(), refresher(env).sendMorning()
 
 Each minute, `sendMorning`:
 
-1. Picks the devices that are due. A device is due when the local time in its time zone is between its chosen time and 60 minutes after, it has no morning edition in the last 20 hours, and any `retry_at` has passed. The local clock is read with `Intl.DateTimeFormat` per row. Daylight-saving changes and a phone that changes time zone need no special code.
+1. Picks the devices that are due. A device is due when the local time in its time zone is from its chosen time to 60 minutes after, it has no morning edition in the last 20 hours, and any `retry_at` has passed. The 60th minute counts: on a spring-forward day a 02:00 choice reads 03:00. The local clock is read with `Intl.DateTimeFormat` per row. Daylight-saving changes and a phone that changes time zone need no special code.
 2. Does nothing when no device is due (no log line).
 3. Skips when Today has no brief under 6 hours old (the same rule the Today tab uses). The devices stay due inside their 60 minutes. Past that, the morning is missed and logged.
 4. Reads the brief's count and top story from KV (`ai` and `feed`, written by the cron).
-5. For each device, writes `sent_at` before sending. A crash or a deploy mid-send then loses a morning edition rather than sending it twice.
+5. For each device, claims it before sending: `sent_at` is written only if the row is as it was read. A second run that overlaps this one, or a reader who turned it off meanwhile, makes the claim a no-op. A crash or a deploy mid-send loses a morning edition rather than sending it twice.
 6. Sends, with a 5-second timeout per request. It stops starting new sends after 10 seconds. Devices not reached stay due for the next minute.
 7. Reads Apple's answer:
 
@@ -173,13 +176,17 @@ Each minute, `sendMorning`:
 | `400 BadDeviceToken`, `400 DeviceTokenNotForTopic` | Deletes the device. |
 | `403 ExpiredProviderToken` | Signs a new login token and retries once. |
 | Other `403` (`InvalidProviderToken`, `BadEnvironmentKeyIdInToken`, `Forbidden`, `UnrelatedKeyIdInToken`), `400 BadTopic`, `400 TopicDisallowed` | A setup problem, not the device's. Stops this minute's sends, logs an error, touches no device. Treated as temporary: if Cloudflare's connection to Apple is shared in a way we can't see, these could come and go. |
-| `429 TooManyRequests`, any `5xx` | Clears `sent_at` and sets `retry_at` 15 minutes ahead (Apple's guidance), if that is still inside the 60 minutes. |
-| `429 TooManyProviderTokenUpdates` | Keeps the current login token. Logs it. |
+| `429` (`TooManyRequests`, `TooManyProviderTokenUpdates`), any `5xx` | Keeps the current login token. Clears `sent_at` and sets `retry_at` 15 minutes ahead (Apple's guidance), while that is still inside the 60 minutes. A device gets up to five tries in its hour (minutes 0, 15, 30, 45 and 60). |
+| Our own timeout or a dropped connection | Counts as sent. Apple may already have delivered, and a lost morning beats a doubled one. The minute stops there: a connection that fails at once would fail every device, and the rest go out next minute. |
 | Anything else | Logs it and keeps the device. |
 
-If most sends in one minute fail with the same reason, the sender stops and deletes nothing.
+A `410` always deletes: it is Apple's word about one phone. A `400` that removes devices deletes them too, except when one reason is given for most of the minute's sends and at least two of those devices had a delivery before. Those are kept: the cause is likely ours, such as a wrong topic.
 
-8. Logs one line when something was due: how many sent, and each failure with its reason and the token's first 8 characters.
+8. Logs one line when something was due: how many sent, and each failure with its reason and the token's first 8 characters. It logs as an error when nothing was sent and something failed.
+
+The notification carries the count, the top story's outlet and headline (cut to 300 characters), and the story's address, title and outlet for the tap. If the whole payload would pass 3,500 bytes (Apple's limit is 4 KB), the address is left out and a tap opens Today.
+
+The device tables are made on the first notification call, not when the object starts. Nothing here can touch the feed refresh.
 
 **Apple request.** `POST https://api.push.apple.com/3/device/<token>`. Production only: TestFlight and App Store builds both use it. Xcode builds on a cable get no notifications. Testing happens on TestFlight.
 

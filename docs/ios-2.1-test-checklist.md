@@ -41,6 +41,17 @@ Note anything off with a screenshot (TestFlight's own screenshot feedback works)
 - [ ] Turned sideways (landscape): Today and the reader still read well.
 - [ ] Airplane mode: an error with Retry; turning it off and tapping Retry loads.
 
+## The morning edition (build 4, #435)
+
+- [ ] The end of Today shows "Get this every morning at 7:00 AM." with Turn on and ✕. ✕ hides it for good.
+- [ ] Settings, Notifications: turning on Morning edition shows Apple's permission prompt once. Allow: the switch stays on and a Time row appears.
+- [ ] Set the time a few minutes ahead. The notification arrives within about a minute of that time: "Today: N stories", then the top story's outlet and headline.
+- [ ] Tapping it opens that story in the reader, with Today behind it.
+- [ ] It doesn't come a second time the same morning. Moving the time later the same day (outside the hour that just went) sends one more; that's expected.
+- [ ] Turning the switch off: no notification the next morning.
+- [ ] Don't Allow at the prompt, or ClearNews turned off in iOS Settings: Settings shows "Notifications are off for ClearNews in iOS Settings" and Open iOS Settings works.
+- [ ] Each send shows in the Worker logs as `morning edition` (Claude can read them).
+
 ## Not in this build
 
-Topic sections and "new since your last visit" (the Should items), the widget and reminders, and notifications (#435). The App Store release waits for notifications (Nikhil, Nov 5).
+Topic sections and "new since your last visit" (the Should items), the widget, and breaking-story alerts (#435, after two weeks of logging). Before the App Store release: the privacy page, the privacy manifest and the EU trader status.

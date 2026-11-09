@@ -1,6 +1,6 @@
 # Current State
 
-**Last Updated**: November 6, 2026
+**Last Updated**: November 9, 2026
 
 ## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 51 sources across 15 categories
 
@@ -19,8 +19,9 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - **API**: the same paths, parameters, JSON field names, key order, 422 bodies and Cache-Control the apps rely on. The first tab (`all`) is named Today; `latest` holds the full list; a search with no tab covers Latest. Articles carry two extra fields for the web, `topics` and `coverage`, after the apps' fields; the apps ignore unknown keys. Requests only read KV (a couple of milliseconds). `GET /api/v1/status` shows when the feed was built and, per source, the last success, status and data center.
 - **Pipeline**: a line-by-line port of the Python normalization, non-Latin filter, dedup and two-tier sort. On 43 recorded feeds it matched the Python output exactly except three fixes (a UTF-8 feed labeled ISO-8859-1, NDTV photo captions taken as summaries, summaries lost near a bare "&").
 - **Reader** (#423, 3.5.0): Defuddle with Mozilla Readability as the fallback, on linkedom; sanitize-html with the old nh3 allowlist; a cleanup pass for page furniture, repeated photos and captions, bylines and empty blocks; results kept in KV for 6 hours and Today's stories read ahead after each brief; video pages answer reason `video`; photos served resized from `getclearnews.com/img` with signed addresses (3.5.1). Cleanup from the Nov 5 measurement (#453, 3.6.2 and 3.6.3): the lead photo shown once (NPR, The Verge), video fallback text and short junk lines removed, repeated lines removed while the story text stays, lazy-loaded photos filled in (DW). SSRF checks on every redirect hop (DNS over HTTPS, private and special ranges blocked), 3 MB cap, rate limited.
-- **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader (Rate Limiting binding).
-- **Tests**: 120 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `measure-reader.mjs` (the reader measured on production, before and after a change, #436), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
+- **Morning edition** (#435, 3.7.0): iPhones sign up with `POST /api/v1/notifications` (new, additive). Each minute, next to the feed refresh, the server pushes Today's count and top story to the phones whose own local time has reached their chosen time, straight to Apple's push service (secret `APNS_KEY`). The device list is a table in the `Refresher`'s SQLite storage. Design: [docs/435-notifications-design.md](docs/435-notifications-design.md).
+- **Rate limits**: 100 requests per 10 s per IP on the API, 20 per minute on the reader, 10 per minute on sign-ups (Rate Limiting binding).
+- **Tests**: 156 in the Workers runtime (Workers AI is mocked) (`npm test`), plus `verify.mjs` (live checks), `replay-brief.mjs` (Today rebuilt from production data with the real models, before a prompt change), `measure-reader.mjs` (the reader measured on production, before and after a change, #436), `contract-diff.mjs`, the Swift decoder sweep and `cutover.mjs` (switchover and rollback, rehearsed).
 
 ### Web Frontend (`web/`, Next.js 16.4.3 static export)
 - Static files only (`output: 'export'`), served by the Worker. No Next server runs.
@@ -31,7 +32,7 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 
 ### iOS App (SwiftUI): v2.0 on the App Store; v2.1 built, not released
 - 2.0 is unchanged by the move; it calls `https://getclearnews.com` as before.
-- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Checked with the decoder sweep and a simulator run against production. On TestFlight since Nov 5 (Family Testers; Apple's beta review submitted), uploaded with `ios/scripts/testflight-upload.sh`. The App Store release waits for notifications (#435). Full feature list in [ios/README.md](ios/README.md).
+- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Build 4 (Nov 9) adds the morning edition: a Settings switch and time, a one-time offer at the end of Today, and a tap that opens the story (#435). Checked with the decoder sweep and a simulator run against production. On TestFlight since Nov 5 (Family Testers; Apple's beta review submitted), uploaded with `ios/scripts/testflight-upload.sh`. The App Store release waits for notifications (#435). Full feature list in [ios/README.md](ios/README.md).
 
 ### Android App (Kotlin + Jetpack Compose): v1.0.0
 - Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 without merging; ClearNews is not on F-Droid.

@@ -89,6 +89,7 @@ Deliberate differences (none breaks a client; each is on the test allow list):
 | `/about/` 308 to `/about` (Next) | 307 to `/about` (Workers assets) | platform default |
 | Reader `extracted_at` with microseconds (`.ffffffZ`) | Milliseconds (`.mmmZ`) | no client reads it (inventory 6.2) |
 | (none) | `GET /api/v1/status`: when `feed` was built and, per source, the last success and last status. No client calls it | R3 |
+| (none) | `POST /api/v1/notifications`: the iOS app's morning edition sign-up (#435). JSON only, 2 KB, 10 a minute per IP on top of the API limit; `204`, `422`, `413`, `415`, `429`, `503`; other methods `405` with `Allow: POST` | #435 |
 
 Deferred from the move and shipped with #413 (3.1.0): the `strip_html` spacing fix (O17), and a per-source limit of the newest 30 items within 7 days.
 
@@ -126,6 +127,8 @@ Limits per run (Workers Paid): 30 s CPU, 15 min wall, 10,000 subrequests. Measur
 **KV consistency.** KV is eventually consistent (up to about 60 s between locations). A run can read a `state` that misses the previous minute's write. Since every due source is fetched (no cap), it picks the same sources again, fetches them a second time with conditional headers and writes them, so nothing is lost; the cost is a redundant fetch. The `state` age in the log line measures how often this happens. If it shows up often, `state` moves to D1 and `feed` stays in KV (research 3). With the 40 s deadline, one run ends before the next starts.
 
 **Sources file.** `backend/sources.yaml` becomes `worker/src/sources.ts`: the same categories and sources, typed, with comments kept. Adding or removing a source stays a one-line data change plus a deploy. Changes now: the two FMP sources removed; two or three free finance RSS feeds added (Nikhil approves the list; they must run on `workers.dev` through the gate day, R9); the five Google News sources and WorldNewsAPI stay listed and disabled. The Google News resolver is not ported (O35).
+
+**Morning edition (#435).** The cron handler calls `sendMorning()` on the same `Refresher` next to `refresh()` (`Promise.allSettled`). Neither holds up the other. A failed refresh still fails the run. The device list is a `devices` table in the `Refresher`'s own SQLite storage, made on first use (no new Durable Object class, so `wrangler rollback` stays possible). Each minute the sender picks the iPhones whose own local time is within an hour after their chosen time and that had no edition in 20 hours. It claims each row before sending, then sends Today's count and top story to Apple's push service (`api.push.apple.com`, production only, HTTP/2 through Cloudflare's proxy). Login: an ES256 token signed from the Worker secret `APNS_KEY` (key `Q239BJM294`, topic `com.nikhilsi.ClearNews` only), kept 50 minutes in SQLite. It skips when Today has no brief under 6 hours old. Apple's answers, retries and deletions: `docs/435-notifications-design.md` section 6.1. One log line `morning edition` when a device was due.
 
 ## 5. Requests
 

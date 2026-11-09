@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.7.0] - 2026-11-09 - The morning edition: server side (#435)
+
+### Added
+- **The morning edition.** Once a day, at the time the reader picks on their iPhone's own clock, the server pushes Today's count and top story: "Today: 10 stories" with the outlet and headline. Tapping it opens the story in the reader. Design and rulings: `docs/435-notifications-design.md`.
+- **`POST /api/v1/notifications`**, new and additive: the iOS app sends its whole state (push token, time zone, time, or null to turn off). JSON only, 2 KB, its own limit of 10 a minute per IP. The published paths and fields are untouched.
+- **The device list** lives in the `Refresher` Durable Object's own SQLite storage, made on first use. No new Durable Object class, so `wrangler rollback` stays possible. At most 1,000 devices.
+- **The sender** runs each minute next to the feed refresh, as its own call. It sends straight to Apple's push service (production) with an ES256 login signed from the new Worker secret `APNS_KEY`. Each device is claimed before its send, so overlapping runs can't double it. It skips when Today has no brief under 6 hours old. Apple's answers decide what happens next: delivered, device gone (deleted), our setup (stop, retry later), Apple busy (retry in 15 minutes inside the hour).
+- `verify.mjs` checks that production refuses a bad sign-up and answers other methods with 405.
+- Deployed Nov 9 as Worker 49841df6, with the secret `APNS_KEY` set: verify 77/77, decoder sweep 1,315 articles with 0 failures, no errors in the logs. On production a made-up device signed up (204) and was removed (204); a `text/plain` sign-up got 415.
+
+### Fixed
+- Two API tests seeded articles dated Nov 1 and began failing on Nov 9, when those turned older than the 7-day limit. They now date articles relative to the day they run.
+
+### Reviews
+- The design had an independent review (12 findings, all answered: `docs/reviews/2026-11-09-notifications-design-review.md`). A probe Worker proved `fetch()` from a Durable Object reaches Apple over HTTP/2, then was deleted.
+- A breaker pass on the built server found 14 problems (5 medium, 9 low), all fixed before deploy. Among them: overlapping runs could send twice, a timeout was retried though Apple may have delivered, time zone spellings could grow a cache, and the body was read before the size check. Its re-check of the fixes found 4 more (a connection failing at once marked every device sent; the deletion guard missed a case; real uninstalls could be held; nudging the time resent), also fixed. 155 tests.
+
+---
+
 ## [3.6.3] - 2026-11-06 - Reader cleanup, the rest of #453; Today counts outlets once
 
 ### Fixed
