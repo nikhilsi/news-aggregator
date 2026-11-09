@@ -1,15 +1,19 @@
 # NOW: Current Priorities
 
-**Last Updated**: November 5, 2026
+**Last Updated**: November 9, 2026
 
 Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. On TestFlight since Nov 5: 2.1 (3) went to the Family Testers group and waits for Apple's beta review. Then Nikhil uses it daily and walks `docs/ios-2.1-test-checklist.md`. The App Store release waits for notifications (#435) and needs the EU trader status set in App Store Connect first. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
-- **Android** (#426): the same, plus Android-only reader fixes.
-- **Notifications** (#435): design first (morning edition, breaking stories, topic alerts; local or push), then the client work in #425 and #426.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. The App Store release waits for notifications (#435) and needs the EU trader status set in App Store Connect first. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
+- **Android** (#426): the same, plus Android-only reader fixes and Firebase push for notifications.
+- **Notifications** (#435): design ruled on Nov 9 ([docs/435-notifications-design.md](docs/435-notifications-design.md)).
+  - The morning edition first: a push from the server with the top headline, at the time the reader picks in their own time zone. Off by default.
+  - iOS goes direct to Apple's push service (probe passed Nov 9). Android uses Firebase, with #426.
+  - Breaking alerts after two weeks of logging what they would have sent.
+  - Next: Nikhil creates the Apple push key, then the server and iOS build (phase 1).
 
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
