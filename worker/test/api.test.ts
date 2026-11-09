@@ -17,7 +17,8 @@ const art = (i: number, o: Partial<Article> = {}): Article => ({
   source_type: 'rss',
   category: 'tech',
   sentiment: null,
-  published_at: `2026-11-01T${String(i % 24).padStart(2, '0')}:00:00Z`,
+  // Within the last day: trimSource drops articles older than 7 days (#413), so fixed dates expire.
+  published_at: new Date(Date.now() - (i % 24) * 3600e3).toISOString().replace(/\.\d{3}Z$/, 'Z'),
   ...o,
 });
 
