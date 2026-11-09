@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
+    private var notifications = NotificationService.shared
 
     var body: some View {
         @Bindable var settings = settings
@@ -17,6 +18,42 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Appearance")
+                }
+
+                // The morning edition (#435): Today's top story once a day.
+                Section {
+                    Toggle("Morning edition", isOn: Binding(
+                        get: { notifications.isOn },
+                        set: { on in
+                            if on {
+                                Task { await notifications.turnOn() }
+                            } else {
+                                notifications.turnOff()
+                            }
+                        }
+                    ))
+                    if notifications.isOn {
+                        DatePicker("Time", selection: Binding(
+                            get: { NotificationService.date(for: notifications.morningMinutes) },
+                            set: { notifications.morningMinutes = NotificationService.minutes(of: $0) }
+                        ), displayedComponents: .hourAndMinute)
+                    }
+                    if notifications.permission == .denied {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Notifications are off for ClearNews in iOS Settings.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Button("Open iOS Settings") {
+                                if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Notifications")
+                } footer: {
+                    Text("Today's top story, once a day at the time you pick.")
                 }
 
                 // Reader font size
@@ -49,6 +86,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .task { await notifications.refreshPermission() }
         }
     }
 }

@@ -91,6 +91,25 @@ final class APIClient {
         return try await execute(request)
     }
 
+    /// A JSON POST whose answer has no body (204), such as the morning edition sign-up (#435).
+    func post<B: Encodable>(_ path: String, body: B) async throws {
+        var request = try buildRequest(path: path, method: "POST")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200...299).contains(status) else {
+            let detail = try? JSONDecoder().decode(ErrorDetail.self, from: data).detail
+            throw APIError.httpError(statusCode: status, detail: detail)
+        }
+    }
+
     // MARK: - Private
 
     private func buildRequest(

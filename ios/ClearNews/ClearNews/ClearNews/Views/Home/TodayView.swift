@@ -8,6 +8,7 @@ struct TodayView: View {
     let briefAt: Date
     var onOpen: (ReaderTarget) -> Void
     var onRefresh: () async -> Void
+    private var notifications = NotificationService.shared
 
     /// The server builds a new brief every hour (worker/src/ai/brief.ts).
     static let editionInterval: TimeInterval = 60 * 60
@@ -28,6 +29,9 @@ struct TodayView: View {
                     Divider()
                 }
                 caughtUp
+                if !notifications.offerDone && !notifications.isOn {
+                    morningOffer
+                }
             }
             .frame(maxWidth: Self.maxWidth)
             .frame(maxWidth: .infinity)
@@ -57,6 +61,35 @@ struct TodayView: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Shown once: the morning edition, offered where a reader has just finished Today (#435).
+    private var morningOffer: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Text("Get this every morning at \(notifications.timeLabel).")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Turn on") {
+                Task { await notifications.turnOn() }
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            Button {
+                notifications.dismissOffer()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Not now")
+        }
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.bottom, 24)
     }
 
     private var caughtUp: some View {

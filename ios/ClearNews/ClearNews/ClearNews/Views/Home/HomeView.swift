@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var searchText = ""
     @State private var selectedTarget: ReaderTarget?
+    private var notifications = NotificationService.shared
 
     var body: some View {
         @Bindable var articleService = articleService
@@ -44,6 +45,13 @@ struct HomeView: View {
         .onChange(of: articleService.selectedCategory) {
             Task { await articleService.fetchArticles() }
         }
+        // A tapped morning edition: its story in the reader, with Today behind it (#435).
+        .onChange(of: notifications.openTarget) { _, target in
+            openFromNotification(target)
+        }
+        .onAppear {
+            openFromNotification(notifications.openTarget)
+        }
         .onChange(of: scenePhase) { _, phase in
             // Back in the app: once Today's brief is an hour old, a newer edition exists.
             if phase == .active, let briefAt = articleService.briefAt,
@@ -51,5 +59,12 @@ struct HomeView: View {
                 Task { await articleService.fetchArticles(refresh: true) }
             }
         }
+    }
+
+    private func openFromNotification(_ target: ReaderTarget?) {
+        guard let target else { return }
+        notifications.openTarget = nil
+        articleService.selectedCategory = "all"
+        selectedTarget = target
     }
 }

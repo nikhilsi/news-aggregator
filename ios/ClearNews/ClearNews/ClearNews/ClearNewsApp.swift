@@ -2,6 +2,9 @@ import SwiftUI
 
 @main
 struct ClearNewsApp: App {
+    /// Receives the push token and taps on notifications (#435).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @State private var articleService = ArticleService()
     @State private var categoryService = CategoryService()
     @State private var appSettings = AppSettings()
@@ -24,6 +27,13 @@ struct ClearNewsApp: App {
                 .task {
                     await categoryService.fetchCategories()
                 }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Keeps the server's morning edition row in step: at most once a day,
+            // or right away after a time zone or permission change (#435).
+            if phase == .active {
+                Task { await NotificationService.shared.syncIfDue() }
+            }
         }
     }
 }

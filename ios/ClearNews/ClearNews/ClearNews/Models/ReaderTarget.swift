@@ -21,6 +21,15 @@ struct ReaderTarget: Identifiable, Hashable {
         publishedAt = article.publishedAt
     }
 
+    /// A story from a tapped morning edition (#435): its address, headline and outlet.
+    init(url: String, title: String, sourceName: String) {
+        self.url = url
+        self.title = title
+        self.sourceName = sourceName
+        imageUrl = nil
+        publishedAt = nil
+    }
+
     init(_ coverage: Coverage) {
         url = coverage.url
         title = coverage.title
