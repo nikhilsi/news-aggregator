@@ -1,7 +1,7 @@
 # Claude Code Development Guide
 
 ---
-**Last Updated**: February 10, 2026
+**Last Updated**: November 9, 2026
 **Purpose**: Rules and workflow for working with this codebase
 ---
 
@@ -83,7 +83,8 @@ Android Compose App ─┘     (site, API, cron; KV)
 ```
 
 **Key architectural decisions:**
-- **One Cloudflare Worker** (`worker/`) - serves the site (Next.js static export from `web/`), the API on `/api/v1/*` and `/health`, and a Cron Trigger. No database, no user accounts, no secrets.
+- **One Cloudflare Worker** (`worker/`) - serves the site (Next.js static export from `web/`), the API on `/api/v1/*` and `/health`, and a Cron Trigger. No user accounts. Two Worker secrets: `PHOTO_KEY` (reader photo addresses) and `APNS_KEY` (Apple push key, #435).
+- **Notifications** (#435, #487) - the iOS app signs up with `POST /api/v1/notifications`; the device list is a table in the Refresher Durable Object's SQLite storage; each minute the cron sends the morning edition and breaking news straight to Apple's push service (`docs/435-notifications-design.md`).
 - **Cron refresh** - Every minute the cron refetches sources whose last check is 15 minutes old (conditional GETs), looks up missing og:images, and writes the merged lists to Workers KV. Requests only read KV. Status per source: `GET /api/v1/status`.
 - **Fixed by the published apps** - The hostname, the `/api/v1` paths, every JSON field the iOS and Android apps decode, and `/article?url=` must not change (`docs/cloudflare-architecture.md`).
 - **Source registry** - All news sources defined in `worker/src/sources.ts`. Adding or removing a source is a one-line change plus a deploy.
@@ -99,7 +100,7 @@ Android Compose App ─┘     (site, API, cron; KV)
 | Layer | Technology |
 |-|-|
 | API and cron | TypeScript / Hono on Cloudflare Workers |
-| Storage | Workers KV (written only by the Cron Trigger) |
+| Storage | Workers KV (written only by the Cron Trigger); the notification device list in the Refresher Durable Object's SQLite |
 | Web Frontend | Next.js (React) / Tailwind |
 | iOS App | Swift / SwiftUI |
 | Android App | Kotlin / Jetpack Compose / Material 3 |
@@ -109,7 +110,7 @@ Android Compose App ─┘     (site, API, cron; KV)
 
 ## 🗄️ Environment Setup
 
-No API keys. The deploy token lives in `~/.secrets/cloudflare/clearnews.env`; never use the Mac's default wrangler login.
+No API keys to set up locally. The deploy token lives in `~/.secrets/cloudflare/clearnews.env`; never use the Mac's default wrangler login. Worker secrets (`PHOTO_KEY`, `APNS_KEY`) live only in Cloudflare; the Apple keys are in `~/.secrets/apple/` (`docs/deploy-runbook.md`).
 
 **Starting Dev:**
 ```bash

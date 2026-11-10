@@ -15,17 +15,18 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 - One card per story: the same news from several outlets is grouped; deals, betting, quizzes, listicles and celebrity gossip are filtered out
 - Every headline, summary and image is the publisher's; AI only labels, groups and ranks
 - **Reader view**: clean extracted article text, dark mode, font scaling
+- **Notifications** (iOS 2.1): a morning edition with Today's top story at the time you pick, and breaking news when many outlets cover a big story at once; both off until you turn them on
 - Two-tier sorting in Latest: a varied top section (a mix of sources and categories), then newest first
 - Keyword search, infinite scroll, dark mode
 - Feeds refresh every minute in the background; pages and the apps read stored results, so they load in milliseconds
-- No accounts, no analytics, no tracking
+- No accounts, no analytics, no tracking (with notifications on, the app sends only a push token, a time and a time zone)
 
 ## Download
 
 | Platform | Status | Link |
 |-|-|-|
 | **Web** | Live | [getclearnews.com](https://getclearnews.com) |
-| **iOS** | v2.0 on App Store | [App Store](https://apps.apple.com/app/id6759177704) |
+| **iOS** | v2.0 on App Store; 2.1 in App Store review | [App Store](https://apps.apple.com/app/id6759177704) |
 | **Android** | v1.0.0 | [APK from GitHub Releases](https://github.com/nikhilsi/news-aggregator/releases) |
 
 ## Tech Stack
