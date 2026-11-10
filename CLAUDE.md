@@ -110,7 +110,7 @@ Android Compose App ─┘     (site, API, cron; KV)
 
 ## 🗄️ Environment Setup
 
-No API keys to set up locally. The deploy token lives in `~/.secrets/cloudflare/clearnews.env`; never use the Mac's default wrangler login. Worker secrets (`PHOTO_KEY`, `APNS_KEY`) live only in Cloudflare; the Apple keys are in `~/.secrets/apple/` (`docs/deploy-runbook.md`).
+No API keys to set up locally. The deploy token lives in `~/.secrets/cloudflare/clearnews.env`; never use the Mac's default wrangler login. Worker secrets (`PHOTO_KEY`, `APNS_KEY`) live only in Cloudflare; the Apple keys are in `~/.secrets/apple/` (`docs/deploy-runbook.md`). The Android signing key is in `android/ClearNews/keystore/` (gitignored), backed up in `~/.secrets/android/`; GitHub Actions holds a copy it can't give back.
 
 **Starting Dev:**
 ```bash

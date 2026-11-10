@@ -6,7 +6,20 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 ## Now
 
-**Open tasks, all of them** (CenterEye, area clearnews, Nov 10, 2026): #426, #417, #501, #502, #424, #415. Anything else is closed or has no task yet (see Later).
+**Open tasks, all of them** (CenterEye, area clearnews, Nov 10, 2026): #426, #503, #417, #501, #502, #424, #415. Anything else is closed or has no task yet (see Later).
+
+**Paused until about Nov 12** (Nikhil, Nov 10): GitaVani's iOS release and the CenterEye public launch come first. ClearNews resumes with #426.
+
+**Waiting on Nikhil before or during #426** (agreed Nov 10; also on #426)
+- Decide: which Google account owns Firebase and, later, the Play account (lean: a new OmSpark Google account on the omspark.com address; Firebase can add a second owner later).
+- Decide: Android version 2.1.0 to match iOS (lean), released from `android-v2.1.0` tags, since `v2.1.0` is March's tag (one-line workflow change).
+- Do: create the Firebase project "ClearNews" (Analytics off), add the Android app `com.nikhilsi.clearnews` (no SHA-1), download `google-services.json`, then Project settings, Service accounts, Generate new private key. Both files go in `~/.secrets/firebase/`. If Google says key creation is disabled, stop: an organization policy has a known fix.
+- Do: save `~/.secrets/android/` (the keystore and the properties file with its two passwords) in the password manager.
+- Do, at device testing: the Pixel on USB with USB debugging allowed for this Mac.
+- Yes or no: download `ClearNews-2.1.0.apk` (1.7 MB) from the v2.1.0 GitHub release to confirm it was signed with the backed-up key (if not, current readers can't update in place).
+- Yes or no: install the Android 16 platform and an emulator image (a couple of GB from Google) for screen, dark mode and text size checks.
+- Gates, each asked when reached: the Firebase key as a Worker secret, the deploy, commits, the GitHub Actions secret for `google-services.json`, the tag that publishes the APK.
+- Work order: (1) Android 16 upgrade and the back-swipe fix, (2) Today, "Covered by", the marks, the reader fixes, the About text, (3) Android sign-ups and the Firebase sender on the server, (4) notifications in the app, (5) breaker review and the phone test, (6) release. Steps 1 and 2 need nothing from Nikhil.
 
 **Watch, no task**
 - The `breaking story` log lines for a few days. On Nov 9 nothing reached 5 outlets while fresh (Boeing's job cuts and the Massie articles had 3). Lower the bar to 4 (`BREAKING_MIN_OUTLETS` in `worker/wrangler.jsonc`, then deploy) if real stories keep missing.
@@ -14,8 +27,9 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 - The six sources added on Nov 5 (3.6.1) in `/api/v1/status`, then a full `measure-reader.mjs run`.
 - The hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
-**Next, in order** (Claude's proposal, Nov 9; Nikhil confirms the order)
-1. **Android catch-up** (#426, P1): the Today screen, "Covered by", Fox and NPR marks, the reader fixes, then notifications through Firebase. Needs Nikhil to create a Firebase project and a service account key. The app is 1.0.0, shipped as an APK on GitHub Releases.
+**Next, in order** (Nikhil agreed, Nov 10)
+1. **Android catch-up** (#426, P1, Track A): target Android 16 (Google Play's floor since Aug 31, 2026), the Today screen, "Covered by", Fox and NPR marks, the reader fixes, the back swipe that closes the app from the reader, then notifications through Firebase. Ships as the GitHub APK first. Needs from Nikhil: a Firebase project and its two files, the Pixel on USB for testing. The app is 1.0.0 today.
+   **Google Play** (#503, P1, Track B, started the same week): a new OmSpark LLC organization account (outside the 12-tester rule for personal accounts), Play signing with the existing key so the Play copy and the APK are one app, then the listing and Google's review. Registering the app there also keeps the APK installable once Google's developer verification goes worldwide in 2027. F-Droid skipped for now.
 2. **Stale-feed alert** (#417, P2): today nothing tells Nikhil when a source stops updating.
 3. **iOS 2.2** (P2): topic sections under Today (#501) and "new since your last visit" (#502), shipped together. The web has both.
 

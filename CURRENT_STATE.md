@@ -36,7 +36,8 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - Phones still on 2.0 (user agent `ClearNews/2`) keep working against the same API.
 
 ### Android App (Kotlin + Jetpack Compose): v1.0.0
-- Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 without merging; ClearNews is not on F-Droid.
+- Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 for inactivity, not rejected (it can be reopened; F-Droid forbids Firebase, so it would need a build without push). ClearNews is not on F-Droid or Google Play.
+- Next (agreed Nov 10): #426 brings it to iOS 2.1 (Android 16 target, Today, "Covered by", the marks, the reader fixes, Firebase push), shipped as the GitHub APK first; #503 puts the same build on Google Play under a new OmSpark LLC organization account, signed with the existing key. The signing key (alias `clearnews`, RSA 2048, valid to 2053) is backed up in `~/.secrets/android/` since Nov 10.
 
 ### API Endpoints
 | Method | Endpoint | Description |
@@ -77,6 +78,7 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 - **Some repeats stay two cards:** stories group at cosine 0.75, which misses some (the Alaska Senate ruling from CNBC and NPR measured 0.69). Lower thresholds merged unrelated stories.
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
 - **Android's About screen** says "financial news APIs" until its next release (fixed in iOS 2.1).
+- **Android: a back swipe in the reader closes the app** instead of the reader (no back handling; found Nov 10, fix in #426).
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
 - **Reader gaps** (#423): sources whose stories never open in the reader were taken off on Nov 5, 2026: BBC (all five feeds, which began refusing Cloudflare after Nov 1), NDTV, UPI Odd News and Smithsonian (#453; measured in `docs/reviews/2026-11-01-reader-investigation.md` section 8). A publisher can still start blocking at any time; the app then shows "doesn't allow reader view" and a link, and `worker/scripts/measure-reader.mjs` finds it. A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post, and Atlas Obscura place pages lose their "Know Before You Go" notes (left as is, Nov 6). First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
 - **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.
