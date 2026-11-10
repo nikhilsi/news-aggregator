@@ -174,9 +174,14 @@ app.post('/api/v1/notifications', signUpBody, async (c) => {
   if (typeof b.token !== 'string' || !TOKEN_RE.test(b.token)) {
     errors.push(bodyError('token', 'Input should be a push token: hex, 64 to 200 characters', b.token));
   }
-  // Turning off works whatever the time zone says.
+  // Breaking news (#487): optional, so build 5 of the app, which doesn't send it, still works.
+  if ('breaking' in b && typeof b.breaking !== 'boolean') {
+    errors.push(bodyError('breaking', 'Input should be a valid boolean', b.breaking, 'bool_type'));
+  }
+  const breaking = b.breaking === true;
+  // Turning everything off works whatever the time zone says.
   const tz = typeof b.tz === 'string' ? canonicalTimeZone(b.tz) : null;
-  if (b.morning !== null && !tz) {
+  if ((b.morning !== null || breaking) && !tz) {
     errors.push(bodyError('tz', 'Input should be a time zone such as America/Los_Angeles', b.tz));
   }
   if (!('morning' in b)) errors.push(bodyError('morning', 'Field required', undefined, 'missing'));
@@ -190,6 +195,7 @@ app.post('/api/v1/notifications', signUpBody, async (c) => {
     token: (b.token as string).toLowerCase(),
     tz: tz ?? 'UTC',
     morning: time ? Number(time[1]) * 60 + Number(time[2]) : null,
+    breaking,
   });
   if (result === 'full') {
     console.error(JSON.stringify({ msg: 'morning edition device list full' }));

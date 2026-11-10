@@ -62,6 +62,18 @@ export interface FeedArticle extends Article {
   coverage: Coverage[];
 }
 
+/**
+ * A story told by several outlets, kept in the stored feed for breaking news (#487).
+ * The API never serves it: tabs show one card per story, and the card's "Covered by"
+ * list carries no dates or labels, so this keeps every member's.
+ */
+export interface FeedStory {
+  /** Stable while the story runs: its oldest article's address. */
+  key: string;
+  /** Every article in the story, one per address, with its labels when it has them. */
+  members: { url: string; title: string; source_name: string; published_at: string | null; k?: Kind; imp?: number }[];
+}
+
 /** The merged lists the API serves: each article once, plus an index list per tab. */
 export interface Feed {
   v: number;
@@ -70,6 +82,8 @@ export interface Feed {
   lists: Record<string, number[]>;
   /** When the Today brief in lists.all was picked; null when Today shows the full list. */
   brief_at?: number | null;
+  /** Stories with at least STORY_MIN_OUTLETS outlets, for breaking news (#487). */
+  stories?: FeedStory[];
 }
 
 export const KINDS = ['news', 'analysis', 'feature', 'howto', 'deals', 'betting', 'quiz', 'listicle', 'celebrity', 'opinion'] as const;

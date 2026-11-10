@@ -11,7 +11,7 @@ import { CATEGORIES, SOURCES } from '../sources.ts';
 import { BRIEF_MAX_AGE_MS } from '../ai/brief.ts';
 import { DROPPED_KINDS } from '../ai/labels.ts';
 import { groupStories, type Story } from '../ai/stories.ts';
-import { FEED_VERSION, type AiItem, type AiStore, type Article, type Coverage, type Feed, type FeedArticle, type Topic } from '../types.ts';
+import { FEED_VERSION, type AiItem, type AiStore, type Article, type Coverage, type Feed, type FeedArticle, type FeedStory, type Topic } from '../types.ts';
 import { mergeForTab } from './merge.ts';
 import { trimSource } from './trim.ts';
 
@@ -58,6 +58,29 @@ function coverage(a: Article, story: Story | undefined): Coverage[] {
     names.add(m.source_name);
     urls.add(m.url);
     out.push({ source_name: m.source_name, title: m.title, url: m.url });
+  }
+  return out;
+}
+
+/** Stories kept for breaking news have at least this many outlets; its bar can be set no lower. */
+export const STORY_MIN_OUTLETS = 3;
+
+/** Every story with STORY_MIN_OUTLETS outlets or more, each member once by address, with its labels (#487). */
+function storiesForBreaking(storyOf: ReadonlyMap<Article, Story>, label: (a: Article) => AiItem | undefined): FeedStory[] {
+  const out: FeedStory[] = [];
+  for (const story of new Set(storyOf.values())) {
+    const byUrl = new Map<string, Article>();
+    for (const m of story.members) if (!byUrl.has(m.url)) byUrl.set(m.url, m);
+    const members = [...byUrl.values()];
+    if (new Set(members.map((m) => m.source_name)).size < STORY_MIN_OUTLETS) continue;
+    const oldest = members.reduce((a, b) => ((b.published_at ?? '') < (a.published_at ?? '') ? b : a));
+    out.push({
+      key: oldest.url,
+      members: members.map((m) => {
+        const l = label(m);
+        return { url: m.url, title: m.title, source_name: m.source_name, published_at: m.published_at, ...(l ? { k: l.k, imp: l.imp } : {}) };
+      }),
+    });
   }
   return out;
 }
@@ -117,5 +140,5 @@ export function buildFeed(articlesBySource: ReadonlyMap<string, Article[]>, now:
       briefAt = brief.at;
     }
   }
-  return { v: FEED_VERSION, built_at: now, articles, lists, brief_at: briefAt };
+  return { v: FEED_VERSION, built_at: now, articles, lists, brief_at: briefAt, stories: storiesForBreaking(storyOf, label) };
 }

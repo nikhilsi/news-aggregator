@@ -64,7 +64,14 @@ export interface ApnsAnswer {
   reason: string | null;
 }
 
-export async function sendAlert(token: string, payload: object, login: Login, topic: string, now: number): Promise<ApnsAnswer> {
+export async function sendAlert(
+  token: string,
+  payload: object,
+  login: Login,
+  topic: string,
+  now: number,
+  kind: 'morning' | 'breaking' = 'morning',
+): Promise<ApnsAnswer> {
   try {
     const res = await fetch(`${APNS_HOST}/3/device/${token}`, {
       method: 'POST',
@@ -74,7 +81,8 @@ export async function sendAlert(token: string, payload: object, login: Login, to
         'apns-push-type': 'alert',
         'apns-priority': '10',
         'apns-expiration': String(Math.floor(now / 1000) + EXPIRES_AFTER_S),
-        'apns-collapse-id': 'morning',
+        // A newer alert of the same kind replaces one that was never shown.
+        'apns-collapse-id': kind,
         'content-type': 'application/json',
       },
       body: JSON.stringify(payload),

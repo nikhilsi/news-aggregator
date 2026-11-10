@@ -43,5 +43,13 @@
   ],
   // The morning edition's Apple push key (#435): created Nov 9, 2026, Production,
   // topic com.nikhilsi.ClearNews only. The key itself is the secret APNS_KEY.
-  "vars": { "APNS_KEY_ID": "Q239BJM294", "APNS_TEAM_ID": "F66D7QPY4N", "APNS_TOPIC": "com.nikhilsi.ClearNews" }
+  // The breaking news bar (#487): outlets covering the story and the headline article's
+  // importance (Nikhil, Nov 9, 2026). Vars, so a test can lower them without a code change.
+  "vars": {
+    "APNS_KEY_ID": "Q239BJM294",
+    "APNS_TEAM_ID": "F66D7QPY4N",
+    "APNS_TOPIC": "com.nikhilsi.ClearNews",
+    "BREAKING_MIN_OUTLETS": "5",
+    "BREAKING_MIN_IMPORTANCE": "4"
+  }
 }

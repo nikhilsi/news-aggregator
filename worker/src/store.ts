@@ -25,6 +25,9 @@ export interface Env {
   APNS_TEAM_ID?: string;
   /** The app's bundle id. */
   APNS_TOPIC?: string;
+  /** The breaking news bar (#487): outlets and importance. Vars, so a test can lower them. */
+  BREAKING_MIN_OUTLETS?: string;
+  BREAKING_MIN_IMPORTANCE?: string;
 }
 
 export const STATE_KEY = 'state';

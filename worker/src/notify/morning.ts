@@ -54,7 +54,8 @@ export interface MorningSummary {
   failures: { token: string; status: number; reason: string | null }[];
 }
 
-async function currentLogin(sql: SqlStorage, cfg: ApnsConfig, now: number, renew: boolean): Promise<Login> {
+/** Apple's login token: kept in SQLite, re-signed after 50 minutes, or on renew if over 20. Shared with breaking news. */
+export async function currentLogin(sql: SqlStorage, cfg: ApnsConfig, now: number, renew: boolean): Promise<Login> {
   const kept = sql.exec('SELECT kid, jwt, iat FROM apns_login WHERE id = 1').toArray()[0] as unknown as Login | undefined;
   if (kept && kept.kid === cfg.keyId) {
     const age = now - kept.iat;
@@ -87,7 +88,7 @@ export async function runMorning(
   // Signed before any device is touched: a bad key fails the minute with nothing marked.
   let login = await currentLogin(sql, cfg, now, false);
   const deadline = Date.now() + budgetMs;
-  const removals: { d: Device; status: number; reason: string }[] = [];
+  const removals: Removal[] = [];
   let attempted = 0;
 
   for (const d of due) {
@@ -137,7 +138,8 @@ export async function runMorning(
     } else {
       // 'retry', 'setup' or a second 'relogin': not the device's fault. Put it back for
       // another try in 15 minutes (Apple's guidance), while still inside its hour.
-      if (minutesPast(d, now) + RETRY_MS / 60e3 <= WINDOW_MIN) {
+      // Due devices always have a morning time.
+      if (minutesPast({ tz: d.tz, morning: d.morning as number }, now) + RETRY_MS / 60e3 <= WINDOW_MIN) {
         sql.exec('UPDATE devices SET sent_at = ?, retry_at = ? WHERE token = ?', d.sent_at, now + RETRY_MS, d.token);
         summary.retry++;
       }
@@ -149,19 +151,34 @@ export async function runMorning(
     // 'keep': logged, the device stays, this morning counts as sent.
   }
 
-  // The guard (GUARD_MIN): a 400 reason given for most of the minute's sends holds the
-  // devices that had a delivery before. Everything else that Apple called gone is deleted.
+  const { removed, held } = applyRemovals(sql, removals, attempted);
+  summary.removed = removed;
+  if (held) summary.stopped = `most failed alike: ${held}; devices with earlier deliveries kept`;
+  return summary;
+}
+
+export interface Removal {
+  d: Device;
+  status: number;
+  /** Status and Apple's reason, for example "400 BadDeviceToken". */
+  reason: string;
+}
+
+/**
+ * Deletes the devices Apple called gone, with the guard (GUARD_MIN): a 400 reason given
+ * for most of the minute's sends holds the devices that had a delivery before. A 410 always
+ * deletes, and 410s are left out of the share: an uninstall says nothing about our setup.
+ * Shared with breaking news.
+ */
+export function applyRemovals(sql: SqlStorage, removals: Removal[], attempted: number): { removed: number; held: string | null } {
   let held: string | null = null;
-  // 410s are left out of the share: an uninstall in the same minute says nothing about our setup.
   const judged = attempted - removals.filter((r) => r.status === 410).length;
   for (const reason of new Set(removals.filter((r) => r.status === 400).map((r) => r.reason))) {
     const all = removals.filter((r) => r.reason === reason);
     const known = all.filter((r) => r.d.delivered_at !== null).length;
     if (known >= GUARD_MIN && all.length / judged > 0.8) held = reason;
   }
-  const keep = (r: (typeof removals)[number]) => r.reason === held && r.d.delivered_at !== null;
-  if (held) summary.stopped = `most failed alike: ${held}; devices with earlier deliveries kept`;
+  const keep = (r: Removal) => r.reason === held && r.d.delivered_at !== null;
   for (const r of removals) if (!keep(r)) sql.exec('DELETE FROM devices WHERE token = ?', r.d.token);
-  summary.removed = removals.filter((r) => !keep(r)).length;
-  return summary;
+  return { removed: removals.filter((r) => !keep(r)).length, held };
 }

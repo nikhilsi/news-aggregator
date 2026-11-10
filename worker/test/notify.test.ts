@@ -18,7 +18,7 @@ const dev = (o: Partial<Device>) => ({ tz: 'America/Los_Angeles', morning: 420, 
 /** Runs code against the Refresher's own SQLite storage. */
 const inStore = <T>(fn: (sql: SqlStorage) => T | Promise<T>) =>
   runInDurableObject(refresher(env), (_inst, state) => {
-    createTables(state.storage.sql);
+    createTables(state.storage);
     return fn(state.storage.sql);
   });
 const rows = () => inStore((sql) => sql.exec('SELECT * FROM devices ORDER BY token').toArray() as unknown as Device[]);
@@ -78,7 +78,7 @@ describe('the phone clock', () => {
     expect(isDue(dev({ sent_at: now }), now + 24 * 60 * MIN)).toBe(true);
     expect(isDue(dev({ retry_at: now + 15 * MIN }), now + 10 * MIN)).toBe(false);
     expect(isDue(dev({ retry_at: now + 15 * MIN }), now + 15 * MIN)).toBe(true);
-    expect(minutesPast(dev({}), now + 59 * MIN)).toBe(59);
+    expect(minutesPast({ tz: 'America/Los_Angeles', morning: 420 }, now + 59 * MIN)).toBe(59);
   });
 });
 
