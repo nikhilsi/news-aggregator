@@ -7,10 +7,10 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition and breaking news (#435, #487, build 6), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. #488 is done (Nov 9): privacy page, privacy manifest, App Store privacy answers published (Device ID, app functionality, not linked, no tracking); EU trader status was already "not a trader" since Nov 6. Next is the App Store submission, with Nikhil's go. The Should items (topic sections, "new since your last visit") are not built.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition and breaking news (#435, #487, build 6), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. #488 is done (Nov 9). 2.1 build 6 was submitted for App Store review on Nov 9 (manual release). The Should items (topic sections, "new since your last visit") are not built.
 - **Android** (#426): the same, plus Android-only reader fixes and Firebase push for notifications.
 - **Notifications:** the iOS morning edition (#435, closed) and breaking news (#487) shipped on Nov 9 ([docs/435-notifications-design.md](docs/435-notifications-design.md)). Server 3.8.0; 2.1 build 6 on TestFlight; both sent and tapped on Nikhil's iPhone.
-  - Next: the App Store release of 2.1 (#425), with Nikhil's go.
+  - 2.1 (build 6) submitted for App Store review on Nov 9, 2026 with new screenshots and store text (`appstore/`); release is manual. When Apple approves, Nikhil says when it goes live.
   - Watch the `breaking story` logs for a few days: on Nov 9 nothing reached 5 outlets while fresh. Lower the bar to 4 if real stories keep missing.
   - Android notifications come with #426 (Firebase).
 

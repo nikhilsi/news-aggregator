@@ -1,24 +1,22 @@
-ClearNews is a clean, no-nonsense news reader that pulls articles from over 40 sources across 13 categories — without clickbait, ad overload, or algorithmic manipulation. Just the news, presented clearly.
+ClearNews is a calm news reader. Today is a short brief of about ten stories, refreshed every hour from dozens of trusted outlets. Each story shows once. Every outlet that covered it is one tap away. When you reach the end, you're caught up.
 
-Browse headlines from trusted sources like AP News, BBC, Ars Technica, The Verge, NPR, Condé Nast Traveler, and many more. Every article is sourced from publicly available RSS feeds and financial news APIs.
+TODAY
+• About ten stories, picked every hour from dozens of outlets. Every headline is the publisher's own.
+• "Covered by N outlets": see how other outlets reported the same story. Any of them opens in the reader.
+• On US politics stories, marks show whether Fox News and NPR covered it.
+• "You're all caught up" at the end, with the time of the next edition.
 
-FEATURES
+NOTIFICATIONS (off until you turn them on)
+• Morning edition: Today's top story, once a day at the time you pick.
+• Breaking news: one alert when many outlets cover a big story at once. At most one a day, never between 10 PM and 7 AM.
 
-• 40+ sources across 13 categories: General, Technology, Science, Finance, Health, Sports, Entertainment, Feel Good, Offbeat, Travel, India, Local (Seattle), and more
-• Built-in reader view — read articles in a clean, distraction-free format without leaving the app
-• Category filtering — browse by topic with one tap
-• Search — find articles by keyword across all sources
-• Dark mode — full support for light, dark, and system themes
-• Pull to refresh — get the latest articles on demand
-• Share articles directly from the feed or reader view
-• No account required — works immediately, no sign-up
-
-READER VIEW
-
-Tap any article to read it in a clean, ad-free reader view. Font size is adjustable. If a source restricts access, you can always open the original article in Safari.
+EVERYTHING ELSE
+• Tabs for General, AI, Physical AI, Space, Technology, Science, Seattle, India, Finance, Health, Sports, Entertainment, Feel Good, Offbeat and Travel.
+• A clean reader view without ads or pop-ups, with adjustable text size. If a publisher doesn't allow it, the app says so and offers the original.
+• Search across every source.
+• Light, dark and system themes.
+• Share any article.
+• No account, no sign-up.
 
 PRIVACY
-
-No ads. No tracking. No analytics. No data collection. Your reading habits stay on your device. See our full privacy policy at getclearnews.com/privacy.
-
-ClearNews is a personal project built for people who just want to read the news without the noise.
+No ads, no tracking, no analytics. If you turn on notifications, the app sends a push token, your chosen time and your time zone. They're used only to send notifications. Turn notifications off and they're deleted. Full policy: getclearnews.com/privacy.

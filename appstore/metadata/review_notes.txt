@@ -1,7 +1,12 @@
-ClearNews is a news aggregator that fetches articles from publicly available RSS feeds and financial news APIs (over 40 sources). The app requires an internet connection to fetch articles from our backend server at getclearnews.com. No account or login is required — all features are available immediately.
+ClearNews is a news reader that fetches articles from publicly available RSS feeds through our server at getclearnews.com. No account or login is required; every feature works immediately.
 
-Key features to test: category tabs for filtering by topic, keyword search, pull-to-refresh for fresh articles, tap any article to open the built-in reader view (clean extracted content), share button on article cards and in reader toolbar, settings for theme and reader font size, About page with privacy policy and support links.
+New in 2.1:
+• Today (the first tab): a brief of about ten stories, rebuilt every hour. Tap "Covered by N outlets" under a story to see other outlets' headlines; each opens in the reader.
+• Notifications, both off by default, in Settings > Notifications:
+  - Morning edition: set Time to 2 or 3 minutes from now and keep the switch on. The server sends Today's top story at that time; tapping it opens the story in the reader.
+  - Breaking news: sent only when five or more outlets cover one important story within a few hours, at most once a day and never between 10 PM and 7 AM. One may not arrive during review.
+• A one-time offer to turn on the morning edition appears at the end of Today.
 
-The reader view extracts article content server-side for a clean reading experience. Some publishers block content extraction (paywalls, bot detection) — in those cases, the app shows a "Read on [source]" button to open the original article. This is expected behavior.
+The reader view extracts article text on our server. Some publishers block extraction; the app then says why and offers the original article. This is expected.
 
-No login is required. The app does not collect any personal data.
+When notifications are on, the app sends a push token, the chosen time and the time zone to our server. They are used only to send notifications and are deleted when notifications are turned off. No other personal data is collected.

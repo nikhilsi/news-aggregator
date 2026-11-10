@@ -1,10 +1,6 @@
-Initial release.
+New in 2.1:
 
-• 40+ news sources across 13 categories
-• Built-in reader view for clean, distraction-free reading
-• Category filtering and keyword search
-• Dark mode with system, light, and dark themes
-• Pull to refresh for the latest headlines
-• Share articles via native share sheet
-• Adjustable reader font size
-• No account required — no ads, no tracking
+• Today: a short brief of about ten stories, refreshed every hour. Tap "Covered by N outlets" to see how other outlets reported the same story.
+• Morning edition: Today's top story once a day, at the time you pick (Settings, Notifications).
+• Breaking news: one alert when many outlets cover a big story at once. Off until you turn it on.
+• A cleaner reader with styled captions and tables and pinch to zoom. When an article can't open, it says why.

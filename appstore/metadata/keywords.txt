@@ -1,1 +1,1 @@
-news,rss,reader,aggregator,headlines,articles,feed,clean,sources,daily
+news,brief,today,headlines,breaking,morning,reader,rss,aggregator,calm,daily,sources,feed
