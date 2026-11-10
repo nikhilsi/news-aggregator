@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy — ClearNews</title>
+    <title>Privacy Policy | ClearNews</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -32,13 +32,13 @@
 </head>
 <body>
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: November 1, 2026</p>
+    <p class="updated">Last updated: November 9, 2026</p>
 
-    <p>ClearNews is a personal news aggregator. Your privacy matters — here's exactly what the app does and doesn't do with your data.</p>
+    <p>ClearNews is a personal news aggregator. Your privacy matters. Here's exactly what the app does and doesn't do with your data.</p>
 
     <h2>What We Don't Do</h2>
     <ul>
-        <li>We do <strong>not</strong> collect, store, or share any personal information.</li>
+        <li>We do <strong>not</strong> collect your name, email address, location or contacts.</li>
         <li>We do <strong>not</strong> use analytics, tracking pixels, or advertising SDKs.</li>
         <li>We do <strong>not</strong> sell or share data with third parties.</li>
         <li>We do <strong>not</strong> require an account to use the app.</li>
@@ -47,8 +47,8 @@
     <h2>Data Stored on Your Device</h2>
     <p>The app stores a small amount of data locally on your device:</p>
     <ul>
-        <li><strong>App settings</strong> — Your theme preference (light/dark/system) and reader font size are saved using iOS UserDefaults. This data never leaves your device.</li>
-        <li><strong>Cached content</strong> — Article data and images are cached by iOS (URLCache) to improve performance. This cache is managed by the operating system and can be cleared in iOS Settings.</li>
+        <li><strong>App settings</strong>: your theme (light, dark or system), reader font size, and whether the morning edition is on and at what time. Theme and font size never leave your device. The morning edition settings are sent to us as described below.</li>
+        <li><strong>Cached content</strong>: article data and images are cached by iOS (URLCache) to improve performance. This cache is managed by the operating system and can be cleared in iOS Settings.</li>
         <li><strong>On the website</strong>: your browser keeps your theme, the topics you pick for the Today page, and when you last visited (to mark stories that are new since then). They stay in your browser's local storage, are never sent to us, and are removed when you clear the site's data.</li>
     </ul>
 
@@ -58,7 +58,18 @@
         <li>The category or search query you're viewing</li>
         <li>The URL of an article when you open it in reader view</li>
     </ul>
-    <p>No personal identifiers, device IDs, or location data are sent with these requests. We do not log IP addresses for tracking purposes.</p>
+    <p>No personal identifiers or location data are sent with these requests. We do not log IP addresses for tracking purposes.</p>
+
+    <h2>Notifications</h2>
+    <p>The iPhone app can send you a morning edition: Today's top story, once a day at the time you pick. It can also send breaking news: one alert when many outlets cover a big story at once, at most one a day. Both are off until you turn them on in Settings.</p>
+    <p>When you turn either on, the app sends our server these things:</p>
+    <ul>
+        <li>A <strong>push token</strong>: an address Apple issues so we can send a notification to ClearNews on your device. It does not identify you.</li>
+        <li>The <strong>time</strong> you picked for the morning edition.</li>
+        <li>Your device's <strong>time zone</strong>, so notifications arrive at the right time where you are.</li>
+        <li>Whether <strong>breaking news</strong> is on.</li>
+    </ul>
+    <p>We use them only to send these notifications, which Apple's push service delivers. Nothing else is attached: no name, account, email or location. When you turn both off, they are deleted from our server. They are also deleted when Apple tells us the app is no longer on your device.</p>
 
     <h2>Third-Party Content</h2>
     <p>Articles displayed in the app are sourced from publicly available RSS feeds. When you tap "Original" to view an article on its source website, that site's own privacy policy applies.</p>
