@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.8.0] - 2026-11-09 - Breaking news alerts; privacy page for notifications (#487, #488)
+
+### Added
+- **Breaking news.** When one story reaches 5 outlets, its first article is under 6 hours old, and one of its articles is labeled news with importance 4 or 5, the phones that turned breaking news on get one alert with that article's headline: "Breaking: covered by N outlets". At most one a day per phone, never between 10 PM and 7 AM on the phone's clock, once per story. Each story over the bar is decided and logged (`breaking story`), even with no phone signed up. The bar is two Worker vars, `BREAKING_MIN_OUTLETS` and `BREAKING_MIN_IMPORTANCE`. Design: `docs/435-notifications-design.md` section 6.5.
+- The stored feed keeps a summary of each story with 3 or more outlets (`feed.stories`), with every article's date and labels. Tabs show one card per story, and the card's "Covered by" list has no dates or labels, so breaking news judges the whole story from this. The API serves none of it.
+- The sign-up takes an optional `breaking` switch (build 5 of the app doesn't send it). The device list keeps phones with breaking news on and the morning edition off. The 3.7.0 table is upgraded once, rows kept.
+
+### Changed
+- **Privacy page:** a Notifications section says what the app sends when notifications are on (push token, time, time zone, the breaking switch), what it's for, and when it's deleted. "We do not collect, store, or share any personal information" became "We do not collect your name, email address, location or contacts." The page's em dashes went too.
+- The iOS app's privacy manifest declares the push token (device ID, app functionality, not linked, no tracking).
+
+---
+
 ## [3.7.0] - 2026-11-09 - The morning edition: server side (#435)
 
 ### Added

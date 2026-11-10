@@ -52,6 +52,13 @@ Note anything off with a screenshot (TestFlight's own screenshot feedback works)
 - [ ] Don't Allow at the prompt, or ClearNews turned off in iOS Settings: Settings shows "Notifications are off for ClearNews in iOS Settings" and Open iOS Settings works.
 - [ ] Each send shows in the Worker logs as `morning edition` (Claude can read them).
 
+## Breaking news (build 6, #487)
+
+- [ ] Settings, Notifications: a Breaking news switch under the morning edition, off by default. Turning it on asks for permission if it hasn't been given.
+- [ ] With the bar lowered for a test, an alert arrives within a minute or two: "Breaking: covered by N outlets", then the outlet and headline. Tapping it opens the story.
+- [ ] No second breaking alert the same day. None between 10 PM and 7 AM.
+- [ ] Morning edition off and breaking news on: breaking alerts still come, no morning edition.
+
 ## Not in this build
 
-Topic sections and "new since your last visit" (the Should items), the widget, and breaking-story alerts (#435, after two weeks of logging). Before the App Store release: the privacy page, the privacy manifest and the EU trader status.
+Topic sections and "new since your last visit" (the Should items) and the widget. Before the App Store release (#488): the App Store privacy answers and the EU trader status.

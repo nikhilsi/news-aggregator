@@ -16,7 +16,7 @@ Three kinds of alert were on the table in #435:
 - **Breaking story:** a rare alert when many outlets cover one story at once. A few a week at most.
 - **Topic alert:** a new story in a topic the reader follows.
 
-This design builds the morning edition first, on iOS. Breaking alerts come second, after their rule is checked on live data. Topic alerts wait until the other two have been in use for a while.
+This design builds the morning edition first, on iOS. Breaking news came second the same day (#487, section 6.5). Topic alerts wait until the other two have been in use for a while.
 
 The iOS 2.1 App Store release waits for this work (Nikhil, Nov 5). The release carries Today and notifications together.
 
@@ -235,12 +235,18 @@ The words come from the brief: the story count plus the top story's outlet and h
 > **Today: 10 stories**  
 > NPR News: Democrats seize full control of Congress. And, which candidates made history last night
 
-### 6.5 Breaking alerts (later, sketched for review)
+### 6.5 Breaking news (#487, built Nov 9, 2026)
 
-- **A story qualifies when:** it reaches 6 outlets for the first time, within 6 hours of its first article, and its headline article is labeled news (not opinion or feature).
-- **Limits:** one alert per story. At most one a day per device. None between 10 PM and 7 AM in the phone's time zone.
-- **Opt-in:** its own switch, off by default. Its field in the device list is added then, not now.
-- **Before switching it on:** the cron logs every alert it would have sent for two weeks. Nikhil reviews that list and the bar is adjusted.
+The two-week wait was dropped (Nikhil, Nov 9): last week's briefs were replayed instead. The replay picked a BBC recap and an opinion piece and missed the election because it broke at 10 PM, which set the rule below. The bar is lower than first sketched (5 outlets, not 6): last week's AI stock sell-off reached 5.
+
+- **What a story is:** every article the server grouped into one story, not just the card a tab shows. While building the feed, the server keeps a short summary of each story with 3 or more outlets (`feed.stories`, stored only, never served by the API): each article's address, headline, outlet, date and labels, and a stable key, the story's oldest article.
+- **A story qualifies when:** it reaches 5 outlets (`BREAKING_MIN_OUTLETS`), its first article is under 6 hours old (dates more than 10 minutes in the future are ignored), and at least one of its articles is labeled news with importance 4 or 5 (`BREAKING_MIN_IMPORTANCE`). The alert uses that article's headline: highest importance, then newest. Two stories in one minute: the bigger one goes first.
+- **Decided once:** the story's key and every article address are remembered for 3 days (`breaking_stories`), so the story never alerts twice, even when follow-ups replace its articles. A story still waiting for labels is left for a later minute. One with all labels and no such article is skipped. One already over 6 hours old when first seen is remembered quietly.
+- **When it can alert again:** a story that goes quiet for 2 days and then reaches 5 outlets again, and a follow-up the grouping treats as its own story. Both count as new stories (breaker check, Nov 9). The once-a-day cap per phone still holds.
+- **Who gets it:** phones with breaking news on, between 07:00 and 21:59 on their own clock, with no breaking alert in 20 hours. Overnight stories are left to the morning edition. Each phone is claimed before its send, as in 6.1. Apple's answers are handled as for the morning edition, without retries: the story was that minute's.
+- **The alert:** "Breaking: covered by N outlets", then the outlet and headline. A tap opens the story in the reader.
+- **Logs:** one `breaking story` line per story decided: send or skip with the reason, outlets, age, headline, importance, and the phones it reached. Stories are decided and logged even when no phone has breaking news on, which is the data for tuning the bar.
+- **The switch:** "Breaking news" in Settings, off by default.
 
 ### 6.6 How readers find it
 

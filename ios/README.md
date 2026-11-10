@@ -1,6 +1,6 @@
 # iOS App — ClearNews (SwiftUI)
 
-Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 5, with the morning edition) is on TestFlight; the App Store has 2.0.
+Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 6, with the morning edition and breaking news) is on TestFlight; the App Store has 2.0.
 
 ## Quick Start
 
@@ -26,7 +26,8 @@ The app connects to `https://getclearnews.com` by default (see `Utilities/Consta
 - **Reader view**: WKWebView rendering extracted HTML content, dark mode CSS, responsive images, styled figures, captions, tables and lists, zoom, configurable font size, external links open in Safari. A placeholder holds the photo's place while it loads. When the reader cannot show an article, a message per reason (blocked, slow, video, no text) and a link to the original
 - **Share**: Share any article from the card footer or reader toolbar via native iOS share sheet
 - **Morning edition** (2.1, #435): Today's count and top story once a day, pushed by the server at the time the reader picks (Settings, Notifications; off by default, 7:00 AM preset), plus a one-time offer at the end of Today. Tapping it opens the story in the reader. The app asks iOS for the push token each time and keeps no copy; it sends its whole state to `POST /api/v1/notifications` on every change and at most once a day otherwise. Push only works in TestFlight and App Store builds (production); Xcode builds on a cable get none. Design: `docs/435-notifications-design.md`
-- **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), the morning edition switch and time, about page with content attribution + links
+- **Breaking news** (2.1, #487): one alert when many outlets cover a big story at once, at most one a day, never between 10 PM and 7 AM on the phone's clock; its own switch in Settings, off by default. Sent with the same state as the morning edition (`breaking`). Design: `docs/435-notifications-design.md` section 6.5
+- **Settings**: Theme picker (system/light/dark), reader font size (S/M/L/XL), the morning edition switch and time, the breaking news switch, about page with content attribution + links
 - **Dynamic Type**: All text uses semantic fonts, padding/sizes scale via `@ScaledMetric`
 - **Haptic feedback**: Light impact on article card tap and category selection
 - **Accessibility**: Labels on all interactive controls, combined elements on error/empty states
