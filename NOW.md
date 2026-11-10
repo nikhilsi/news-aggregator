@@ -7,11 +7,11 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition (#435, build 5), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. The App Store release needs #488 first (privacy page and manifest, App Store privacy answers, EU trader status). The Should items (topic sections, "new since your last visit") are not built.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition and breaking news (#435, #487, build 6), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. The App Store release needs Nikhil's two steps in #488 first (App Store privacy answers, EU trader status). The Should items (topic sections, "new since your last visit") are not built.
 - **Android** (#426): the same, plus Android-only reader fixes and Firebase push for notifications.
-- **Notifications:** the iOS morning edition shipped on Nov 9 (#435, closed; [docs/435-notifications-design.md](docs/435-notifications-design.md)). Server live since 3.7.0; 2.1 build 5 on TestFlight; sent and tapped on Nikhil's iPhone.
-  - Next: the App Store prerequisites (#488): the privacy page and privacy manifest (Claude drafts), the App Store privacy answers and EU trader status (Nikhil).
-  - Then breaking-story alerts (#487): two weeks of logging what would qualify, a review with Nikhil, then the switch.
+- **Notifications:** the iOS morning edition (#435, closed) and breaking news (#487) shipped on Nov 9 ([docs/435-notifications-design.md](docs/435-notifications-design.md)). Server 3.8.0; 2.1 build 6 on TestFlight; both sent and tapped on Nikhil's iPhone.
+  - Next: Nikhil's App Store Connect steps in #488 (privacy answers, EU trader status; the privacy page and manifest are done), then the App Store release (#425).
+  - Watch the `breaking story` logs for a few days: on Nov 9 nothing reached 5 outlets while fresh. Lower the bar to 4 if real stories keep missing.
   - Android notifications come with #426 (Firebase).
 
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.

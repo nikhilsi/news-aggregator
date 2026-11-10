@@ -11,6 +11,11 @@
 - **Privacy page:** a Notifications section says what the app sends when notifications are on (push token, time, time zone, the breaking switch), what it's for, and when it's deleted. "We do not collect, store, or share any personal information" became "We do not collect your name, email address, location or contacts." The page's em dashes went too.
 - The iOS app's privacy manifest declares the push token (device ID, app functionality, not linked, no tracking).
 
+### Deployed
+- Nov 9 as Worker af16477c: verify 77/77, decoder sweep 1,305 articles with 0 failures, no errors; the 3.7.0 device table upgraded with its rows kept; the privacy page live.
+- End-to-end test the same day: the bar lowered to 3 outlets and importance 3 (Worker 4213b868). At 5:03:59 PM two stories cleared it in one minute. The bigger, Thomas Massie's impeachment articles (importance 5), went to Nikhil's iPhone (build 6): due 1, sent 1, and the tap opened the story. The second, Boeing's job cuts, reached no one: his daily alert was used. The real bar was restored right after (Worker 47b2ef7a, verify 77/77).
+- First look at the real bar: on Nov 9 the stories with 3 or more outlets were the Nvidia and FBI story (8 outlets, but 13 hours old, so left to the morning edition), the Massie articles (3) and Boeing's job cuts (3). None reached 5. A few days of `breaking story` logs will show whether 5 is too high.
+
 ---
 
 ## [3.7.0] - 2026-11-09 - The morning edition: server side (#435)
