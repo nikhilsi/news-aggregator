@@ -26,7 +26,7 @@ Every major news source is drowning in ads, clickbait, and political rage. Clear
 | Platform | Status | Link |
 |-|-|-|
 | **Web** | Live | [getclearnews.com](https://getclearnews.com) |
-| **iOS** | v2.0 on App Store; 2.1 in App Store review | [App Store](https://apps.apple.com/app/id6759177704) |
+| **iOS** | v2.1 on App Store | [App Store](https://apps.apple.com/app/id6759177704) |
 | **Android** | v1.0.0 | [APK from GitHub Releases](https://github.com/nikhilsi/news-aggregator/releases) |
 
 ## Tech Stack

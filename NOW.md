@@ -1,20 +1,18 @@
 # NOW: Current Priorities
 
-**Last Updated**: November 9, 2026
+**Last Updated**: November 10, 2026
 
 Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 ## Now
 
-**Open tasks, all of them** (CenterEye, area clearnews, Nov 9, 2026): #425, #426, #417, #501, #502, #424, #415. Anything else is closed or has no task yet (see Later).
+**Open tasks, all of them** (CenterEye, area clearnews, Nov 10, 2026): #426, #417, #501, #502, #424, #415. Anything else is closed or has no task yet (see Later).
 
-**In flight**
-- **iOS 2.1 App Store release** (#425, P1): build 6 has been in Apple's review since Nov 9. It goes live automatically when Apple approves (Nikhil's go, Nov 9). Close #425 once it is live. Apple's status emails reach nikhilsi@gmail.com since Nov 9 (every App Store Connect notification was off until then). Status: App Store Connect, Apps, GetClearNews, or the API (`docs/app-store-submission-playbook.md`).
-- **Watch, no task:**
-  - The `breaking story` log lines for a few days. On Nov 9 nothing reached 5 outlets while fresh (Boeing's job cuts and the Massie articles had 3). Lower the bar to 4 (`BREAKING_MIN_OUTLETS` in `worker/wrangler.jsonc`, then deploy) if real stories keep missing.
-  - The `morning edition` log lines: sends, failures, removals.
-  - The six sources added on Nov 5 (3.6.1) in `/api/v1/status`, then a full `measure-reader.mjs run`.
-  - The hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
+**Watch, no task**
+- The `breaking story` log lines for a few days. On Nov 9 nothing reached 5 outlets while fresh (Boeing's job cuts and the Massie articles had 3). Lower the bar to 4 (`BREAKING_MIN_OUTLETS` in `worker/wrangler.jsonc`, then deploy) if real stories keep missing.
+- The `morning edition` log lines: sends, failures, removals.
+- The six sources added on Nov 5 (3.6.1) in `/api/v1/status`, then a full `measure-reader.mjs run`.
+- The hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
 **Next, in order** (Claude's proposal, Nov 9; Nikhil confirms the order)
 1. **Android catch-up** (#426, P1): the Today screen, "Covered by", Fox and NPR marks, the reader fixes, then notifications through Firebase. Needs Nikhil to create a Firebase project and a service account key. The app is 1.0.0, shipped as an APK on GitHub Releases.
@@ -23,7 +21,7 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 
 **Parked:** #424 (the feed's own text when a page can't be read; only when a measurement shows a source cut short) and #415 (a Grok-written digest from X; needs an exception to the no-AI-text rule).
 
-**Shipped recently** (details in CHANGELOG): Nov 9: the iOS morning edition (#435, 3.7.0), breaking news (#487, 3.8.0), the privacy page and App Store prerequisites (#488), iOS 2.1 submitted. Nov 6: reader cleanup and Today's outlet count (#453, 3.6.2 and 3.6.3). Nov 5: the reader measurement script (#436), iOS 2.1's Must items, sources that never open replaced (3.6.1). Nov 1: the move to Cloudflare (#400), India cleanup (#413), #414 steps 1 to 3, the reader (#423), Fox politics and CNBC Business feeds (#416).
+**Shipped recently** (details in CHANGELOG): Nov 10: iOS 2.1 on the App Store (#425), with Today, "Covered by", the reader fixes, the morning edition and breaking news. Nov 9: the iOS morning edition (#435, 3.7.0), breaking news (#487, 3.8.0), the privacy page and App Store prerequisites (#488). Nov 6: reader cleanup and Today's outlet count (#453, 3.6.2 and 3.6.3). Nov 5: the reader measurement script (#436), iOS 2.1's Must items, sources that never open replaced (3.6.1). Nov 1: the move to Cloudflare (#400), India cleanup (#413), #414 steps 1 to 3, the reader (#423), Fox politics and CNBC Business feeds (#416).
 
 ## Ruled decisions that govern next steps
 

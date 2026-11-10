@@ -1,8 +1,8 @@
 # Current State
 
-**Last Updated**: November 9, 2026
+**Last Updated**: November 10, 2026
 
-## Status: Live on Cloudflare at getclearnews.com | iOS v2.0 on App Store | Android v1.0.0 (APK) | 51 sources across 15 categories
+## Status: Live on Cloudflare at getclearnews.com | iOS v2.1 on App Store | Android v1.0.0 (APK) | 51 sources across 15 categories
 
 ### Move to Cloudflare (Nov 1, 2026, task #400)
 
@@ -31,9 +31,9 @@ Decisions made with the move (Nikhil): Google Analytics removed (it never worked
 - Google Analytics removed. The API base is `/api/v1` on the same origin.
 - `/privacy` and `/support` are static pages in `web/public/` (opened from both apps).
 
-### iOS App (SwiftUI): v2.0 on the App Store; v2.1 in App Store review
-- 2.0 is unchanged by the move; it calls `https://getclearnews.com` as before.
-- 2.1 (build 3, #425, Nov 5): the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes, About text. Builds 4 to 6 (Nov 9) add the morning edition (a Settings switch and time, a one-time offer at the end of Today, a tap that opens the story; #435) and breaking news (#487). Checked with the decoder sweep and a simulator run against production. On TestFlight for Family Testers (Nikhil and Urmila), uploaded with `ios/scripts/testflight-upload.sh`. Build 6 was submitted for App Store review on Nov 9, 2026 with new screenshots and store text (`appstore/`); it releases automatically when Apple approves (Nikhil's go). Full feature list in [ios/README.md](ios/README.md).
+### iOS App (SwiftUI): v2.1 on the App Store
+- 2.1 (build 6, #425) has been live on the App Store since Nov 10, 2026, 9:21 AM PT, released by Apple on approval (submitted Nov 9). Build 3 (Nov 5) brought the Today screen with "Covered by N outlets" and the Fox and NPR marks, the reader display fixes and the About text; builds 4 to 6 (Nov 9) added the morning edition (a Settings switch and time, a one-time offer at the end of Today, a tap that opens the story; #435) and breaking news (#487). Checked with the decoder sweep and a simulator run against production, then on TestFlight by Nikhil and Urmila (Family Testers; uploads with `ios/scripts/testflight-upload.sh`). Store text and screenshots: `appstore/`. Full feature list in [ios/README.md](ios/README.md).
+- Phones still on 2.0 (user agent `ClearNews/2`) keep working against the same API.
 
 ### Android App (Kotlin + Jetpack Compose): v1.0.0
 - Unchanged by the move. Ships as a signed APK on GitHub Releases (GitHub Actions on tag push). The F-Droid merge request (#34426) was closed on May 8, 2026 without merging; ClearNews is not on F-Droid.
@@ -76,7 +76,7 @@ Good News Network and Frommer's were blocked on the droplet and work from Cloudf
 ## Known Issues
 - **Some repeats stay two cards:** stories group at cosine 0.75, which misses some (the Alaska Senate ruling from CNBC and NPR measured 0.69). Lower thresholds merged unrelated stories.
 - **Today can still show one saga twice** (the Binance hack, then withdrawals resuming, measured under 0.60); the editor prompt is what keeps them apart. To watch in the first days of briefs.
-- **The apps' About screens** say "financial news APIs" until their next release (fixed in iOS 2.1, not released yet).
+- **Android's About screen** says "financial news APIs" until its next release (fixed in iOS 2.1).
 - **Physical AI was thin** (about 19 stories a week, 15 from The Robot Report); since 3.3.0 it also takes robotics stories from every source. To check after a few days.
 - **Reader gaps** (#423): sources whose stories never open in the reader were taken off on Nov 5, 2026: BBC (all five feeds, which began refusing Cloudflare after Nov 1), NDTV, UPI Odd News and Smithsonian (#453; measured in `docs/reviews/2026-11-01-reader-investigation.md` section 8). A publisher can still start blocking at any time; the app then shows "doesn't allow reader view" and a link, and `worker/scripts/measure-reader.mjs` finds it. A lead paragraph is missing on some Atlas Obscura place pages and the odd Substack or Scientific American post, and Atlas Obscura place pages lose their "Know Before You Go" notes (left as is, Nov 6). First opens take about 0.8 s at the median since two extractors run; second opens and Today's stories come from the cache.
 - **Today can drop to 9 stories** late in the hour when a picked story falls out of its source's newest 30; the next hourly edition refills it.

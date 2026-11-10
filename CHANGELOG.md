@@ -1,5 +1,9 @@
 # Changelog
 
+## [iOS 2.1] - 2026-11-10 - On the App Store (#425)
+
+No server change. Build 6 went live at 9:21 AM PT, released by Apple on approval (submitted Nov 9). It carries Today, story coverage and the reader fixes (3.6.0), the morning edition (3.7.0) and breaking news (3.8.0), with new store text and 11 screenshots (`appstore/`). From now on the published app also reads `topics`, `coverage` and `brief_at`, posts to `/api/v1/notifications`, and opens notifications by their `url`, `title` and `source` keys (`docs/cloudflare-architecture.md`).
+
 ## [3.8.0] - 2026-11-09 - Breaking news alerts; privacy page for notifications (#487, #488)
 
 ### Added
