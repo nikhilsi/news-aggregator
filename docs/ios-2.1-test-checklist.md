@@ -61,4 +61,4 @@ Note anything off with a screenshot (TestFlight's own screenshot feedback works)
 
 ## Not in this build
 
-Topic sections and "new since your last visit" (the Should items) and the widget. Before the App Store release (#488): the App Store privacy answers and the EU trader status.
+Topic sections and "new since your last visit" (the Should items) and the widget. The App Store privacy answers and EU trader status are done (#488, Nov 9).
