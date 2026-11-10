@@ -7,14 +7,12 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
 ## Now
 
 **The apps** (all P1, Nikhil, Nov 1):
-- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition setting (#435, build 4), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. The App Store release waits for notifications (#435) and needs the EU trader status set in App Store Connect first. The Should items (topic sections, "new since your last visit") and notifications (after #435) are not built.
+- **iOS 2.1** (#425): the Must items are built (Today screen, story coverage, Fox and NPR marks, reader display fixes, About text), plus the morning edition (#435, build 5), not on the App Store yet. On TestFlight: Apple approved the 2.1 (3) beta on Nov 6. Nikhil and Urmila use it daily and walk `docs/ios-2.1-test-checklist.md`. The App Store release needs #488 first (privacy page and manifest, App Store privacy answers, EU trader status). The Should items (topic sections, "new since your last visit") are not built.
 - **Android** (#426): the same, plus Android-only reader fixes and Firebase push for notifications.
-- **Notifications** (#435): design ruled on Nov 9 ([docs/435-notifications-design.md](docs/435-notifications-design.md)).
-  - The morning edition first: a push from the server with the top headline, at the time the reader picks in their own time zone. Off by default.
-  - iOS goes direct to Apple's push service (probe passed Nov 9). Android uses Firebase, with #426.
-  - Breaking alerts after two weeks of logging what they would have sent.
-  - Server side live since Nov 9 (3.7.0, Worker 49841df6). The first morning edition reached Nikhil's iPhone on Nov 9 at 3:56 PM (build 4); tapping it crashed the app, fixed in build 5 on TestFlight.
-  - Next: confirm the tap opens the story on build 5. Then the App Store release (privacy page, privacy manifest, EU trader status first).
+- **Notifications:** the iOS morning edition shipped on Nov 9 (#435, closed; [docs/435-notifications-design.md](docs/435-notifications-design.md)). Server live since 3.7.0; 2.1 build 5 on TestFlight; sent and tapped on Nikhil's iPhone.
+  - Next: the App Store prerequisites (#488): the privacy page and privacy manifest (Claude drafts), the App Store privacy answers and EU trader status (Nikhil).
+  - Then breaking-story alerts (#487): two weeks of logging what would qualify, a review with Nikhil, then the switch.
+  - Android notifications come with #426 (Firebase).
 
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
