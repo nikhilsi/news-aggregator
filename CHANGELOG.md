@@ -9,6 +9,7 @@
 - **The sender** runs each minute next to the feed refresh, as its own call. It sends straight to Apple's push service (production) with an ES256 login signed from the new Worker secret `APNS_KEY`. Each device is claimed before its send, so overlapping runs can't double it. It skips when Today has no brief under 6 hours old. Apple's answers decide what happens next: delivered, device gone (deleted), our setup (stop, retry later), Apple busy (retry in 15 minutes inside the hour).
 - `verify.mjs` checks that production refuses a bad sign-up and answers other methods with 405.
 - Deployed Nov 9 as Worker 49841df6, with the secret `APNS_KEY` set: verify 77/77, decoder sweep 1,315 articles with 0 failures, no errors in the logs. On production a made-up device signed up (204) and was removed (204); a `text/plain` sign-up got 415.
+- First morning edition delivered Nov 9 at 3:56 PM PT to Nikhil's iPhone (iOS 2.1 build 4 from TestFlight): logged `due 1, sent 1`, Apple accepted it on the first try. Tapping it crashed build 4: the app answered iOS's "tap handled" callback on a background thread, and UIKit requires the main thread (TestFlight crash log). Build 5 answers both notification callbacks on the main thread.
 
 ### Fixed
 - Two API tests seeded articles dated Nov 1 and began failing on Nov 9, when those turned older than the 7-day limit. They now date articles relative to the day they run.

@@ -1,6 +1,6 @@
 # iOS App — ClearNews (SwiftUI)
 
-Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 4, with the morning edition) is on TestFlight; the App Store has 2.0.
+Native iOS client for ClearNews. Zero external dependencies. Deployment target: iOS 17.0. Version 2.1 (build 5, with the morning edition) is on TestFlight; the App Store has 2.0.
 
 ## Quick Start
 

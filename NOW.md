@@ -13,8 +13,8 @@ Shipped work lives in CHANGELOG.md; this file looks forward only.
   - The morning edition first: a push from the server with the top headline, at the time the reader picks in their own time zone. Off by default.
   - iOS goes direct to Apple's push service (probe passed Nov 9). Android uses Firebase, with #426.
   - Breaking alerts after two weeks of logging what they would have sent.
-  - Server side live since Nov 9 (3.7.0, Worker 49841df6). The iOS side is 2.1 build 4 on TestFlight.
-  - Next: Nikhil turns it on in Settings on his iPhone and sets a time a few minutes ahead; the first morning edition that arrives is the final check. Then the App Store release (privacy page, privacy manifest, EU trader status first).
+  - Server side live since Nov 9 (3.7.0, Worker 49841df6). The first morning edition reached Nikhil's iPhone on Nov 9 at 3:56 PM (build 4); tapping it crashed the app, fixed in build 5 on TestFlight.
+  - Next: confirm the tap opens the story on build 5. Then the App Store release (privacy page, privacy manifest, EU trader status first).
 
 **Watch for a few days** (no task needed): the six sources added on Nov 5 (3.6.1) in `/api/v1/status` and on the phone, then a full `measure-reader.mjs run`. In the hourly briefs (each is logged; `worker/scripts/replay-brief.mjs` reruns any of them): repeats in Today, outlet balance, US politics coverage, the weak local story that sometimes fills slot 10, and Today shrinking to 9 when a picked story falls out of its source's newest 30.
 
