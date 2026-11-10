@@ -38,6 +38,16 @@ struct SettingsView: View {
                             set: { notifications.morningMinutes = NotificationService.minutes(of: $0) }
                         ), displayedComponents: .hourAndMinute)
                     }
+                    Toggle("Breaking news", isOn: Binding(
+                        get: { notifications.isBreakingOn },
+                        set: { on in
+                            if on {
+                                Task { await notifications.turnOnBreaking() }
+                            } else {
+                                notifications.turnOffBreaking()
+                            }
+                        }
+                    ))
                     if notifications.permission == .denied {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Notifications are off for ClearNews in iOS Settings.")
@@ -53,7 +63,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Notifications")
                 } footer: {
-                    Text("Today's top story, once a day at the time you pick.")
+                    Text("Morning edition: Today's top story, once a day at the time you pick. Breaking news: when many outlets cover a big story at once; at most one a day, never between 10 PM and 7 AM.")
                 }
 
                 // Reader font size
