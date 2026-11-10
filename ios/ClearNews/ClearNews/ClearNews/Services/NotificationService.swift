@@ -180,25 +180,39 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         // No token (no network, or a build without push): the next sync tries again.
     }
 
+    // UIKit asserts that these completion handlers run on the main thread. The async
+    // forms of these methods finish on a background thread when marked nonisolated,
+    // which crashed build 4 on tapping a notification (TestFlight crash, Nov 9, 2026).
+    // So: the completion-handler forms, each answered on the main thread.
+
     /// A morning edition that arrives while the app is open still shows as a banner.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        DispatchQueue.main.async {
+            completionHandler([.banner, .list, .sound])
+        }
     }
 
     /// Tapped: open the story in the reader, with Today behind it.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         let content = response.notification.request.content
-        guard let url = content.userInfo["url"] as? String else { return }
+        let url = content.userInfo["url"] as? String
         let title = content.userInfo["title"] as? String ?? content.body
         let source = content.userInfo["source"] as? String ?? ""
-        await MainActor.run {
-            NotificationService.shared.openTarget = ReaderTarget(url: url, title: title, sourceName: source)
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                if let url {
+                    NotificationService.shared.openTarget = ReaderTarget(url: url, title: title, sourceName: source)
+                }
+            }
+            completionHandler()
         }
     }
 }
