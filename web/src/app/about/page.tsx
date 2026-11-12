@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen">
-      {/* Minimal header — just the brand mark linking home */}
+      {/* Minimal header: just the brand mark linking home */}
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/80">
         <div className="mx-auto flex max-w-7xl items-center px-4 py-3">
           <Link
@@ -36,6 +36,29 @@ export default function AboutPage() {
           want, in your own order.
         </p>
 
+        <p className="mb-4 leading-relaxed">
+          The Today tab is a brief of about 10 stories, picked every hour by
+          AI. The Latest tab has everything. The{' '}
+          <a
+            href="https://apps.apple.com/app/id6759177704"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            iPhone app
+          </a>
+          {' adds a morning edition and breaking-news alerts. An earlier '}
+          <a
+            href="https://github.com/nikhilsi/news-aggregator/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Android app
+          </a>
+          {' is on GitHub.'}
+        </p>
+
         <p className="mb-10 leading-relaxed">
           Articles come from your sources directly. The reader view extracts
           the content cleanly: no autoplay videos, no nag-screen popups, no
@@ -46,12 +69,22 @@ export default function AboutPage() {
         <h2 className="mb-4 text-2xl font-bold">Built by Nikhil Singhal</h2>
 
         <p className="mb-4 leading-relaxed">
-          Nikhil is a CTO and VP Engineering based in Seattle. He builds tools
-          that make working with information cleaner.
+          Nikhil Singhal is an Enterprise AI Architect &amp; Builder and a
+          hands-on CTO in Seattle. He builds tools that make working with
+          information cleaner.
         </p>
 
         <p className="mb-10 leading-relaxed">
           Other projects:{' '}
+          <a
+            href="https://centereye.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            CenterEye
+          </a>
+          {' (one record every AI chat works from), '}
           <a
             href="https://resynclife.com"
             target="_blank"
