@@ -88,7 +88,7 @@ const JSON_LD = {
       givenName: 'Nikhil',
       familyName: 'Singhal',
       jobTitle:
-        'Enterprise AI Architect & Builder | Hands-on CTO | Founder, AI Trust Commons',
+        'Enterprise AI Architect & Builder | CTO & VP Engineering | Founder, AI Trust Commons',
       url: 'https://nikhilsinghal.com',
       image: 'https://nikhilsinghal.com/img/nikhil-singhal-portrait-1200.jpg',
       email: 'mailto:nikhil@omspark.com',
