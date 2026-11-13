@@ -110,6 +110,7 @@ const JSON_LD = {
         'https://aitrustcommons.org',
         'https://hipcharter.com',
         'https://omspark.com',
+        'https://www.crunchbase.com/person/nikhil-singhal',
       ],
       knowsAbout: [
         'Artificial Intelligence',
